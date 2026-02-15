@@ -1,0 +1,284 @@
+.adPage {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #0f172a;
+  background: linear-gradient(180deg, #fafafa, #ffffff);
+}
+
+.adPage * {
+  box-sizing: border-box;
+}
+
+.adHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.adTitle {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.4px;
+}
+
+.adSub {
+  color: #64748b;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.adHeaderActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Buttons */
+.adBtn,
+.adBtnSoft {
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 120ms ease, opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.adBtn {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+.adBtnSoft {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+}
+
+.adBtn:hover,
+.adBtnSoft:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.adBtnDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Stats */
+.adStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.adStatCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(6px);
+}
+
+.adStatTitle {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.adStatValue {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.adStatHint {
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Section headers */
+.adSectionHead {
+  margin-top: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px;
+}
+
+.adSectionTitle {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.adSectionSub {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Grid */
+.adGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.adName {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.adBadgeSoft {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  border: 1px solid #e0e7ff;
+  white-space: nowrap;
+}
+
+.adMeta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.adMuted {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.adPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.adPill-added {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.adPill-confirmed {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #065f46;
+}
+
+/* Actions */
+.adActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Empty */
+.adEmpty {
+  grid-column: 1 / -1;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  color: #334155;
+}
+
+.adEmptyTitle {
+  font-weight: 900;
+}
+
+.adEmptySub {
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .adHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adHeaderActions {
+    justify-content: flex-start;
+  }
+
+  .adGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .adPage {
+    padding: 14px;
+  }
+
+  .adTitle {
+    font-size: 22px;
+  }
+
+  .adGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adBtn,
+  .adBtnSoft {
+    width: 100%;
+  }
+
+  .adActions {
+    flex-direction: column;
+  }
+}

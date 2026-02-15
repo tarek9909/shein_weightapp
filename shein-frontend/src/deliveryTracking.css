@@ -1,0 +1,283 @@
+.dtPage {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #0f172a;
+  background: linear-gradient(180deg, #fafafa, #ffffff);
+}
+
+.dtPage * {
+  box-sizing: border-box;
+}
+
+.dtHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.dtTitle {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.4px;
+}
+
+.dtSub {
+  color: #64748b;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dtSearchWrap {
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dtLabel {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 900;
+}
+
+.dtInput {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  font-weight: 700;
+}
+
+/* Stats row */
+.dtStats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.dtStatCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(6px);
+}
+
+.dtStatTitle {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.dtStatValue {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Buttons */
+.dtBtn,
+.dtBtnSoft {
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 120ms ease, opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.dtBtn {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+.dtBtnSoft {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+}
+
+.dtBtn:hover,
+.dtBtnSoft:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.dtBtnDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Grid of customers */
+.dtGrid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dtCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dtCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dtName {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.dtBadgeSoft {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  border: 1px solid #e0e7ff;
+  white-space: nowrap;
+}
+
+.dtMeta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.dtMuted {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.dtStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dtStatus-collected {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #065f46;
+}
+
+.dtStatus-withdelivery {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.dtStatus-pending {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.dtActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Empty */
+.dtEmpty {
+  grid-column: 1 / -1;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  color: #334155;
+}
+
+.dtEmptyTitle {
+  font-weight: 900;
+}
+
+.dtEmptySub {
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .dtHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dtSearchWrap {
+    min-width: unset;
+  }
+
+  .dtStats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dtGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dtPage {
+    padding: 14px;
+  }
+
+  .dtTitle {
+    font-size: 22px;
+  }
+
+  .dtStats {
+    grid-template-columns: 1fr;
+  }
+
+  .dtGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dtBtn,
+  .dtBtnSoft {
+    width: 100%;
+  }
+
+  .dtActions {
+    flex-direction: column;
+  }
+}

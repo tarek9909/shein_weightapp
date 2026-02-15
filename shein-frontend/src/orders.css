@@ -1,0 +1,200 @@
+/* orders.css */
+
+.ordPage {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #0f172a;
+  background: linear-gradient(180deg, #fafafa, #ffffff);
+}
+
+.ordPage * {
+  box-sizing: border-box;
+}
+
+.ordHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ordTitle {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.4px;
+}
+
+.ordSub {
+  color: #64748b;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.ordHeaderRight {
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ordLabel {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 900;
+}
+
+/* MonthSelector wrapper: makes it fit the same input look */
+.ordMonthWrap select,
+.ordMonthWrap select:focus,
+.ordMonthWrap select:active {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  color: #0f172a;
+  appearance: none;
+}
+
+/* Grid of orders */
+.ordGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Card */
+.ordCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ordCardHead {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ordCardTitle {
+  font-weight: 900;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.ordMuted {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.ordBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ordBadgeSoft {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  border: 1px solid #e0e7ff;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ordCardBody {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.ordDetails {
+  color: #0f172a;
+  font-weight: 800;
+  word-break: break-word;
+}
+
+/* Button */
+.ordBtn {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.ordBtn:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+/* Empty */
+.ordEmpty {
+  grid-column: 1 / -1;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  color: #334155;
+}
+
+.ordEmptyTitle {
+  font-weight: 900;
+}
+
+.ordEmptySub {
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .ordHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ordHeaderRight {
+    min-width: unset;
+  }
+  .ordGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ordPage {
+    padding: 14px;
+  }
+  .ordTitle {
+    font-size: 22px;
+  }
+  .ordGrid {
+    grid-template-columns: 1fr;
+  }
+  .ordBtn {
+    width: 100%;
+  }
+}

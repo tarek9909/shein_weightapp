@@ -1,0 +1,104 @@
+.cmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 4000;
+}
+
+.cmModal {
+  width: min(520px, 100%);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #0f172a;
+  overflow: hidden;
+}
+
+.cmHead {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.cmTitle {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.cmX {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.cmBody {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cmMsg {
+  color: #334155;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.cmInput {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.cmFooter {
+  padding: 12px 14px 14px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cmBtn,
+.cmBtnSoft {
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.cmBtn {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+.cmBtnSoft {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+}
+
+@media (max-width: 640px) {
+  .cmFooter {
+    flex-direction: column;
+  }
+  .cmBtn,
+  .cmBtnSoft {
+    width: 100%;
+  }
+}

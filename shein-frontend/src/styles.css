@@ -1,0 +1,25 @@
+body {
+  font-family: Arial, sans-serif;
+  background:linear-gradient(180deg, #fafafa, #ffffff);
+  margin: 0;
+  padding: 20px;
+}
+:root{
+  /* change this to your navbar height */
+  --app-header-h: 72px;
+}
+
+/* If you have a fixed header/hamburger */
+.app-content {
+  padding-top: calc(var(--app-header-h) + env(safe-area-inset-top));
+}
+
+/* If you don’t have an app-content wrapper, you can apply it to body/main */
+main {
+  padding-top: calc(var(--app-header-h) + env(safe-area-inset-top));
+}
+
+/* Extra: anchor jumps won’t hide under header */
+html {
+  scroll-padding-top: calc(var(--app-header-h) + 12px);
+}

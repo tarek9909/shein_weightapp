@@ -1,0 +1,231 @@
+/* cartsEditor.css (scoped modal, matches History/Dashboard) */
+
+.ceOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 2000;
+}
+
+.ceModal {
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #0f172a;
+}
+
+.ceHead {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ceTitle {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.ceSub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.ceMuted {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.ceClose {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ceAlert {
+  margin: 12px 14px 0;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #9f1239;
+  font-weight: 800;
+}
+
+.ceActionsTop {
+  padding: 12px 14px 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.ceBtn,
+.ceBtnSoft,
+.ceBtnDanger {
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 900;
+  transition: transform 120ms ease, opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.ceBtn {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+.ceBtnSoft {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+}
+
+.ceBtnDanger {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.ceBtn:hover,
+.ceBtnSoft:hover,
+.ceBtnDanger:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.ceBtnDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Grid of carts */
+.ceGrid {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ceCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ceCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ceCardTitle {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Badges */
+.ceBadgeSoft {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  border: 1px solid #e0e7ff;
+  white-space: nowrap;
+}
+
+.ceCardButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ceFooter {
+  padding: 0 14px 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Empty state */
+.ceEmpty {
+  grid-column: 1 / -1;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  color: #334155;
+}
+
+.ceEmptyTitle {
+  font-weight: 900;
+}
+
+.ceEmptySub {
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .ceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ceOverlay {
+    padding: 12px;
+  }
+
+  .ceGrid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .ceFooter {
+    padding: 0 12px 12px;
+  }
+
+  .ceBtn,
+  .ceBtnSoft,
+  .ceBtnDanger {
+    width: 100%;
+  }
+
+  .ceCardButtons {
+    flex-direction: column;
+  }
+}

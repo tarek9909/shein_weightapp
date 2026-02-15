@@ -1,0 +1,99 @@
+.hamburger-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+}
+.hamburger-btn,.close-btn {
+  background-color:none ;
+  color: #718093;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.hamburger-btn:hover,.close-btn:hover {
+  background-color: #718093;
+  color: white;
+}
+/* Overlay background (semi-transparent) */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 99;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Open state */
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Menu panel */
+.menu-content {
+  width: 250px;
+  height: 100%;
+  background-color: #fff;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  
+}
+
+.menu-overlay.open .menu-content {
+  transform: translateX(0);
+}
+
+/* Close button */
+.close-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  align-self: flex-end;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+/* Menu links */
+.menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  font-weight: bold;
+  margin-top: 100px;
+}
+
+.menu-links a {
+  text-decoration: none;
+  font-size: 18px;
+  color: #333;
+  transition: color 0.2s ease;
+  padding: 15px;
+  border-radius: 15px;
+    color: #718093;
+}
+.menu-links a:hover {
+  background-color: #718093;
+  color: white;
+}
+.btn2{
+    padding: 15px;
+    margin: 15px;
+    font-size: 16px;
+}
