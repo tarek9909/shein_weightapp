@@ -9,6 +9,7 @@ import {
   refreshOrderSheinTrack,
   refreshOrderSheinWeight,
 } from "../api/sheinTrackerApi";
+import { getCustomerDirectory } from "../api/customersApi";
 import MonthSelector from "../components/MonthSelector";
 import CartsEditor from "../components/CartsEditor";
 import { CustomModal } from "../components/CustomModal";
@@ -33,6 +34,9 @@ const OrdersPage = () => {
   const [sheinUsers, setSheinUsers] = useState([]);
   const [chromeProfiles, setChromeProfiles] = useState([]);
   const [sheinEmail, setSheinEmail] = useState("");
+  const [directoryCustomers, setDirectoryCustomers] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customersLoading, setCustomersLoading] = useState(false);
   const [orderCustomerCollectByOrderId, setOrderCustomerCollectByOrderId] = useState({});
 
   // Order Add / Edit Modal state
@@ -43,6 +47,7 @@ const OrdersPage = () => {
     order_name: "",
     order_details: "",
     amount_to_collect: "",
+    customer_ids: [],
   });
   const [formError, setFormError] = useState("");
 
@@ -166,6 +171,22 @@ const OrdersPage = () => {
     }
   };
 
+  const loadDirectoryCustomers = async () => {
+    setCustomersLoading(true);
+    try {
+      const data = await getCustomerDirectory();
+      setDirectoryCustomers(Array.isArray(data?.customers) ? data.customers : []);
+    } catch (error) {
+      setDirectoryCustomers([]);
+      openInfo({
+        title: "Customers Unavailable",
+        message: error?.message || "Could not load reusable customers.",
+      });
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
   useEffect(() => {
     let currentUser = null;
     try {
@@ -183,6 +204,7 @@ const OrdersPage = () => {
 
     loadMonths();
     loadSheinUsers();
+    loadDirectoryCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -217,6 +239,14 @@ const OrdersPage = () => {
     () => totalToCollect - totalOrdersAmount - totalEstimatedShipping,
     [totalToCollect, totalOrdersAmount, totalEstimatedShipping]
   );
+  const filteredDirectoryCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+    if (!query) return directoryCustomers;
+    return directoryCustomers.filter((customer) =>
+      [customer.customer_name, customer.phone, customer.notes]
+        .some((value) => String(value || "").toLowerCase().includes(query))
+    );
+  }, [customerSearch, directoryCustomers]);
 
   const handleOpenAddOrder = () => {
     if (!monthId) {
@@ -229,7 +259,9 @@ const OrdersPage = () => {
       order_name: `Order ${orders.length + 1}`,
       order_details: "",
       amount_to_collect: "",
+      customer_ids: [],
     });
+    setCustomerSearch("");
     setFormError("");
     setIsOrderModalOpen(true);
   };
@@ -241,9 +273,24 @@ const OrdersPage = () => {
       order_name: order.order_name || "",
       order_details: order.order_details || "",
       amount_to_collect: order.amount_to_collect ?? "",
+      customer_ids: [],
     });
+    setCustomerSearch("");
     setFormError("");
     setIsOrderModalOpen(true);
+  };
+
+  const toggleOrderCustomer = (customerId) => {
+    setOrderForm((current) => {
+      const id = Number(customerId);
+      const selected = Array.isArray(current.customer_ids) ? current.customer_ids : [];
+      return {
+        ...current,
+        customer_ids: selected.includes(id)
+          ? selected.filter((value) => value !== id)
+          : [...selected, id],
+      };
+    });
   };
 
   const handleSaveOrder = async (e) => {
@@ -265,7 +312,7 @@ const OrdersPage = () => {
 
     try {
       if (orderModalMode === "add") {
-        const res = await addOrder(monthId, orderForm.order_name.trim(), String(cost), collect);
+        const res = await addOrder(monthId, orderForm.order_name.trim(), String(cost), collect, orderForm.customer_ids);
         if (res?.ok === false || res?.success === false) {
           throw new Error(res?.error || "Failed to add order");
         }
@@ -655,6 +702,53 @@ const OrdersPage = () => {
                     required
                   />
                 </div>
+
+                {orderModalMode === "add" && (
+                  <div className="ordCustomerPicker">
+                    <div className="ordCustomerPickerHead">
+                      <div>
+                        <label className="ordCustomerPickerLabel">ASSIGN CUSTOMERS (OPTIONAL)</label>
+                        <div className="ordCustomerPickerHint">
+                          {orderForm.customer_ids.length} selected
+                        </div>
+                      </div>
+                      <input
+                        className="ordCustomerSearch"
+                        value={customerSearch}
+                        onChange={(event) => setCustomerSearch(event.target.value)}
+                        placeholder="Search customers"
+                        aria-label="Search customers"
+                      />
+                    </div>
+                    {customersLoading ? (
+                      <div className="ordCustomerEmpty">Loading customers...</div>
+                    ) : filteredDirectoryCustomers.length === 0 ? (
+                      <div className="ordCustomerEmpty">
+                        {directoryCustomers.length ? "No customers match your search." : "Add customers from the Customers page first."}
+                      </div>
+                    ) : (
+                      <div className="ordCustomerOptions">
+                        {filteredDirectoryCustomers.map((customer) => {
+                          const id = Number(customer.id);
+                          const selected = orderForm.customer_ids.includes(id);
+                          return (
+                            <label key={id} className={`ordCustomerOption${selected ? " isSelected" : ""}`}>
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => toggleOrderCustomer(id)}
+                              />
+                              <span>
+                                <strong>{customer.customer_name}</strong>
+                                {customer.phone ? <small>{customer.phone}</small> : null}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="modalFooter" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>

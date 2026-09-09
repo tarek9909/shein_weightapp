@@ -450,3 +450,98 @@
     grid-template-columns: 1fr;
   }
 }
+
+.ordCustomerPicker {
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.ordCustomerPickerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.ordCustomerPickerLabel {
+  display: block;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.ordCustomerPickerHint,
+.ordCustomerEmpty {
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.ordCustomerSearch {
+  width: 150px;
+  min-width: 0;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: #fff;
+  color: var(--text, #0f172a);
+}
+
+.ordCustomerOptions {
+  display: grid;
+  gap: 5px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ordCustomerOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 7px 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.ordCustomerOption.isSelected {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.ordCustomerOption input {
+  accent-color: #2563eb;
+}
+
+.ordCustomerOption span {
+  display: grid;
+  min-width: 0;
+}
+
+.ordCustomerOption strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.ordCustomerOption small {
+  color: var(--muted, #64748b);
+  font-size: 11px;
+}
+
+@media (max-width: 520px) {
+  .ordCustomerPickerHead {
+    display: grid;
+  }
+
+  .ordCustomerSearch {
+    width: 100%;
+  }
+}
