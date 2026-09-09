@@ -2,25 +2,40 @@
 .opsHeader { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 24px; }
 .opsHeader h1 { margin: 4px 0 8px; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.04em; }
 .opsHeader h2, .opsCard h2 { margin: 0; font-size: 20px; }
-.opsEyebrow { margin: 0; color: #4f46e5; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+.opsEyebrow { margin: 0; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
 .opsMuted { color: #64748b; margin: 0; font-size: 14px; }
 .opsControlGroup, .opsToolbar, .opsToolbarActions, .opsInlineForm, .opsAssignmentPanel { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .opsControlGroup label, .opsHeader > label, .opsAssignmentPanel label { display: grid; gap: 6px; color: #64748b; font-size: 12px; font-weight: 800; }
 .opsControlGroup input, .opsControlGroup select, .opsHeader select, .opsAssignmentPanel input, .opsAssignmentPanel select, .opsInlineForm input, .opsInlineForm select, .opsInlineForm button, .opsToolbar input, .opsToolbar select, .opsSelectedContext select, .opsWideInput { min-height: 40px; border: 1px solid #dbe3ef; border-radius: 10px; padding: 9px 11px; background: white; color: #18212f; }
 .opsControlGroup input { min-width: 260px; }
 .opsCard { background: #fff; border: 1px solid #e1e8f0; border-radius: 18px; padding: 20px; margin-top: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
-.opsToolbar { justify-content: space-between; margin-bottom: 16px; }
-.opsToolbar button, .opsToolbarActions button, .opsAssignmentPanel button, .opsInlineForm button, .opsTable button, .opsPreset button { border: 0; border-radius: 9px; padding: 9px 12px; background: #4f46e5; color: #fff; font-weight: 750; cursor: pointer; }
+.opsToolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.opsAssignmentPanel button, .opsInlineForm button { border: 0; border-radius: 9px; padding: 9px 14px; background: #0f172a; color: #fff; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
+.opsAssignmentPanel button:hover, .opsInlineForm button:hover { background: #1e293b; }
+.opsToolbar > button, .opsToolbarActions button { border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 13px; background: #ffffff; color: #334155; font-weight: 650; cursor: pointer; font-size: 13px; transition: all 0.15s ease; }
+.opsToolbar > button:hover, .opsToolbarActions button:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
 .opsToolbar button:disabled, .opsAssignmentPanel button:disabled { opacity: .45; cursor: not-allowed; }
-.opsTabs { display: flex; gap: 6px; flex-wrap: wrap; }
-.opsTab { border: 1px solid #dbe3ef; background: #f8fafc; color: #475569; border-radius: 999px; padding: 8px 12px; cursor: pointer; font-weight: 700; }
-.opsTabActive { background: #312e81; color: #fff; border-color: #312e81; }
-.opsAssignmentPanel { padding: 14px; margin-bottom: 16px; border: 1px solid #e0e7ff; border-radius: 13px; background: #f8faff; }
-.opsAssignmentPanel > div { display: grid; gap: 2px; margin-right: auto; }.opsAssignmentPanel > div strong { font-size: 24px; color: #312e81; }.opsAssignmentPanel > div span { color: #64748b; font-size: 12px; }
-.opsTableWrap { overflow-x: auto; }.opsTable { width: 100%; min-width: 820px; border-collapse: collapse; }.opsTable th { text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding: 11px; border-bottom: 1px solid #e5e7eb; }.opsTable td { padding: 12px 11px; border-bottom: 1px solid #eef2f7; vertical-align: top; }.opsTable td small, .opsTable td strong + small { display: block; color: #64748b; margin-top: 4px; font-size: 12px; }.opsTable td button { margin: 0 5px 5px 0; padding: 7px 9px; font-size: 12px; }
-.opsPill { display: inline-flex; border-radius: 999px; padding: 4px 8px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 750; white-space: nowrap; }.opsPillGood { color: #166534; background: #dcfce7; }
+.opsTabs { display: inline-flex; background: #f1f5f9; border-radius: 10px; padding: 3px; gap: 3px; border: 1px solid #e2e8f0; }
+.opsTab, .opsTabs button.opsTab { border: 0 !important; background: transparent !important; color: #64748b !important; border-radius: 7px !important; padding: 6px 14px !important; cursor: pointer !important; font-size: 13px !important; font-weight: 600 !important; transition: all 0.15s ease !important; box-shadow: none !important; }
+.opsTab:hover, .opsTabs button.opsTab:hover { color: #0f172a !important; background: rgba(255, 255, 255, 0.7) !important; }
+.opsTabActive, .opsTabs button.opsTab.opsTabActive { background: #ffffff !important; color: #0f172a !important; font-weight: 750 !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important; }
+.opsAssignmentPanel { padding: 14px; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 13px; background: #f8fafc; }
+.opsAssignmentPanel > div { display: grid; gap: 2px; margin-right: auto; }.opsAssignmentPanel > div strong { font-size: 24px; color: #0f172a; }.opsAssignmentPanel > div span { color: #64748b; font-size: 12px; }
+.opsTableWrap { overflow-x: auto; }.opsTable { width: 100%; min-width: 820px; border-collapse: collapse; }.opsTable th { text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding: 11px; border-bottom: 1px solid #e5e7eb; }.opsTable td { padding: 12px 11px; border-bottom: 1px solid #eef2f7; vertical-align: top; }.opsTable td small, .opsTable td strong + small { display: block; color: #64748b; margin-top: 4px; font-size: 12px; }.opsTable td button { margin: 0 5px 5px 0; padding: 6px 10px; font-size: 12px; border-radius: 7px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+.opsTable td button:hover { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
+.opsPill { display: inline-flex; border-radius: 6px; padding: 3px 8px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 650; white-space: nowrap; border: 1px solid #e2e8f0; }.opsPillGood { color: #166534; background: #f0fdf4; border-color: #bbf7d0; }
 .opsParts { display: flex; gap: 5px; flex-wrap: wrap; }.opsEmpty { padding: 36px 16px; text-align: center; color: #64748b; }.opsAlert { border-radius: 11px; padding: 12px 14px; margin: 10px 0; font-weight: 700; }.opsAlertError { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }.opsAlertSuccess { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-.opsSectionTitle { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; }.opsSectionTitle p { margin-top: 5px; }.opsInlineForm { align-items: center; margin: 12px 0; }.opsInlineForm input, .opsInlineForm select { flex: 1; min-width: 130px; }.opsPresetList { display: grid; gap: 8px; }.opsPreset { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #eef2f7; border-radius: 10px; }.opsPreset strong { min-width: 50px; }.opsPreset span:nth-child(3) { margin-right: auto; }.opsChoiceList { display: grid; gap: 7px; margin-top: 12px; max-height: 240px; overflow: auto; }.opsChoice { display: flex; justify-content: space-between; padding: 11px; border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; cursor: pointer; text-align: left; }.opsChoiceActive { border-color: #6366f1; background: #eef2ff; }.opsChoice span { color: #64748b; }.opsSelectedContext { display: grid; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }.opsWideInput { width: 100%; box-sizing: border-box; }.opsEventList { display: grid; gap: 8px; }.opsEvent { border: 1px solid #e2e8f0; border-radius: 11px; background: #fbfdff; }.opsEvent summary { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; cursor: pointer; padding: 12px; list-style: none; }.opsEvent summary span:nth-last-of-type(1) { margin-left: auto; }.opsEvent summary small { color: #64748b; }.opsEventBody { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 12px 12px; }.opsEventBody pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; min-height: 40px; background: #f1f5f9; border-radius: 8px; font-size: 11px; }
+.opsSectionTitle { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; }.opsSectionTitle p { margin-top: 5px; }.opsInlineForm { align-items: center; margin: 12px 0; }.opsInlineForm input, .opsInlineForm select { flex: 1; min-width: 130px; }
+.opsPresetList { display: grid; gap: 8px; }
+.opsPreset { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; }
+.opsPreset strong { min-width: 50px; color: #0f172a; font-weight: 700; }
+.opsPreset span:nth-child(3) { margin-right: auto; color: #64748b; font-weight: 600; }
+.opsPreset button { border: 1px solid #cbd5e1 !important; border-radius: 7px !important; padding: 5px 11px !important; background: #ffffff !important; color: #475569 !important; font-weight: 650 !important; cursor: pointer !important; font-size: 12px !important; transition: all 0.15s ease !important; }
+.opsPreset button:hover { background: #f1f5f9 !important; border-color: #94a3b8 !important; color: #0f172a !important; }
+.opsPreset button:disabled { opacity: 0.35 !important; cursor: not-allowed !important; }
+.opsPreset button.opsPresetRemove { color: #b91c1c !important; border-color: #fca5a5 !important; }
+.opsPreset button.opsPresetRemove:hover { background: #fef2f2 !important; border-color: #f87171 !important; }
+.opsChoiceList { display: grid; gap: 7px; margin-top: 12px; max-height: 240px; overflow: auto; }.opsChoice { display: flex; justify-content: space-between; padding: 11px; border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; cursor: pointer; text-align: left; }.opsChoiceActive { border-color: #0f172a; background: #f8fafc; }.opsChoice span { color: #64748b; }.opsSelectedContext { display: grid; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }.opsWideInput { width: 100%; box-sizing: border-box; }.opsEventList { display: grid; gap: 8px; }.opsEvent { border: 1px solid #e2e8f0; border-radius: 11px; background: #fbfdff; }.opsEvent summary { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; cursor: pointer; padding: 12px; list-style: none; }.opsEvent summary span:nth-last-of-type(1) { margin-left: auto; }.opsEvent summary small { color: #64748b; }.opsEventBody { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 12px 12px; }.opsEventBody pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; min-height: 40px; background: #f1f5f9; border-radius: 8px; font-size: 11px; }
 .opsDetailGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }.opsDetailGrid > div { display: grid; gap: 5px; padding: 12px; background: #f8fafc; border-radius: 10px; }.opsDetailGrid span { color: #64748b; font-size: 13px; }
 @media (max-width: 760px) { .opsPage { padding: 22px 12px 48px; }.opsHeader { display: grid; align-items: stretch; }.opsControlGroup { display: grid; }.opsControlGroup input { min-width: 0; width: 100%; box-sizing: border-box; }.opsCard { padding: 14px; border-radius: 14px; }.opsAssignmentPanel { display: grid; align-items: stretch; }.opsAssignmentPanel > div { margin-right: 0; }.opsEventBody, .opsDetailGrid { grid-template-columns: 1fr; }.opsPreset { flex-wrap: wrap; } }
 
@@ -28,9 +43,9 @@
 .opsModeSwitch {
   display: inline-flex;
   background: #f1f5f9;
-  border-radius: 12px;
-  padding: 4px;
-  gap: 4px;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
   margin-bottom: 16px;
   border: 1px solid #e2e8f0;
 }
@@ -38,27 +53,32 @@
   border: 0;
   background: transparent;
   color: #64748b;
-  font-weight: 700;
+  font-weight: 650;
   font-size: 13px;
-  padding: 8px 18px;
-  border-radius: 9px;
+  padding: 7px 16px;
+  border-radius: 7px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.15s ease-in-out;
+}
+.opsModeSwitch button:hover {
+  color: #0f172a;
 }
 .opsModeSwitch button.active {
   background: #ffffff;
   color: #0f172a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-weight: 750;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 .opsSelfDeliveryCard {
-  background: linear-gradient(135deg, #f0fdfa, #f8fafc);
-  border: 1.5px solid #99f6e4;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 16px 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 .opsSelfDeliveryCardHeader {
   display: flex;
@@ -77,11 +97,11 @@
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #0f766e;
+  color: #0f172a;
 }
 .opsSelfDeliveryTitle p {
-  margin: 2px 0 0;
-  font-size: 12px;
+  margin: 3px 0 0;
+  font-size: 12.5px;
   color: #64748b;
 }
 .opsBulkQuickBar {
@@ -90,11 +110,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 10px 14px;
-  background: #ffffff;
+  padding: 8px 12px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 14px;
+  border-radius: 9px;
+  margin-bottom: 12px;
 }
 .opsBulkChips {
   display: flex;
@@ -104,28 +124,31 @@
 }
 .opsChip {
   font-size: 12px;
-  font-weight: 700;
-  padding: 5px 10px;
-  border-radius: 6px;
+  font-weight: 650;
+  padding: 5px 11px;
+  border-radius: 7px;
   border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  background: #ffffff;
   color: #334155;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
 }
 .opsChip:hover {
-  background: #e2e8f0;
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 .opsBulkMetrics {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: #475569;
 }
 .opsBulkMetrics span.highlight {
-  color: #0d9488;
+  color: #0f172a;
+  font-weight: 800;
 }
 .opsBulkActions {
   display: flex;
@@ -133,49 +156,82 @@
   flex-wrap: wrap;
   align-items: center;
 }
-.opsBtnPrimary {
-  background: #4f46e5 !important;
+.opsBtnPrimary, .opsBtnSuccess {
+  background: #0f172a !important;
   color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  border-radius: 8px !important;
+  padding: 8px 15px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
 }
-.opsBtnSuccess {
-  background: #0d9488 !important;
-  color: #ffffff !important;
+.opsBtnPrimary:hover, .opsBtnSuccess:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
 }
-.opsBtnSuccess:hover {
-  background: #0f766e !important;
+.opsBtnPrimary:disabled, .opsBtnSuccess:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
 }
 .opsBtnDanger {
-  background: #ef4444 !important;
-  color: #ffffff !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 8px !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
 }
 .opsBtnDanger:hover {
-  background: #dc2626 !important;
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
+}
+.opsBtnDanger:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
 }
 .opsBtnOutline {
   background: #ffffff !important;
-  color: #475569 !important;
+  color: #334155 !important;
   border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
 }
 .opsBtnOutline:hover {
-  background: #f1f5f9 !important;
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+.opsBtnOutline:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
 }
 .opsPillWarning {
-  background: #fef3c7;
-  color: #b45309;
-  font-weight: 750;
-  border: 1px solid #fde68a;
+  background: #fefce8;
+  color: #854d0e;
+  font-weight: 650;
+  border: 1px solid #fef08a;
 }
 .opsPillSelf {
-  background: #ccfbf1;
-  color: #0f766e;
-  font-weight: 750;
-  border: 1px solid #99f6e4;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 650;
+  border: 1px solid #cbd5e1;
 }
 .opsPillCourier {
-  background: #e0e7ff;
-  color: #3730a3;
-  font-weight: 750;
-  border: 1px solid #c7d2fe;
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 650;
+  border: 1px solid #bfdbfe;
 }
 
 /* Inline Delivery Number Input in Table */
@@ -228,52 +284,53 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 12px;
-  border-radius: 9px;
-  border: 1.5px solid #e2e8f0;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
   background: #ffffff;
   cursor: pointer;
   user-select: none;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: #334155;
   transition: all 0.15s ease;
 }
 .opsPresetCard:hover {
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
   background: #f8fafc;
 }
 .opsPresetCard.active {
-  border-color: #6366f1 !important;
-  background: #eef2ff !important;
-  color: #312e81 !important;
-  box-shadow: 0 0 0 1px #6366f1;
+  border-color: #0f172a !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  box-shadow: 0 0 0 1px #0f172a;
 }
 .opsPresetCard input[type="checkbox"] {
-  accent-color: #4f46e5;
+  accent-color: #0f172a;
   width: 15px;
   height: 15px;
   cursor: pointer;
 }
 .opsPresetCard b {
   font-size: 12px;
-  color: #4f46e5;
-  background: #e0e7ff;
+  color: #475569;
+  background: #f1f5f9;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: 4px;
 }
 .opsPresetCard.active b {
-  background: #4f46e5;
-  color: #ffffff;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 /* Courier Dispatch Card */
 .opsCourierDispatchCard {
-  background: linear-gradient(135deg, #f8faff, #ffffff);
-  border: 1.5px solid #c7d2fe;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 18px 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 .opsCourierDispatchHeader {
   display: flex;
@@ -286,11 +343,11 @@
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #3730a3;
+  color: #0f172a;
 }
 .opsCourierDispatchHeader p {
-  margin: 2px 0 0;
-  font-size: 12px;
+  margin: 3px 0 0;
+  font-size: 12.5px;
   color: #64748b;
 }
 
@@ -298,7 +355,7 @@
 .opsPerCustomerSection {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #e0e7ff;
+  border-top: 1px solid #f1f5f9;
 }
 .opsPerCustomerHeader {
   display: flex;
@@ -312,7 +369,7 @@
   margin: 0;
   font-size: 13.5px;
   font-weight: 750;
-  color: #1e1b4b;
+  color: #0f172a;
 }
 .opsPerCustomerGrid {
   display: grid;
@@ -440,10 +497,10 @@
   border-color: #cbd5e1;
 }
 .opsMethodBtn.active {
-  border-color: #6366f1 !important;
-  background: #eef2ff !important;
-  color: #312e81 !important;
-  box-shadow: 0 0 0 1px #6366f1;
+  border-color: #0f172a !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: none;
 }
 .opsModalInput {
   width: 100%;
@@ -459,9 +516,9 @@
   transition: all 0.15s ease;
 }
 .opsModalInput:focus {
-  border-color: #6366f1;
+  border-color: #0f172a;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
 }
 
 /* Cargo Customs Modal and Badges */
@@ -471,58 +528,58 @@
   gap: 4px;
   border-radius: 999px;
   padding: 4px 10px;
-  background: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   margin: 0 4px 4px 0;
 }
 .opsCustomsBadge:hover {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  transform: translateY(-1px);
+  background: #dcfce7;
+  border-color: #86efac;
 }
 .opsBtnReceive {
   border: 0;
-  border-radius: 9px;
-  padding: 7px 11px;
-  background: #4f46e5;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #0f172a;
   color: #fff;
-  font-weight: 750;
+  font-weight: 700;
   cursor: pointer;
   margin: 0 4px 4px 0;
   font-size: 12px;
   transition: all 0.15s ease;
 }
 .opsBtnReceive:hover {
-  background: #4338ca;
+  background: #1e293b;
 }
 .opsBtnReceive:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .opsBtnAddCustoms {
-  border: 1.5px solid #6366f1;
-  border-radius: 9px;
-  padding: 6px 10px;
-  background: #eef2ff;
-  color: #4338ca;
-  font-weight: 750;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 11px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 650;
   cursor: pointer;
   margin: 0 4px 4px 0;
   font-size: 12px;
   transition: all 0.15s ease;
 }
 .opsBtnAddCustoms:hover {
-  background: #e0e7ff;
-  border-color: #4f46e5;
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 .opsCargoCalcBanner {
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border: 1.5px solid #ddd6fe;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 12px 16px;
   display: flex;
@@ -530,16 +587,16 @@
   gap: 4px;
 }
 .opsCargoCalcFormula {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 800;
-  color: #4c1d95;
+  color: #0f172a;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .opsCargoCalcDesc {
   font-size: 12px;
-  color: #6d28d9;
+  color: #64748b;
   font-weight: 500;
 }
 .opsFieldHelp {
@@ -574,7 +631,7 @@
 .opsCheckboxLabel input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #4f46e5;
+  accent-color: #0f172a;
   cursor: pointer;
 }
 .opsCloseBtn {

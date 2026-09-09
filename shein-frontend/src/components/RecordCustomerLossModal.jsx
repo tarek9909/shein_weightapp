@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { addLoss } from "../api/lossesApi";
 
 const LOSS_TYPES = [
-  { value: "package not added / missing", label: "⚠️ Package Not Added / Missing Cargo" },
-  { value: "out of stock item", label: "📦 Out of Stock Item" },
-  { value: "damaged package", label: "💔 Damaged Package / Cargo" },
-  { value: "customer refused / cancelled", label: "🚫 Customer Refused / Cancelled" },
-  { value: "wrong item", label: "🔄 Wrong Item / Mismatch" },
-  { value: "delivery charge", label: "🚚 Delivery / Courier Issue" },
-  { value: "lost cargo / transit", label: "✈️ Lost in Transit / Customs" },
-  { value: "refund / discount", label: "💵 Customer Refund / Discount" },
-  { value: "customs penalty", label: "📑 Customs / Tax Fee" },
-  { value: "other", label: "❓ Other Loss" },
+  { value: "package not added / missing", label: "Package Not Added / Missing Cargo" },
+  { value: "out of stock item", label: "Out of Stock Item" },
+  { value: "damaged package", label: "Damaged Package / Cargo" },
+  { value: "customer refused / cancelled", label: "Customer Refused / Cancelled" },
+  { value: "wrong item", label: "Wrong Item / Mismatch" },
+  { value: "delivery charge", label: "Delivery / Courier Issue" },
+  { value: "lost cargo / transit", label: "Lost in Transit / Customs" },
+  { value: "refund / discount", label: "Customer Refund / Discount" },
+  { value: "customs penalty", label: "Customs / Tax Fee" },
+  { value: "other", label: "Other Loss" },
 ];
 
 export default function RecordCustomerLossModal({
@@ -137,11 +137,11 @@ export default function RecordCustomerLossModal({
       <div
         style={{
           background: "#ffffff",
-          border: "1.5px solid #fecaca",
-          borderRadius: "18px",
+          border: "1px solid #e2e8f0",
+          borderRadius: "16px",
           width: "100%",
           maxWidth: isBulk ? "540px" : "480px",
-          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9)",
+          boxShadow: "0 20px 40px -15px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.9)",
           color: "#0f172a",
           overflow: "hidden",
         }}
@@ -157,28 +157,15 @@ export default function RecordCustomerLossModal({
             background: "#ffffff",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span
-              style={{
-                background: "#fee2e2",
-                color: "#b91c1c",
-                padding: "0.4rem 0.6rem",
-                borderRadius: "10px",
-                fontSize: "1.1rem",
-              }}
-            >
-              📉
-            </span>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
-                {isBulk ? `Record Bulk Loss (${targetList.length} Customers)` : "Record Customer Loss"}
-              </h3>
-              <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748b" }}>
-                {isBulk
-                  ? `Immediately register losses across ${targetList.length} selected customers`
-                  : "Immediately register a loss against this customer & order"}
-              </p>
-            </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
+              {isBulk ? `Record Bulk Loss (${targetList.length} Customers)` : "Record Customer Loss"}
+            </h3>
+            <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+              {isBulk
+                ? `Register losses across ${targetList.length} selected customers`
+                : "Register a loss against this customer & order"}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -465,14 +452,14 @@ export default function RecordCustomerLossModal({
               disabled={loading || (isBulk && bulkAmountMode === "fixed" && (!amount || parseFloat(amount) <= 0)) || (!isBulk && (!amount || parseFloat(amount) <= 0))}
               style={{
                 padding: "0.6rem 1.4rem",
-                background: loading ? "#991b1b" : "linear-gradient(135deg, #ef4444, #dc2626)",
+                background: loading ? "#334155" : "#0f172a",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "8px",
-                fontWeight: 750,
+                fontWeight: 700,
                 cursor: loading ? "wait" : "pointer",
                 fontSize: "0.875rem",
-                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)",
+                transition: "background 0.15s ease",
               }}
             >
               {loading ? "Recording..." : isBulk ? `Record Loss ($${totalCalculatedLoss.toFixed(2)})` : "Record Loss"}

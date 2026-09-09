@@ -518,8 +518,8 @@ export default function DeliveryWorkspace() {
         </div>
       </div>
 
-      {error && <div className="opsAlert opsAlertError">⚠️ {error}</div>}
-      {notice && <div className="opsAlert opsAlertSuccess">✅ {notice}</div>}
+      {error && <div className="opsAlert opsAlertError">{error}</div>}
+      {notice && <div className="opsAlert opsAlertSuccess">{notice}</div>}
 
       {/* Mode Switcher */}
       <div className="opsModeSwitch">
@@ -528,14 +528,14 @@ export default function DeliveryWorkspace() {
           className={workspaceMode === "self" ? "active" : ""}
           onClick={() => setWorkspaceMode("self")}
         >
-          🏃 Self-Delivery & Bulk Collection
+          Self-Delivery & Collection
         </button>
         <button
           type="button"
           className={workspaceMode === "courier" ? "active" : ""}
           onClick={() => setWorkspaceMode("courier")}
         >
-          🚚 Courier Dispatch
+          Courier Dispatch
         </button>
       </div>
 
@@ -544,10 +544,9 @@ export default function DeliveryWorkspace() {
         <section className="opsSelfDeliveryCard">
           <div className="opsSelfDeliveryCardHeader">
             <div className="opsSelfDeliveryTitle">
-              <span style={{ fontSize: "1.75rem" }}>🏃</span>
               <div>
-                <h3>Self-Delivery & Bulk Collection Section</h3>
-                <p>Select multiple customers to collect payments in bulk, assign self-pickup ($0 fee), or log immediate losses for unadded/missing cargo.</p>
+                <h3>Self-Delivery & Bulk Collection</h3>
+                <p>Select multiple customers to collect payments in bulk, assign self-pickup ($0 fee), or log customer losses.</p>
               </div>
             </div>
             <div className="opsBulkActions">
@@ -582,20 +581,20 @@ export default function DeliveryWorkspace() {
           {/* Quick Selection Bar */}
           <div className="opsBulkQuickBar">
             <div className="opsBulkChips">
-              <span style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: 800, color: "#64748b", marginRight: "4px" }}>
+              <span style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: 750, color: "#64748b", marginRight: "4px" }}>
                 Select:
               </span>
               <button type="button" className="opsChip" onClick={selectAllReadyNotAdded}>
-                ⚡ All Ready / Not Added ({customers.filter((c) => c.is_received && !c.is_collected && c.delivery_assignment_status === "unassigned").length})
+                All Ready ({customers.filter((c) => c.is_received && !c.is_collected && c.delivery_assignment_status === "unassigned").length})
               </button>
               <button type="button" className="opsChip" onClick={selectAllAssigned}>
-                📋 All Assigned ({customers.filter((c) => c.delivery_assignment_status === "assigned" && !c.is_collected).length})
+                All Assigned ({customers.filter((c) => c.delivery_assignment_status === "assigned" && !c.is_collected).length})
               </button>
               <button type="button" className="opsChip" onClick={selectAllUncollected}>
                 All Uncollected ({customers.filter((c) => !c.is_collected).length})
               </button>
               {selected.length > 0 && (
-                <button type="button" className="opsChip" onClick={clearSelection} style={{ color: "#ef4444" }}>
+                <button type="button" className="opsChip" onClick={clearSelection} style={{ color: "#b91c1c", borderColor: "#fca5a5" }}>
                   Clear ({selected.length})
                 </button>
               )}
@@ -603,7 +602,7 @@ export default function DeliveryWorkspace() {
 
             <div className="opsBulkMetrics">
               <span>Selected: <strong className="highlight">{selected.length}</strong></span>
-              <span>Total Value: <strong className="highlight">${money(selectedTotalAmount)}</strong></span>
+              <span>Total: <strong className="highlight">${money(selectedTotalAmount)}</strong></span>
             </div>
           </div>
 
@@ -611,22 +610,22 @@ export default function DeliveryWorkspace() {
           <div className="opsBulkActions" style={{ marginTop: "10px" }}>
             <button
               type="button"
-              className="opsBtnSuccess"
+              className="opsBtnPrimary"
               disabled={!selectedSelfCollectable.length || saving}
               onClick={bulkSelfCollect}
               title="Collect target payments directly into payments and complete self-delivery in 1 click"
             >
-              ⚡ Bulk Self-Deliver & Collect Now ({selectedSelfCollectable.length})
+              Self-Deliver & Collect ({selectedSelfCollectable.length})
             </button>
 
             <button
               type="button"
-              className="opsBtnPrimary"
+              className="opsBtnOutline"
               disabled={!selectedAssignable.length || saving}
               onClick={bulkAssignSelf}
               title="Mark selected customers for self-delivery counter pickup without collecting yet"
             >
-              📦 Bulk Mark as Self-Delivery ({selectedAssignable.length})
+              Mark as Self-Delivery ({selectedAssignable.length})
             </button>
 
             <button
@@ -636,7 +635,7 @@ export default function DeliveryWorkspace() {
               onClick={openBulkLossModal}
               title="Record immediate customer losses for selected packages that were not added, missing, or damaged"
             >
-              📉 Record Loss on Selected ({selectedRows.length})
+              Record Loss ({selectedRows.length})
             </button>
 
             <button
@@ -645,7 +644,7 @@ export default function DeliveryWorkspace() {
               disabled={!selectedCollectable.length || saving}
               onClick={collectSelected}
             >
-              💰 Collect Assigned ({selectedCollectable.length})
+              Collect Assigned ({selectedCollectable.length})
             </button>
 
             <button
@@ -654,7 +653,7 @@ export default function DeliveryWorkspace() {
               disabled={!selectedRows.some((row) => row.delivery_assignment_status === "assigned" && !row.is_collected) || saving}
               onClick={revertSelected}
             >
-              ↩️ Revert Selected
+              Revert Selected
             </button>
           </div>
         </section>
@@ -665,7 +664,7 @@ export default function DeliveryWorkspace() {
         <div className="opsCourierDispatchCard">
           <div className="opsCourierDispatchHeader">
             <div>
-              <h3>🚚 Courier Dispatch Assignment</h3>
+              <h3>Courier Dispatch Assignment</h3>
               <p>Select delivery preset via checkboxes and assign each customer their own specific delivery number.</p>
             </div>
             <div className="opsBulkMetrics">
@@ -703,12 +702,12 @@ export default function DeliveryWorkspace() {
                     placeholder="Quick sequential start (e.g. 1001)"
                     value={startingNumber}
                     onChange={(e) => setStartingNumber(e.target.value)}
-                    style={{ width: "210px", padding: "4px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                    style={{ width: "210px", padding: "5px 9px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
                   />
                   <button
                     type="button"
                     className="opsBtnOutline"
-                    style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
+                    style={{ padding: "5px 10px", fontSize: "12px", borderRadius: "6px" }}
                     onClick={() => {
                       const start = parseInt(startingNumber, 10);
                       if (isNaN(start) || start <= 0) {
@@ -761,13 +760,13 @@ export default function DeliveryWorkspace() {
                   onClick={assignCourierSelected}
                   style={{ padding: "8px 18px", fontSize: "13px" }}
                 >
-                  🚚 Save Courier Assignments ({selectedAssignable.length})
+                  Save Courier Assignments ({selectedAssignable.length})
                 </button>
               </div>
             </div>
           ) : (
             <div style={{ marginTop: "12px", padding: "12px", background: "#ffffff", borderRadius: "8px", border: "1px dashed #cbd5e1", color: "#64748b", fontSize: "13px" }}>
-              👉 Select one or more ready received customers in the table below to assign their individual delivery numbers, or click <strong>🚚 Assign Delivery</strong> directly on any row.
+              Select one or more ready received customers in the table below to assign their individual delivery numbers, or click <strong>Assign Delivery</strong> directly on any row.
             </div>
           )}
         </div>
@@ -795,23 +794,7 @@ export default function DeliveryWorkspace() {
           </div>
 
           <div className="opsToolbarActions">
-            <button type="button" onClick={loadCustomers}>🔄 Refresh</button>
-            <button
-              type="button"
-              className="opsBtnSuccess"
-              disabled={!selectedSelfCollectable.length || saving}
-              onClick={bulkSelfCollect}
-            >
-              ⚡ Self-Collect Selected ({selectedSelfCollectable.length})
-            </button>
-            <button
-              type="button"
-              className="opsBtnDanger"
-              disabled={!selectedRows.length || saving}
-              onClick={openBulkLossModal}
-            >
-              📉 Record Loss ({selectedRows.length})
-            </button>
+            <button type="button" onClick={loadCustomers}>Refresh</button>
           </div>
         </div>
 
@@ -851,7 +834,7 @@ export default function DeliveryWorkspace() {
                   const isCourier = customer.delivery_method === "courier";
 
                   return (
-                    <tr key={id} style={{ background: selected.includes(id) ? "#f0fdf4" : undefined }}>
+                    <tr key={id} style={{ background: selected.includes(id) ? "#f8fafc" : undefined }}>
                       <td>
                         <input
                           type="checkbox"
@@ -872,17 +855,17 @@ export default function DeliveryWorkspace() {
 
                       <td>
                         <span className={customer.is_received ? "opsPill opsPillGood" : "opsPill"}>
-                          {customer.is_received ? "✅ Received" : "⏳ Awaiting cargo"}
+                          {customer.is_received ? "Received" : "Awaiting cargo"}
                         </span>
                       </td>
 
                       <td>
                         {isUnassigned ? (
-                          <span className="opsPill opsPillWarning">⚠️ Not Added</span>
+                          <span className="opsPill opsPillWarning">Not Added</span>
                         ) : isSelf ? (
-                          <span className="opsPill opsPillSelf">🏃 Self-Delivery</span>
+                          <span className="opsPill opsPillSelf">Self-Delivery</span>
                         ) : isCourier ? (
-                          <span className="opsPill opsPillCourier">🚚 Courier</span>
+                          <span className="opsPill opsPillCourier">Courier</span>
                         ) : (
                           <span className="opsPill">{customer.delivery_assignment_status}</span>
                         )}
@@ -916,7 +899,7 @@ export default function DeliveryWorkspace() {
                                 title="Quick-save this delivery number"
                                 onClick={() => quickSaveDeliveryNumber(customer)}
                               >
-                                💾
+                                Save
                               </button>
                             )}
                           </div>
@@ -933,19 +916,19 @@ export default function DeliveryWorkspace() {
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                           {collected ? (
-                            <span className="opsPill opsPillGood">✅ Paid & Collected</span>
+                            <span className="opsPill opsPillGood">Collected</span>
                           ) : (
                             <>
                               {/* Assign or Edit Delivery Pop-up Modal Button */}
                               {customer.is_received && (
                                 <button
                                   type="button"
-                                  className={isUnassigned ? "opsBtnPrimary" : "opsBtnOutline"}
+                                  className="opsBtnOutline"
                                   style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
                                   onClick={() => openAssignModal(customer)}
                                   title={isUnassigned ? "Assign delivery number and preset" : "Edit delivery number and preset"}
                                 >
-                                  {isUnassigned ? "🚚 Assign Delivery" : "✏️ Edit Deliv"}
+                                  {isUnassigned ? "Assign Delivery" : "Edit Delivery"}
                                 </button>
                               )}
 
@@ -953,45 +936,41 @@ export default function DeliveryWorkspace() {
                               {customer.is_received && (
                                 <button
                                   type="button"
-                                  className="opsBtnSuccess"
+                                  className="opsBtnPrimary"
                                   style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
                                   onClick={() => singleSelfCollect(customer)}
                                   title="Collect payment now via self-delivery"
                                 >
-                                  ⚡ Self-Collect
+                                  Self-Collect
                                 </button>
                               )}
 
                               {customer.delivery_assignment_status === "assigned" && (
                                 <button
                                   type="button"
-                                  className="opsBtnPrimary"
+                                  className="opsBtnOutline"
                                   style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
                                   onClick={() => singleCollect(customer)}
                                   title="Collect assigned delivery"
                                 >
-                                  💰 Collect
+                                  Collect
                                 </button>
                               )}
 
                               {/* Immediate Loss Recording Button */}
                               <button
                                 type="button"
+                                className="opsBtnDanger"
                                 style={{
                                   padding: "4px 8px",
-                                  background: isUnassigned ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.12)",
-                                  border: isUnassigned ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid rgba(239, 68, 68, 0.3)",
-                                  color: "#ef4444",
-                                  borderRadius: "6px",
                                   fontSize: "11px",
-                                  fontWeight: 750,
-                                  cursor: "pointer",
+                                  borderRadius: "6px",
                                   whiteSpace: "nowrap",
                                 }}
                                 onClick={() => openSingleLossModal(customer)}
                                 title={isUnassigned ? "Record immediate loss: package not added / missing" : "Record immediate customer loss"}
                               >
-                                {isUnassigned ? "📉 Loss (Not Added)" : "📉 Loss"}
+                                Record Loss
                               </button>
                             </>
                           )}
@@ -1042,7 +1021,7 @@ export default function DeliveryWorkspace() {
               <button type="button" onClick={() => editPreset(preset)}>Edit</button>
               <button type="button" disabled={index === 0} onClick={() => movePreset(preset, -1)}>↑</button>
               <button type="button" disabled={index === presets.length - 1} onClick={() => movePreset(preset, 1)}>↓</button>
-              <button type="button" onClick={() => removePreset(preset)}>Remove</button>
+              <button type="button" className="opsPresetRemove" onClick={() => removePreset(preset)}>Remove</button>
             </div>
           ))}
         </div>
@@ -1078,7 +1057,7 @@ export default function DeliveryWorkspace() {
             <div className="opsCustomerAssignModalHead">
               <div>
                 <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800 }}>
-                  🚚 Assign Delivery — {assignModal.customer.customer_name || `Customer #${assignModal.customer.customer_id}`}
+                  Assign Delivery — {assignModal.customer.customer_name || `Customer #${assignModal.customer.customer_id}`}
                 </h3>
                 <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#64748b" }}>
                   Cart {assignModal.customer.cart_order_number || `#${assignModal.customer.cart_id}`} • {assignModal.customer.order_name || `Order #${assignModal.customer.order_id}`}
@@ -1097,7 +1076,7 @@ export default function DeliveryWorkspace() {
             <div className="opsCustomerAssignModalBody">
               {assignModal.error && (
                 <div className="opsAlert opsAlertError" style={{ margin: "0 0 14px" }}>
-                  ⚠️ {assignModal.error}
+                  {assignModal.error}
                 </div>
               )}
 
@@ -1110,14 +1089,14 @@ export default function DeliveryWorkspace() {
                     className={`opsMethodBtn ${assignModal.method === "courier" ? "active" : ""}`}
                     onClick={() => setAssignModal((prev) => ({ ...prev, method: "courier", error: "" }))}
                   >
-                    🚚 Courier Delivery
+                    Courier Delivery
                   </button>
                   <button
                     type="button"
                     className={`opsMethodBtn ${assignModal.method === "self" ? "active" : ""}`}
                     onClick={() => setAssignModal((prev) => ({ ...prev, method: "self", error: "" }))}
                   >
-                    🏃 Self-Delivery / Store Pickup
+                    Self-Delivery / Store Pickup
                   </button>
                 </div>
               </div>
