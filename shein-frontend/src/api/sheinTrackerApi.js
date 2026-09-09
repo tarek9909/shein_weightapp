@@ -4,22 +4,22 @@ import { apiFetch } from "./http";
 const BASE_URL = API_ORIGIN;
 
 export const listSheinUsers = () =>
-  apiFetch(`${BASE_URL}/sheinAccounts/getAccounts.php`);
+  apiFetch(`${BASE_URL}/sheinAccounts/getAccounts`);
 
 export const listChromeProfiles = () =>
-  apiFetch(`${BASE_URL}/sheinAccounts/getAccounts.php`);
+  apiFetch(`${BASE_URL}/sheinAccounts/getAccounts`);
 
 export const registerSheinAccount = (payload) =>
-  apiFetch(`${BASE_URL}/sheinAccounts/saveAccount.php`, {
+  apiFetch(`${BASE_URL}/sheinAccounts/saveAccount`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 
 export const getSheinUserDetail = (email) =>
-  apiFetch(`${BASE_URL}/sheinAccounts/getAccountDetail.php?email=${encodeURIComponent(email)}`);
+  apiFetch(`${BASE_URL}/sheinAccounts/getAccountDetail?email=${encodeURIComponent(email)}`);
 
 export const deleteSheinUserByOwner = (email) =>
-  apiFetch(`${BASE_URL}/sheinAccounts/deleteAccount.php`, {
+  apiFetch(`${BASE_URL}/sheinAccounts/deleteAccount`, {
     method: "POST",
     body: JSON.stringify({ email }),
   });
@@ -37,16 +37,16 @@ export const refreshCartShein = (cartId, profileKey = "") =>
     }),
   });
 
-export const refreshOrderSheinTrack = (orderId) =>
+export const refreshOrderSheinTrack = (orderId, profileKey = "") =>
   apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinTrack`, {
     method: "POST",
-    body: JSON.stringify({ order_id: orderId }),
+    body: JSON.stringify({ order_id: orderId, ...(profileKey ? { profile_key: profileKey } : {}) }),
   });
 
-export const refreshOrderSheinWeight = (orderId) =>
+export const refreshOrderSheinWeight = (orderId, profileKey = "") =>
   apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinWeight`, {
     method: "POST",
-    body: JSON.stringify({ order_id: orderId }),
+    body: JSON.stringify({ order_id: orderId, ...(profileKey ? { profile_key: profileKey } : {}) }),
   });
 
 // Unused in current UI, kept as no-op compatibility helpers.

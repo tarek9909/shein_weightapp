@@ -278,9 +278,10 @@ function sheinSplitFields(...records) {
   };
 }
 
-async function updateTrack(db, userId, cartId, oldTracking, track) {
+async function updateTrack(db, userId, cartId, oldTracking, track, profileKey = null) {
   const split = sheinSplitFields(track);
-  await execute(db, `UPDATE order_carts SET shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+  await execute(db, `UPDATE order_carts SET chrome_profile_key=COALESCE(?,chrome_profile_key),shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+    profileKey,
     track.carrier ?? null,
     track.tracking_no ?? null,
     track.status_text ?? null,
@@ -345,8 +346,10 @@ router.post(paths("refreshCartShein"), asyncHandler(async (req, res) => {
 }));
 router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
   const orderId = int(req.body?.order_id ?? req.body?.id);
+  const requestedProfile = trim(req.body?.profile_key);
   if (orderId <= 0) return okError(res, 400, "Order id is required", "ok");
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
+  if (requestedProfile && !isChromeProfileKey(requestedProfile)) return okError(res, 400, "A valid Chrome profile is required", "ok");
 
   const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_delivered,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? AND COALESCE(shein_delivered,0)=0 ORDER BY id DESC", [orderId, uid(req)]);
   let updated = 0;
@@ -355,7 +358,7 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
 
   for (const cart of carts) {
     const orderNo = trim(cart.shein_order_no);
-    const profileKey = trim(cart.chrome_profile_key);
+    const profileKey = requestedProfile || trim(cart.chrome_profile_key);
     if (!orderNo || !profileKey || !isChromeProfileKey(profileKey)) {
       skipped++;
       if (!profileKey || !isChromeProfileKey(profileKey)) errors.push(`Cart ${cart.id}: A valid Chrome profile is required`);
@@ -367,7 +370,7 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
       errors.push(`Cart ${cart.id}: ${result.error}`);
       continue;
     }
-    await updateTrack(pool, uid(req), cart.id, cart.shein_tracking_no, result.data);
+    await updateTrack(pool, uid(req), cart.id, cart.shein_tracking_no, result.data, profileKey);
     updated++;
   }
 
@@ -387,8 +390,10 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
 }));
 router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
   const orderId = int(req.body?.order_id ?? req.body?.id);
+  const requestedProfile = trim(req.body?.profile_key);
   if (orderId <= 0) return okError(res, 400, "Order id is required", "ok");
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
+  if (requestedProfile && !isChromeProfileKey(requestedProfile)) return okError(res, 400, "A valid Chrome profile is required", "ok");
 
   const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC", [orderId, uid(req)]);
   const groups = new Map();
@@ -401,7 +406,7 @@ router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
     const oldTracking = trim(cart.shein_tracking_no);
     if (oldTracking) touched.add(oldTracking);
     const orderNo = trim(cart.shein_order_no);
-    const profileKey = trim(cart.chrome_profile_key);
+    const profileKey = requestedProfile || trim(cart.chrome_profile_key);
     if (!profileKey || !orderNo || !isChromeProfileKey(profileKey)) {
       skipped++;
       if (!profileKey || !isChromeProfileKey(profileKey)) errors.push(`Cart ${cart.id}: A valid Chrome profile is required`);
@@ -448,7 +453,8 @@ router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
       const weightKg = row.total_weight_kg == null ? null : Number(row.total_weight_kg);
       const split = sheinSplitFields(row);
       for (const id of ids) {
-        await execute(pool, `UPDATE order_carts SET shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+        await execute(pool, `UPDATE order_carts SET chrome_profile_key=?,shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+          group.profileKey,
           row.total_weight_g == null ? null : int(row.total_weight_g),
           weightKg,
           weightKg == null ? null : weightKg + 2,

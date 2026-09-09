@@ -59,7 +59,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/login.php`, {
+      const res = await fetch(`${BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

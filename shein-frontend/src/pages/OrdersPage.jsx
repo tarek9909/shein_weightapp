@@ -12,6 +12,7 @@ import {
 import { getCustomerDirectory } from "../api/customersApi";
 import MonthSelector from "../components/MonthSelector";
 import CartsEditor from "../components/CartsEditor";
+import CustomDropdown from "../components/CustomDropdown";
 import OrderCollectionModal from "../components/OrderCollectionModal";
 import RecordCustomerLossModal from "../components/RecordCustomerLossModal";
 import { CustomModal } from "../components/CustomModal";
@@ -34,6 +35,7 @@ const OrdersPage = () => {
   const [refreshingTrackOrderId, setRefreshingTrackOrderId] = useState(null);
   const [refreshingWeightOrderId, setRefreshingWeightOrderId] = useState(null);
   const [chromeProfiles, setChromeProfiles] = useState([]);
+  const [refreshProfileKey, setRefreshProfileKey] = useState("");
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customersLoading, setCustomersLoading] = useState(false);
@@ -165,9 +167,12 @@ const OrdersPage = () => {
   const loadChromeProfiles = async () => {
     try {
       const data = await listChromeProfiles();
-      setChromeProfiles(data?.chrome_profiles || []);
+      const profiles = data?.chrome_profiles || [];
+      setChromeProfiles(profiles);
+      setRefreshProfileKey((current) => current || profiles[0]?.profile_key || "");
     } catch {
       setChromeProfiles([]);
+      setRefreshProfileKey("");
     }
   };
 
@@ -330,17 +335,22 @@ const OrdersPage = () => {
   };
 
   const handleRefreshOrderTrack = async (order) => {
+    if (!refreshProfileKey) {
+      openInfo({ title: "Missing Chrome Profile", message: "Select a Chrome profile before refreshing track." });
+      return;
+    }
     setRefreshingTrackOrderId(order.id);
     try {
-      const res = await refreshOrderSheinTrack(order.id);
+      const res = await refreshOrderSheinTrack(order.id, refreshProfileKey);
       await loadOrders(monthId);
       const errCount = Array.isArray(res?.errors) ? res.errors.length : 0;
+      const errorDetails = errCount ? `\n${res.errors.join("\n")}` : "";
       openInfo({
         title: "Track Refreshed",
         message:
           `Updated carts: ${Number(res?.updated || 0)}\n` +
           `Skipped carts: ${Number(res?.skipped || 0)}\n` +
-          `Errors: ${errCount}`,
+          `Errors: ${errCount}${errorDetails}`,
       });
     } catch (err) {
       openInfo({
@@ -353,19 +363,24 @@ const OrdersPage = () => {
   };
 
   const handleRefreshOrderWeight = async (order) => {
+    if (!refreshProfileKey) {
+      openInfo({ title: "Missing Chrome Profile", message: "Select a Chrome profile before getting weight." });
+      return;
+    }
     setRefreshingWeightOrderId(order.id);
     try {
-      const res = await refreshOrderSheinWeight(order.id);
+      const res = await refreshOrderSheinWeight(order.id, refreshProfileKey);
       await loadOrders(monthId);
       const totalPlus2 = Number(res?.summary?.total_weight_plus_2kg || 0);
       const errCount = Array.isArray(res?.errors) ? res.errors.length : 0;
+      const errorDetails = errCount ? `\n${res.errors.join("\n")}` : "";
       openInfo({
         title: "Weight Updated",
         message:
           `Updated carts: ${Number(res?.updated || 0)}\n` +
           `Skipped carts: ${Number(res?.skipped || 0)}\n` +
           `Order total (+2kg/cart): ${totalPlus2.toFixed(3)} kg\n` +
-          `Errors: ${errCount}`,
+          `Errors: ${errCount}${errorDetails}`,
       });
     } catch (err) {
       openInfo({
@@ -401,7 +416,33 @@ const OrdersPage = () => {
               </div>
             </div>
 
-            <div style={{ alignSelf: "flex-end" }}>
+            <div style={{ flex: 1 }}>
+              <div className="ordLabel">Chrome Profile for Refresh</div>
+              <div className="ordMonthWrap">
+                <CustomDropdown
+                  value={refreshProfileKey}
+                  placeholder="Select Chrome profile"
+                  options={chromeProfiles.map((profile) => ({
+                    value: profile.profile_key,
+                    label: profile.name || profile.profile_key,
+                  }))}
+                  onChange={(event) => setRefreshProfileKey(event.target.value)}
+                  disabled={!chromeProfiles.length || loading}
+                  searchable={chromeProfiles.length > 8}
+                />
+              </div>
+            </div>
+
+            <div style={{ alignSelf: "flex-end", display: "flex", gap: "8px" }}>
+              <a
+                href="/customers"
+                className="ordBtnSoft"
+                style={{ padding: "10px 14px", height: "42px", display: "inline-flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap", textDecoration: "none" }}
+                title="Manage reusable customer directory"
+              >
+                👥 Customers
+              </a>
+
               <button
                 type="button"
                 className="ordBtn"

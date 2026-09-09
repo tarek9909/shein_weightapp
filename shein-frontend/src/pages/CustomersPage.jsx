@@ -6,6 +6,7 @@ import {
   getCustomerDirectory,
   updateDirectoryCustomer,
 } from "../api/customersApi";
+import { CustomModal } from "../components/CustomModal";
 import "../customerDirectory.css";
 
 const EMPTY_FORM = { customer_name: "", phone: "", notes: "" };
@@ -13,7 +14,9 @@ const EMPTY_FORM = { customer_name: "", phone: "", notes: "" };
 function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString();
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function parseBulkLine(line) {
@@ -27,9 +30,23 @@ function parseBulkLine(line) {
   };
 }
 
+function getInitials(name) {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function cleanPhoneForWa(phone) {
+  if (!phone) return "";
+  const cleaned = phone.replace(/[^0-9]/g, "");
+  return cleaned;
+}
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("single"); // "single" | "bulk"
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [bulkText, setBulkText] = useState("");
@@ -37,6 +54,26 @@ export default function CustomersPage() {
   const [saving, setSaving] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [notice, setNotice] = useState({ type: "", text: "" });
+  const [modal, setModal] = useState({ isOpen: false });
+
+  const closeModal = () => setModal({ isOpen: false });
+
+  const openConfirm = ({ title, message, onYes }) => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      showCancel: true,
+      confirmText: "Confirm Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        closeModal();
+        await onYes();
+      },
+      onCancel: closeModal,
+      onClose: closeModal,
+    });
+  };
 
   const parsedBulkCount = useMemo(
     () => bulkText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length,
@@ -79,7 +116,8 @@ export default function CustomersPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (saving || !form.customer_name.trim()) {
+    const cleanName = form.customer_name.trim();
+    if (saving || !cleanName) {
       setNotice({ type: "error", text: "Customer name is required." });
       return;
     }
@@ -87,15 +125,25 @@ export default function CustomersPage() {
     setNotice({ type: "", text: "" });
     try {
       if (editingId) {
-        const response = await updateDirectoryCustomer(editingId, form);
-        setCustomers((current) => current.map((customer) => (
-          customer.id === editingId ? response.customer : customer
-        )));
-        setNotice({ type: "success", text: "Customer updated successfully." });
+        const response = await updateDirectoryCustomer(editingId, {
+          customer_name: cleanName,
+          phone: form.phone.trim(),
+          notes: form.notes.trim(),
+        });
+        setCustomers((current) =>
+          current.map((customer) =>
+            customer.id === editingId ? response.customer : customer
+          )
+        );
+        setNotice({ type: "success", text: `Customer "${cleanName}" updated successfully.` });
       } else {
-        const response = await createDirectoryCustomer(form);
+        const response = await createDirectoryCustomer({
+          customer_name: cleanName,
+          phone: form.phone.trim(),
+          notes: form.notes.trim(),
+        });
         setCustomers((current) => [response.customer, ...current]);
-        setNotice({ type: "success", text: "Customer added successfully." });
+        setNotice({ type: "success", text: `Customer "${cleanName}" added to directory.` });
       }
       resetForm();
     } catch (error) {
@@ -135,6 +183,7 @@ export default function CustomersPage() {
 
   const startEdit = (customer) => {
     setEditingId(customer.id);
+    setActiveTab("single");
     setForm({
       customer_name: customer.customer_name || "",
       phone: customer.phone || "",
@@ -143,117 +192,374 @@ export default function CustomersPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = async (customer) => {
-    if (!window.confirm(`Delete ${customer.customer_name}?`)) return;
-    try {
-      await deleteDirectoryCustomer(customer.id);
-      setCustomers((current) => current.filter((item) => item.id !== customer.id));
-      if (editingId === customer.id) resetForm();
-      setNotice({ type: "success", text: "Customer deleted." });
-    } catch (error) {
-      setNotice({ type: "error", text: error?.message || "Could not delete customer." });
-    }
+  const handleDelete = (customer) => {
+    openConfirm({
+      title: "Delete Customer",
+      message: `Are you sure you want to delete customer "${customer.customer_name}"? This removes them from the reusable directory.`,
+      onYes: async () => {
+        try {
+          await deleteDirectoryCustomer(customer.id);
+          setCustomers((current) => current.filter((item) => item.id !== customer.id));
+          if (editingId === customer.id) resetForm();
+          setNotice({ type: "success", text: `Customer "${customer.customer_name}" deleted.` });
+        } catch (error) {
+          setNotice({ type: "error", text: error?.message || "Could not delete customer." });
+        }
+      },
+    });
   };
+
+  // KPIs
+  const totalCount = customers.length;
+  const withPhoneCount = useMemo(() => customers.filter((c) => Boolean(c.phone)).length, [customers]);
+  const withNotesCount = useMemo(() => customers.filter((c) => Boolean(c.notes)).length, [customers]);
 
   return (
     <main className="customerDirectoryPage">
-      <header className="customerDirectoryHeader">
-        <div>
-          <div className="customerDirectoryEyebrow">CUSTOMER DIRECTORY</div>
-          <h1>Customers</h1>
-          <p>Save reusable customers, then select them while creating an order.</p>
+      {/* Header */}
+      <header className="cdHeader">
+        <div className="cdHeaderLeft">
+          <div className="cdEyebrow">
+            <span className="cdEyebrowDot" />
+            CUSTOMER DIRECTORY & REUSABLE PROFILES
+          </div>
+          <h1 className="cdTitle">Customers Management</h1>
+          <p className="cdSub">
+            Save reusable customer contacts to quickly select them from dropdowns when adding carts and orders.
+          </p>
         </div>
-        <div className="customerDirectoryCount">
-          <strong>{customers.length}</strong>
-          <span>shown</span>
+
+        <div className="cdHeaderRight">
+          <button
+            type="button"
+            className="cdBtnSoft"
+            onClick={() => loadCustomers(query)}
+            disabled={loading}
+            title="Refresh list"
+          >
+            🔄 Refresh
+          </button>
         </div>
       </header>
 
+      {/* KPI Cards */}
+      <div className="cdKpiGrid">
+        <div className="cdKpiCard">
+          <div className="cdKpiIcon">👥</div>
+          <div className="cdKpiContent">
+            <div className="cdKpiLabel">Total Customers</div>
+            <div className="cdKpiValue">{totalCount}</div>
+            <div className="cdKpiHint">{query ? "Matching search" : "In workspace directory"}</div>
+          </div>
+        </div>
+
+        <div className="cdKpiCard">
+          <div className="cdKpiIcon">📞</div>
+          <div className="cdKpiContent">
+            <div className="cdKpiLabel">With Phone Numbers</div>
+            <div className="cdKpiValue">{withPhoneCount}</div>
+            <div className="cdKpiHint">Direct WhatsApp & Call ready</div>
+          </div>
+        </div>
+
+        <div className="cdKpiCard">
+          <div className="cdKpiIcon">📝</div>
+          <div className="cdKpiContent">
+            <div className="cdKpiLabel">With Notes / Preferences</div>
+            <div className="cdKpiValue">{withNotesCount}</div>
+            <div className="cdKpiHint">Delivery instructions & address</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notice alert */}
       {notice.text && (
-        <div className={`customerDirectoryNotice is-${notice.type}`} role="status">
-          {notice.text}
+        <div className={`cdNotice is-${notice.type}`} role="status">
+          <span>{notice.type === "success" ? "✅" : "⚠️"}</span>
+          <span>{notice.text}</span>
+          <button
+            type="button"
+            className="cdNoticeClose"
+            onClick={() => setNotice({ type: "", text: "" })}
+            aria-label="Dismiss notice"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      <div className="customerDirectoryLayout">
-        <section className="customerDirectoryCard">
-          <div className="customerDirectoryCardHeading">
-            <div>
-              <h2>{editingId ? "Edit customer" : "Add customer"}</h2>
-              <p>These records are private to the current user workspace.</p>
-            </div>
+      {/* Creation / Edit Card with Mode Tabs */}
+      <section className="cdCard cdEditorCard">
+        <div className="cdEditorNav">
+          <div className="cdEditorTabs">
+            <button
+              type="button"
+              className={`cdEditorTab ${activeTab === "single" ? "active" : ""}`}
+              onClick={() => setActiveTab("single")}
+            >
+              {editingId ? "✏️ Edit Customer" : "➕ Add Single Customer"}
+            </button>
+            <button
+              type="button"
+              className={`cdEditorTab ${activeTab === "bulk" ? "active" : ""}`}
+              onClick={() => {
+                if (editingId) resetForm();
+                setActiveTab("bulk");
+              }}
+            >
+              📥 Bulk Import Customers
+            </button>
           </div>
-          <form onSubmit={handleSubmit} className="customerDirectoryForm">
-            <label htmlFor="customer-name">Customer name</label>
-            <input id="customer-name" name="customer_name" value={form.customer_name} onChange={updateField} placeholder="e.g. Sara Ahmed" autoComplete="name" />
-            <label htmlFor="customer-phone">Phone (optional)</label>
-            <input id="customer-phone" name="phone" value={form.phone} onChange={updateField} placeholder="e.g. +961..." autoComplete="tel" />
-            <label htmlFor="customer-notes">Notes (optional)</label>
-            <textarea id="customer-notes" name="notes" value={form.notes} onChange={updateField} placeholder="Address, delivery preference, or other note" rows="3" />
-            <div className="customerDirectoryFormActions">
-              {editingId && <button type="button" className="customerDirectoryButton secondary" onClick={resetForm}>Cancel</button>}
-              <button type="submit" className="customerDirectoryButton" disabled={saving}>
-                {saving ? "Saving..." : editingId ? "Save changes" : "Add customer"}
+
+          {editingId && (
+            <div className="cdEditingBadge">
+              Editing: <strong>{form.customer_name}</strong>
+            </div>
+          )}
+        </div>
+
+        {activeTab === "single" ? (
+          <form onSubmit={handleSubmit} className="cdForm">
+            <div className="cdFormGrid">
+              <div className="cdField">
+                <label htmlFor="customer-name" className="cdLabel">
+                  Customer Name <span className="cdReq">*</span>
+                </label>
+                <input
+                  id="customer-name"
+                  name="customer_name"
+                  value={form.customer_name}
+                  onChange={updateField}
+                  placeholder="e.g. Sara Ahmed"
+                  autoComplete="name"
+                  className="cdInput"
+                  required
+                />
+              </div>
+
+              <div className="cdField">
+                <label htmlFor="customer-phone" className="cdLabel">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  id="customer-phone"
+                  name="phone"
+                  value={form.phone}
+                  onChange={updateField}
+                  placeholder="e.g. +961 70 123 456"
+                  autoComplete="tel"
+                  className="cdInput"
+                />
+              </div>
+
+              <div className="cdField cdFieldFull">
+                <label htmlFor="customer-notes" className="cdLabel">
+                  Notes / Delivery Address (Optional)
+                </label>
+                <textarea
+                  id="customer-notes"
+                  name="notes"
+                  value={form.notes}
+                  onChange={updateField}
+                  placeholder="e.g. Beirut, Hamra Street - Prefers WhatsApp contact"
+                  rows="2"
+                  className="cdTextarea"
+                />
+              </div>
+            </div>
+
+            <div className="cdFormActions">
+              {editingId && (
+                <button type="button" className="cdBtnSoft" onClick={resetForm}>
+                  Cancel
+                </button>
+              )}
+              <button type="submit" className="cdBtn" disabled={saving || !form.customer_name.trim()}>
+                {saving ? "Saving..." : editingId ? "Save Customer Changes" : "➕ Add to Directory"}
               </button>
             </div>
           </form>
-        </section>
-
-        <section className="customerDirectoryCard">
-          <div className="customerDirectoryCardHeading">
-            <div>
-              <h2>Bulk add</h2>
-              <p>One customer per line. Optional format: <code>Name, phone, notes</code>.</p>
-            </div>
-            <span className="customerDirectoryBulkCount">{parsedBulkCount}</span>
-          </div>
-          <textarea
-            className="customerDirectoryBulkInput"
-            value={bulkText}
-            onChange={(event) => setBulkText(event.target.value)}
-            placeholder={'Sara Ahmed\nOmar Haddad, +961 70 000 000\nMaya Saleh, +961 71 000 000, VIP'}
-            rows="10"
-          />
-          <button type="button" className="customerDirectoryButton" onClick={handleBulkSubmit} disabled={bulkSaving || !parsedBulkCount}>
-            {bulkSaving ? "Adding customers..." : `Add ${parsedBulkCount || "customers"} in bulk`}
-          </button>
-        </section>
-      </div>
-
-      <section className="customerDirectoryCard customerDirectoryListCard">
-        <div className="customerDirectoryListHeading">
-          <div>
-            <h2>Saved customers</h2>
-            <p>Search and manage your reusable customer list.</p>
-          </div>
-          <input className="customerDirectorySearch" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customers..." aria-label="Search customers" />
-        </div>
-        {loading ? (
-          <div className="customerDirectoryEmpty">Loading customers...</div>
-        ) : customers.length === 0 ? (
-          <div className="customerDirectoryEmpty">No customers found.</div>
         ) : (
-          <div className="customerDirectoryTableWrap">
-            <table className="customerDirectoryTable">
-              <thead><tr><th>Name</th><th>Phone</th><th>Notes</th><th>Created</th><th>Actions</th></tr></thead>
+          <div className="cdBulkWrap">
+            <div className="cdBulkHint">
+              Enter one customer per line. Format: <code>Customer Name, Phone Number, Optional Notes</code>
+              <br />
+              <span className="cdMuted">
+                Example: <code>Sara Ahmed, +96170123456, Hamra delivery</code>
+              </span>
+            </div>
+
+            <textarea
+              className="cdBulkTextarea"
+              value={bulkText}
+              onChange={(event) => setBulkText(event.target.value)}
+              placeholder={"Sara Ahmed\nOmar Haddad, +961 70 000 000\nMaya Saleh, +961 71 000 000, VIP Customer"}
+              rows="8"
+            />
+
+            <div className="cdBulkActions">
+              <span className="cdBulkCounter">
+                Detected: <strong>{parsedBulkCount}</strong> customer{parsedBulkCount === 1 ? "" : "s"}
+              </span>
+
+              <button
+                type="button"
+                className="cdBtn"
+                onClick={handleBulkSubmit}
+                disabled={bulkSaving || !parsedBulkCount}
+              >
+                {bulkSaving ? "Importing..." : `Import ${parsedBulkCount || ""} Customers`}
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Customers List Section */}
+      <section className="cdCard cdListCard">
+        <div className="cdListHeader">
+          <div className="cdListHeaderLeft">
+            <h2 className="cdListTitle">Saved Customers Directory</h2>
+            <div className="cdListSub">
+              Showing {customers.length} customer{customers.length === 1 ? "" : "s"}
+            </div>
+          </div>
+
+          <div className="cdSearchWrap">
+            <span className="cdSearchIcon">🔍</span>
+            <input
+              className="cdSearchInput"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name, phone, or notes..."
+              aria-label="Search customers"
+            />
+            {query && (
+              <button
+                type="button"
+                className="cdSearchClear"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="cdLoadingState">
+            <div className="cdSpinner" />
+            <div>Loading customers directory...</div>
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="cdEmptyState">
+            <div className="cdEmptyIcon">👤</div>
+            <div className="cdEmptyTitle">No customers found</div>
+            <div className="cdEmptySub">
+              {query
+                ? `No customers match your search "${query}".`
+                : "Add your first customer using the form above to start building your directory."}
+            </div>
+            {query && (
+              <button type="button" className="cdBtnSoft" onClick={() => setQuery("")}>
+                Clear Search
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="cdTableResponsive">
+            <table className="cdTable">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Phone / WhatsApp</th>
+                  <th>Notes / Address</th>
+                  <th>Added On</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
               <tbody>
-                {customers.map((customer) => (
-                  <tr key={customer.id}>
-                    <td><strong>{customer.customer_name}</strong></td>
-                    <td>{customer.phone || "—"}</td>
-                    <td>{customer.notes || "—"}</td>
-                    <td>{formatDate(customer.created_at)}</td>
-                    <td className="customerDirectoryActions">
-                      <button type="button" className="customerDirectorySmallButton" onClick={() => startEdit(customer)}>Edit</button>
-                      <button type="button" className="customerDirectorySmallButton danger" onClick={() => handleDelete(customer)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
+                {customers.map((customer) => {
+                  const waNumber = cleanPhoneForWa(customer.phone);
+                  return (
+                    <tr key={customer.id} className={editingId === customer.id ? "cdRowEditing" : ""}>
+                      <td>
+                        <div className="cdCustomerCell">
+                          <span className="cdAvatar">{getInitials(customer.customer_name)}</span>
+                          <div>
+                            <div className="cdCustomerName">{customer.customer_name}</div>
+                            <div className="cdCustomerId">ID #{customer.id}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>
+                        {customer.phone ? (
+                          <div className="cdPhoneWrap">
+                            <a href={`tel:${customer.phone}`} className="cdPhoneLink" title="Call">
+                              📞 {customer.phone}
+                            </a>
+                            {waNumber && (
+                              <a
+                                href={`https://wa.me/${waNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="cdWaLink"
+                                title="Open WhatsApp Chat"
+                              >
+                                💬 WA
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="cdMuted">—</span>
+                        )}
+                      </td>
+
+                      <td>
+                        {customer.notes ? (
+                          <span className="cdNotes">{customer.notes}</span>
+                        ) : (
+                          <span className="cdMuted">—</span>
+                        )}
+                      </td>
+
+                      <td>
+                        <span className="cdDate">{formatDate(customer.created_at)}</span>
+                      </td>
+
+                      <td>
+                        <div className="cdActions">
+                          <button
+                            type="button"
+                            className="cdActionBtn edit"
+                            onClick={() => startEdit(customer)}
+                            title="Edit customer details"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="cdActionBtn delete"
+                            onClick={() => handleDelete(customer)}
+                            title="Delete customer"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
+
+      {/* Confirmation modal */}
+      <CustomModal {...modal} />
     </main>
   );
 }

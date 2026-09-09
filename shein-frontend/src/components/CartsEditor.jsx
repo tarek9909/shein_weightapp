@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCarts, addCart, updateCart, deleteCart } from "../api/cartsApi";
+import {
+  getCustomerDirectory,
+  addCustomer,
+  createDirectoryCustomer,
+} from "../api/customersApi";
 import { refreshCartShein } from "../api/sheinTrackerApi";
 import CustomersEditor from "./CustomersEditor";
 import { CustomModal } from "../components/CustomModal";
@@ -13,6 +18,7 @@ const CartsEditor = ({
   chromeProfiles = [],
 }) => {
   const [carts, setCarts] = useState([]);
+  const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [selectedCart, setSelectedCart] = useState(null);
   const [refreshingCartId, setRefreshingCartId] = useState(null);
   const [selectedProfileByCart, setSelectedProfileByCart] = useState({});
@@ -22,8 +28,18 @@ const CartsEditor = ({
 
   useEffect(() => {
     loadCarts();
+    loadDirectory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadDirectory = async () => {
+    try {
+      const res = await getCustomerDirectory();
+      setDirectoryCustomers(Array.isArray(res?.customers) ? res.customers : []);
+    } catch {
+      // non-blocking
+    }
+  };
 
   const loadCarts = async () => {
     try {
@@ -106,6 +122,11 @@ const CartsEditor = ({
     shein_carrier: "",
     shein_total_weight_kg: "",
     shein_delivered: false,
+    selected_customer_id: "",
+    customer_name: "",
+    customer_gross_amount: "",
+    customer_delivery_charge: "0",
+    save_to_directory: true,
     error: "",
     isSubmitting: false,
   });
@@ -121,6 +142,11 @@ const CartsEditor = ({
       shein_carrier: "",
       shein_total_weight_kg: "",
       shein_delivered: false,
+      selected_customer_id: "",
+      customer_name: "",
+      customer_gross_amount: "",
+      customer_delivery_charge: "0",
+      save_to_directory: true,
       error: "",
       isSubmitting: false,
     });
@@ -138,6 +164,11 @@ const CartsEditor = ({
       shein_total_weight_kg:
         cart.shein_total_weight_kg != null ? String(cart.shein_total_weight_kg) : "",
       shein_delivered: Number(cart.shein_delivered || 0) === 1,
+      selected_customer_id: "",
+      customer_name: "",
+      customer_gross_amount: "",
+      customer_delivery_charge: "0",
+      save_to_directory: false,
       error: "",
       isSubmitting: false,
     });
@@ -154,6 +185,11 @@ const CartsEditor = ({
       shein_carrier: "",
       shein_total_weight_kg: "",
       shein_delivered: false,
+      selected_customer_id: "",
+      customer_name: "",
+      customer_gross_amount: "",
+      customer_delivery_charge: "0",
+      save_to_directory: true,
       error: "",
       isSubmitting: false,
     });
@@ -221,6 +257,34 @@ const CartsEditor = ({
               ...current,
               [newId]: cartFormModal.profile_key,
             }));
+          }
+
+          // Automatically attach initial customer if specified
+          const custName = cartFormModal.customer_name.trim();
+          if (custName) {
+            const gross = Number(cartFormModal.customer_gross_amount || 0);
+            const delivery = Number(cartFormModal.customer_delivery_charge || 0);
+            const net = Math.max(0, gross - delivery);
+
+            if (cartFormModal.save_to_directory) {
+              const inDir = directoryCustomers.some(
+                (d) => d.customer_name.toLowerCase() === custName.toLowerCase()
+              );
+              if (!inDir) {
+                try {
+                  await createDirectoryCustomer({ customer_name: custName });
+                  loadDirectory();
+                } catch {
+                  // non-blocking
+                }
+              }
+            }
+
+            try {
+              await addCustomer(newId, custName, net, delivery);
+            } catch {
+              // non-blocking for cart creation
+            }
           }
         }
       }
@@ -333,6 +397,16 @@ const CartsEditor = ({
           <button className="ceBtn" onClick={handleOpenAddCart}>
             Add Cart
           </button>
+          <a
+            href="/customers"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ceBtnSoft"
+            style={{ marginLeft: "auto", textDecoration: "none" }}
+            title="Open Customers Directory in a new tab"
+          >
+            👥 Customers Directory ↗
+          </a>
         </div>
 
         <div className="ceGrid">
@@ -624,6 +698,144 @@ const CartsEditor = ({
                       </label>
                     </div>
                   </div>
+
+                  {!cartFormModal.editingCart && (
+                    <div className="ceCustomerSection">
+                      <div className="ceCustomerSectionHeader">
+                        <span className="ceCustomerSectionIcon">👤</span>
+                        <div>
+                          <div className="ceCustomerSectionTitle">
+                            Assign Initial Customer <span className="ceMuted">(Optional)</span>
+                          </div>
+                          <div className="ceCustomerSectionSub">
+                            Select a saved customer from your directory or type a new one to immediately attach them to this cart.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="ceField">
+                        <label className="ceLabel">Select from Customers Directory</label>
+                        <CustomDropdown
+                          placeholder="-- Choose from Saved Customers (or type below) --"
+                          value={cartFormModal.selected_customer_id}
+                          options={[
+                            { value: "", label: "✍️ Custom / Type New Customer Name" },
+                            ...directoryCustomers.map((dc) => ({
+                              value: String(dc.id),
+                              label: `${dc.customer_name}${dc.phone ? ` • 📞 ${dc.phone}` : ""}`,
+                            })),
+                          ]}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (!val) {
+                              setCartFormModal((prev) => ({
+                                ...prev,
+                                selected_customer_id: "",
+                              }));
+                            } else {
+                              const match = directoryCustomers.find(
+                                (dc) => String(dc.id) === String(val)
+                              );
+                              if (match) {
+                                setCartFormModal((prev) => ({
+                                  ...prev,
+                                  selected_customer_id: val,
+                                  customer_name: match.customer_name,
+                                  error: "",
+                                }));
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="ceField">
+                        <label className="ceLabel">Customer Name</label>
+                        <input
+                          type="text"
+                          className="ceInput"
+                          placeholder="e.g. Sara Ahmed"
+                          value={cartFormModal.customer_name}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const match = directoryCustomers.find(
+                              (dc) => dc.customer_name.toLowerCase() === val.trim().toLowerCase()
+                            );
+                            setCartFormModal((prev) => ({
+                              ...prev,
+                              customer_name: val,
+                              selected_customer_id: match ? String(match.id) : "",
+                            }));
+                          }}
+                        />
+                      </div>
+
+                      {cartFormModal.customer_name.trim() && (
+                        <>
+                          <div className="ceFormRow">
+                            <div className="ceField">
+                              <label className="ceLabel">Gross Amount ($)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="ceInput"
+                                placeholder="0.00"
+                                value={cartFormModal.customer_gross_amount}
+                                onChange={(e) =>
+                                  setCartFormModal((prev) => ({
+                                    ...prev,
+                                    customer_gross_amount: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+
+                            <div className="ceField">
+                              <label className="ceLabel">Delivery Charge ($)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="ceInput"
+                                placeholder="0"
+                                value={cartFormModal.customer_delivery_charge}
+                                onChange={(e) =>
+                                  setCartFormModal((prev) => ({
+                                    ...prev,
+                                    customer_delivery_charge: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          {!cartFormModal.selected_customer_id &&
+                            !directoryCustomers.some(
+                              (dc) =>
+                                dc.customer_name.toLowerCase() ===
+                                cartFormModal.customer_name.trim().toLowerCase()
+                            ) && (
+                              <label className="ceCheckboxLabel" style={{ marginTop: "4px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={cartFormModal.save_to_directory}
+                                  onChange={(e) =>
+                                    setCartFormModal((prev) => ({
+                                      ...prev,
+                                      save_to_directory: e.target.checked,
+                                    }))
+                                  }
+                                />
+                                <span>
+                                  Save "{cartFormModal.customer_name.trim()}" to Customers Directory for future use
+                                </span>
+                              </label>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="ceFormFooter">

@@ -4,8 +4,11 @@ import {
   addCustomer,
   updateCustomer,
   deleteCustomer,
+  getCustomerDirectory,
+  createDirectoryCustomer,
 } from "../api/customersApi";
 import { CustomModal } from "../components/CustomModal";
+import CustomDropdown from "./CustomDropdown";
 import RecordCustomerLossModal from "./RecordCustomerLossModal";
 import "../customersEditor.css";
 
@@ -17,6 +20,7 @@ const money = (n) =>
 
 const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const [customers, setCustomers] = useState([]);
+  const [directoryCustomers, setDirectoryCustomers] = useState([]);
 
   // modal controller for general alerts / delete confirmation
   const [modal, setModal] = useState({ isOpen: false });
@@ -26,7 +30,9 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const [formModal, setFormModal] = useState({
     isOpen: false,
     editingCustomer: null,
+    selectedDirectoryId: "",
     name: "",
+    saveToDirectory: true,
     grossAmount: "",
     deliveryCharge: "0",
     error: "",
@@ -35,8 +41,18 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
 
   useEffect(() => {
     loadCustomers();
+    loadDirectory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart.id]);
+
+  const loadDirectory = async () => {
+    try {
+      const res = await getCustomerDirectory();
+      setDirectoryCustomers(Array.isArray(res?.customers) ? res.customers : []);
+    } catch {
+      // non-blocking
+    }
+  };
 
   const loadCustomers = async () => {
     const data = await getCustomers(cart.id);
@@ -95,7 +111,9 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     setFormModal({
       isOpen: true,
       editingCustomer: null,
+      selectedDirectoryId: "",
       name: "",
+      saveToDirectory: true,
       grossAmount: "",
       deliveryCharge: "0",
       error: "",
@@ -108,11 +126,16 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     const currentNet = Number(c.usd_to_collect || 0);
     const currentDelivery = Number(c.delivery_charge_usd || 0);
     const currentGross = currentNet + currentDelivery;
+    const matchedDir = directoryCustomers.find(
+      (d) => d.customer_name.toLowerCase() === String(c.customer_name || "").trim().toLowerCase()
+    );
 
     setFormModal({
       isOpen: true,
       editingCustomer: c,
+      selectedDirectoryId: matchedDir ? String(matchedDir.id) : "",
       name: c.customer_name ?? "",
+      saveToDirectory: false,
       grossAmount: String(currentGross),
       deliveryCharge: String(currentDelivery),
       error: "",
@@ -124,7 +147,9 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     setFormModal({
       isOpen: false,
       editingCustomer: null,
+      selectedDirectoryId: "",
       name: "",
+      saveToDirectory: true,
       grossAmount: "",
       deliveryCharge: "0",
       error: "",
@@ -157,6 +182,19 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     setFormModal((prev) => ({ ...prev, isSubmitting: true, error: "" }));
 
     try {
+      // If user checked save to directory and name doesn't exist in directory, save it
+      const alreadyInDir = directoryCustomers.some(
+        (dc) => dc.customer_name.toLowerCase() === name.toLowerCase()
+      );
+      if (formModal.saveToDirectory && !alreadyInDir) {
+        try {
+          await createDirectoryCustomer({ customer_name: name });
+          loadDirectory();
+        } catch {
+          // ignore directory duplicate or non-fatal errors
+        }
+      }
+
       if (formModal.editingCustomer) {
         await updateCustomer(formModal.editingCustomer.id, name, netAmount, delivery);
       } else {
@@ -190,6 +228,21 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const computedDelivery = Number(formModal.deliveryCharge || 0);
   const computedNet = Math.max(0, computedGross - computedDelivery);
 
+  const selectedCustomerObj = useMemo(() => {
+    if (formModal.selectedDirectoryId) {
+      return directoryCustomers.find(
+        (dc) => String(dc.id) === String(formModal.selectedDirectoryId)
+      );
+    }
+    const clean = formModal.name.trim().toLowerCase();
+    if (!clean) return null;
+    return directoryCustomers.find(
+      (dc) => dc.customer_name.toLowerCase() === clean
+    );
+  }, [directoryCustomers, formModal.selectedDirectoryId, formModal.name]);
+
+  const isExistingDirectoryName = Boolean(selectedCustomerObj);
+
   return (
     <div className="cuOverlay" role="dialog" aria-modal="true">
       <div className="cuModal">
@@ -218,6 +271,17 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
           >
             Add Customer
           </button>
+
+          <a
+            href="/customers"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cuBtnSoft"
+            style={{ marginLeft: "auto", textDecoration: "none" }}
+            title="Open Customers Directory in a new tab"
+          >
+            👥 Customer Directory ↗
+          </a>
         </div>
 
         <div className="cuBody">
@@ -319,6 +383,45 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                   )}
 
                   <div className="cuField">
+                    <label className="cuLabel" htmlFor="cuDirectorySelect">
+                      Select Customer from Directory
+                    </label>
+                    <CustomDropdown
+                      id="cuDirectorySelect"
+                      placeholder="-- Choose from Saved Customers (or type below) --"
+                      value={formModal.selectedDirectoryId}
+                      options={[
+                        { value: "", label: "✍️ Custom / Type New Name Below" },
+                        ...directoryCustomers.map((dc) => ({
+                          value: String(dc.id),
+                          label: `${dc.customer_name}${dc.phone ? ` • 📞 ${dc.phone}` : ""}`,
+                        })),
+                      ]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          setFormModal((prev) => ({
+                            ...prev,
+                            selectedDirectoryId: "",
+                          }));
+                        } else {
+                          const match = directoryCustomers.find(
+                            (dc) => String(dc.id) === String(val)
+                          );
+                          if (match) {
+                            setFormModal((prev) => ({
+                              ...prev,
+                              selectedDirectoryId: val,
+                              name: match.customer_name,
+                              error: "",
+                            }));
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="cuField">
                     <label className="cuLabel" htmlFor="cuNameInput">
                       Customer Name <span className="cuReq">*</span>
                     </label>
@@ -328,13 +431,44 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                       className="cuInput"
                       placeholder="e.g. Sara Ahmed"
                       value={formModal.name}
-                      onChange={(e) =>
-                        setFormModal((prev) => ({ ...prev, name: e.target.value, error: "" }))
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = directoryCustomers.find(
+                          (dc) => dc.customer_name.toLowerCase() === val.trim().toLowerCase()
+                        );
+                        setFormModal((prev) => ({
+                          ...prev,
+                          name: val,
+                          selectedDirectoryId: match ? String(match.id) : "",
+                          error: "",
+                        }));
+                      }}
                       autoFocus
                       required
                     />
                   </div>
+
+                  {selectedCustomerObj && (
+                    <div className="cuDirBadge">
+                      <span className="cuDirBadgeDot" />
+                      <span>Saved customer: <strong>{selectedCustomerObj.customer_name}</strong></span>
+                      {selectedCustomerObj.phone && <span> • 📞 {selectedCustomerObj.phone}</span>}
+                      {selectedCustomerObj.notes && <span> • 📝 {selectedCustomerObj.notes}</span>}
+                    </div>
+                  )}
+
+                  {!isExistingDirectoryName && formModal.name.trim() && (
+                    <label className="cuSaveDirCheckbox">
+                      <input
+                        type="checkbox"
+                        checked={formModal.saveToDirectory}
+                        onChange={(e) =>
+                          setFormModal((prev) => ({ ...prev, saveToDirectory: e.target.checked }))
+                        }
+                      />
+                      <span>Save "{formModal.name.trim()}" to Customer Directory for future orders</span>
+                    </label>
+                  )}
 
                   <div className="cuFormRow">
                     <div className="cuField">
