@@ -237,7 +237,7 @@ export default function CustomersPage() {
             disabled={loading}
             title="Refresh list"
           >
-            🔄 Refresh
+            Refresh
           </button>
         </div>
       </header>
@@ -245,7 +245,6 @@ export default function CustomersPage() {
       {/* KPI Cards */}
       <div className="cdKpiGrid">
         <div className="cdKpiCard">
-          <div className="cdKpiIcon">👥</div>
           <div className="cdKpiContent">
             <div className="cdKpiLabel">Total Customers</div>
             <div className="cdKpiValue">{totalCount}</div>
@@ -254,7 +253,6 @@ export default function CustomersPage() {
         </div>
 
         <div className="cdKpiCard">
-          <div className="cdKpiIcon">📞</div>
           <div className="cdKpiContent">
             <div className="cdKpiLabel">With Phone Numbers</div>
             <div className="cdKpiValue">{withPhoneCount}</div>
@@ -263,7 +261,6 @@ export default function CustomersPage() {
         </div>
 
         <div className="cdKpiCard">
-          <div className="cdKpiIcon">📝</div>
           <div className="cdKpiContent">
             <div className="cdKpiLabel">With Notes / Preferences</div>
             <div className="cdKpiValue">{withNotesCount}</div>
@@ -275,7 +272,6 @@ export default function CustomersPage() {
       {/* Notice alert */}
       {notice.text && (
         <div className={`cdNotice is-${notice.type}`} role="status">
-          <span>{notice.type === "success" ? "✅" : "⚠️"}</span>
           <span>{notice.text}</span>
           <button
             type="button"
@@ -297,7 +293,7 @@ export default function CustomersPage() {
               className={`cdEditorTab ${activeTab === "single" ? "active" : ""}`}
               onClick={() => setActiveTab("single")}
             >
-              {editingId ? "✏️ Edit Customer" : "➕ Add Single Customer"}
+              {editingId ? "Edit Customer" : "Add Single Customer"}
             </button>
             <button
               type="button"
@@ -307,7 +303,7 @@ export default function CustomersPage() {
                 setActiveTab("bulk");
               }}
             >
-              📥 Bulk Import Customers
+              Bulk Import Customers
             </button>
           </div>
 
@@ -375,7 +371,7 @@ export default function CustomersPage() {
                 </button>
               )}
               <button type="submit" className="cdBtn" disabled={saving || !form.customer_name.trim()}>
-                {saving ? "Saving..." : editingId ? "Save Customer Changes" : "➕ Add to Directory"}
+                {saving ? "Saving..." : editingId ? "Save Customer Changes" : "Add to Directory"}
               </button>
             </div>
           </form>
@@ -426,7 +422,12 @@ export default function CustomersPage() {
           </div>
 
           <div className="cdSearchWrap">
-            <span className="cdSearchIcon">🔍</span>
+            <span className="cdSearchIcon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
             <input
               className="cdSearchInput"
               value={query}
@@ -454,7 +455,6 @@ export default function CustomersPage() {
           </div>
         ) : customers.length === 0 ? (
           <div className="cdEmptyState">
-            <div className="cdEmptyIcon">👤</div>
             <div className="cdEmptyTitle">No customers found</div>
             <div className="cdEmptySub">
               {query
@@ -498,7 +498,7 @@ export default function CustomersPage() {
                         {customer.phone ? (
                           <div className="cdPhoneWrap">
                             <a href={`tel:${customer.phone}`} className="cdPhoneLink" title="Call">
-                              📞 {customer.phone}
+                              {customer.phone}
                             </a>
                             {waNumber && (
                               <a
@@ -508,7 +508,7 @@ export default function CustomersPage() {
                                 className="cdWaLink"
                                 title="Open WhatsApp Chat"
                               >
-                                💬 WA
+                                WhatsApp
                               </a>
                             )}
                           </div>
@@ -537,7 +537,7 @@ export default function CustomersPage() {
                             onClick={() => startEdit(customer)}
                             title="Edit customer details"
                           >
-                            ✏️ Edit
+                            Edit
                           </button>
                           <button
                             type="button"
@@ -545,7 +545,7 @@ export default function CustomersPage() {
                             onClick={() => handleDelete(customer)}
                             title="Delete customer"
                           >
-                            🗑️ Delete
+                            Delete
                           </button>
                         </div>
                       </td>

@@ -1,9 +1,9 @@
-/* customerDirectory.css - Ultra-Premium Customer Directory Styling */
+/* customerDirectory.css - Clean, Minimalist Customer Directory Styling */
 
 .customerDirectoryPage {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 20px 0 60px;
+  padding: 24px 20px 60px;
   color: #0f172a;
   font-family: inherit;
 }
@@ -14,35 +14,34 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
 }
 
 .cdEyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #4f46e5;
+  color: #64748b;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .cdEyebrowDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #4f46e5;
-  box-shadow: 0 0 10px rgba(79, 70, 229, 0.6);
+  background: #94a3b8;
 }
 
 .cdTitle {
-  margin: 6px 0 4px;
-  font-size: 28px;
+  margin: 4px 0 4px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.02em;
   color: #0f172a;
 }
 
@@ -62,39 +61,30 @@
 /* KPI Cards */
 .cdKpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .cdKpiCard {
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
   display: flex;
   align-items: center;
-  gap: 16px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .cdKpiCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
   border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 .cdKpiIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
+  display: none;
 }
 
 .cdKpiContent {
@@ -107,45 +97,46 @@
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .cdKpiValue {
   font-size: 26px;
   font-weight: 800;
   color: #0f172a;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
   line-height: 1.2;
+  margin-top: 2px;
 }
 
 .cdKpiHint {
-  font-size: 11.5px;
+  font-size: 12px;
   color: #94a3b8;
   margin-top: 2px;
 }
 
 /* Notices */
 .cdNotice {
-  margin-bottom: 20px;
-  padding: 13px 18px;
-  border-radius: 12px;
-  font-size: 13.5px;
-  font-weight: 700;
+  margin-bottom: 18px;
+  padding: 11px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .cdNotice.is-success {
-  border: 1px solid #86efac;
+  border: 1px solid #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
 .cdNotice.is-error {
-  border: 1px solid #fca5a5;
-  background: #fef2f2;
-  color: #991b1b;
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
 }
 
 .cdNoticeClose {
@@ -154,7 +145,7 @@
   background: transparent;
   cursor: pointer;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   color: inherit;
   opacity: 0.6;
 }
@@ -165,45 +156,46 @@
 
 /* Card Container */
 .cdCard {
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
-  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  margin-bottom: 20px;
 }
 
 /* Editor Section */
 .cdEditorCard {
-  padding: 20px;
+  padding: 18px 20px;
 }
 
 .cdEditorNav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 16px;
   border-bottom: 1px solid #f1f5f9;
   padding-bottom: 14px;
   flex-wrap: wrap;
 }
 
 .cdEditorTabs {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  gap: 3px;
   background: #f1f5f9;
-  padding: 4px;
-  border-radius: 10px;
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
 }
 
 .cdEditorTab {
   border: none;
   background: transparent;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 7px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #64748b;
   transition: all 0.15s ease;
 }
@@ -214,30 +206,32 @@
 
 .cdEditorTab.active {
   background: #ffffff;
-  color: #4f46e5;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  font-weight: 750;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .cdEditingBadge {
-  font-size: 12.5px;
-  color: #4338ca;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  font-size: 12px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-weight: 600;
 }
 
 /* Form Styles */
 .cdForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .cdFormGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 
 .cdField {
@@ -252,14 +246,14 @@
 
 .cdLabel {
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 700;
   color: #475569;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
 .cdReq {
-  color: #ef4444;
+  color: #b91c1c;
 }
 
 .cdInput,
@@ -267,14 +261,15 @@
 .cdBulkTextarea,
 .cdSearchInput {
   width: 100%;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   background: #ffffff;
   color: #0f172a;
   font: inherit;
   font-size: 13.5px;
   outline: none;
-  padding: 10px 14px;
+  padding: 9px 13px;
+  box-sizing: border-box;
   transition: all 0.15s ease;
 }
 
@@ -282,8 +277,8 @@
 .cdTextarea:focus,
 .cdBulkTextarea:focus,
 .cdSearchInput:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
 }
 
 .cdTextarea {
@@ -306,22 +301,22 @@
 }
 
 .cdBulkHint {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #475569;
   line-height: 1.5;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .cdBulkHint code {
   background: #f1f5f9;
   padding: 2px 6px;
-  border-radius: 5px;
-  color: #4338ca;
+  border-radius: 4px;
+  color: #0f172a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .cdBulkTextarea {
@@ -344,7 +339,8 @@
 }
 
 .cdBulkCounter strong {
-  color: #4f46e5;
+  color: #0f172a;
+  font-weight: 750;
   font-size: 14px;
 }
 
@@ -352,12 +348,12 @@
 .cdBtn,
 .cdBtnSoft,
 .cdActionBtn {
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   font: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 13px;
+  font-weight: 650;
+  transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -365,34 +361,34 @@
 }
 
 .cdBtn {
-  padding: 10px 18px;
-  border: 1px solid #4338ca;
-  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+  padding: 8px 16px;
+  border: 1px solid #0f172a;
+  background: #0f172a;
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  font-weight: 700;
 }
 
 .cdBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-  filter: brightness(1.05);
+  background: #1e293b;
+  border-color: #1e293b;
 }
 
 .cdBtn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .cdBtnSoft {
-  padding: 9px 15px;
-  border: 1.5px solid #cbd5e1;
+  padding: 7px 14px;
+  border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #0f172a;
+  color: #334155;
 }
 
 .cdBtnSoft:hover:not(:disabled) {
   background: #f8fafc;
   border-color: #94a3b8;
+  color: #0f172a;
 }
 
 /* List Card */
@@ -401,24 +397,24 @@
 }
 
 .cdListHeader {
-  padding: 18px 22px;
+  padding: 16px 20px;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .cdListTitle {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #0f172a;
 }
 
 .cdListSub {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #64748b;
   margin-top: 2px;
 }
@@ -426,29 +422,30 @@
 .cdSearchWrap {
   position: relative;
   width: 100%;
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .cdSearchIcon {
   position: absolute;
-  left: 12px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 13px;
   color: #94a3b8;
   pointer-events: none;
+  display: flex;
+  align-items: center;
 }
 
 .cdSearchInput {
-  padding-left: 34px;
-  padding-right: 32px;
-  height: 40px;
-  border-radius: 10px;
+  padding-left: 32px;
+  padding-right: 30px;
+  height: 38px;
+  border-radius: 8px;
 }
 
 .cdSearchClear {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   border: none;
@@ -478,34 +475,34 @@
 .cdTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .cdTable th {
   background: #f8fafc;
   color: #64748b;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 750;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 13px 20px;
-  border-bottom: 1.5px solid #e2e8f0;
+  padding: 11px 18px;
+  border-bottom: 1px solid #e2e8f0;
   text-align: left;
 }
 
 .cdTable td {
-  padding: 14px 20px;
+  padding: 12px 18px;
   border-bottom: 1px solid #f1f5f9;
   color: #334155;
   vertical-align: middle;
 }
 
 .cdTable tr:hover {
-  background: #fafafa;
+  background: #f8fafc;
 }
 
 .cdRowEditing {
-  background: #f0fdf4 !important;
+  background: #f8fafc !important;
 }
 
 .cdCustomerCell {
@@ -515,24 +512,25 @@
 }
 
 .cdAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
-  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11.5px;
+  font-weight: 750;
   letter-spacing: -0.2px;
   flex-shrink: 0;
 }
 
 .cdCustomerName {
-  font-weight: 800;
+  font-weight: 750;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .cdCustomerId {
@@ -554,24 +552,24 @@
 }
 
 .cdPhoneLink:hover {
-  color: #4f46e5;
+  color: #0f172a;
   text-decoration: underline;
 }
 
 .cdWaLink {
-  padding: 3px 8px;
-  background: #25d366;
-  color: #ffffff;
-  border-radius: 6px;
+  padding: 2px 7px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  border-radius: 5px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
 }
 
 .cdWaLink:hover {
-  background: #20ba59;
-  transform: scale(1.05);
+  background: #dcfce7;
 }
 
 .cdNotes {
@@ -592,34 +590,36 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cdActionBtn {
-  padding: 6px 12px;
+  padding: 5px 11px;
   font-size: 12px;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 7px;
 }
 
 .cdActionBtn.edit {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
 }
 
 .cdActionBtn.edit:hover {
-  background: #dbeafe;
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .cdActionBtn.delete {
   background: #fef2f2;
-  border-color: #fecaca;
+  border: 1px solid #fca5a5;
   color: #b91c1c;
 }
 
 .cdActionBtn.delete:hover {
   background: #fee2e2;
+  border-color: #f87171;
 }
 
 .cdMuted {
@@ -629,37 +629,36 @@
 /* Empty & Loading States */
 .cdEmptyState,
 .cdLoadingState {
-  padding: 50px 20px;
+  padding: 48px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .cdEmptyIcon {
-  font-size: 36px;
-  opacity: 0.6;
+  display: none;
 }
 
 .cdEmptyTitle {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 750;
   color: #0f172a;
 }
 
 .cdEmptySub {
-  font-size: 13.5px;
+  font-size: 13px;
   color: #64748b;
   max-width: 360px;
 }
 
 .cdSpinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #4f46e5;
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid #e2e8f0;
+  border-top-color: #0f172a;
   border-radius: 50%;
   animation: cdSpin 0.7s linear infinite;
 }
