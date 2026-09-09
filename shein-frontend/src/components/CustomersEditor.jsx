@@ -17,8 +17,19 @@ const money = (n) =>
 const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const [customers, setCustomers] = useState([]);
 
-  // modal controller
+  // modal controller for general alerts / delete confirmation
   const [modal, setModal] = useState({ isOpen: false });
+
+  // single unified form modal state for adding/editing customers
+  const [formModal, setFormModal] = useState({
+    isOpen: false,
+    editingCustomer: null,
+    name: "",
+    grossAmount: "",
+    deliveryCharge: "0",
+    error: "",
+    isSubmitting: false,
+  });
 
   useEffect(() => {
     loadCustomers();
@@ -67,28 +78,6 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     });
   };
 
-  const openPrompt = ({ title, placeholder, defaultValue = "", type = "text", onSubmit }) => {
-    setModal({
-      isOpen: true,
-      title,
-      inputProps: { placeholder, defaultValue, type },
-      showCancel: true,
-      confirmText: "Save",
-      cancelText: "Cancel",
-      onConfirm: async (value) => {
-        const v = String(value ?? "").trim();
-        if (!v) {
-          setModal((m) => ({ ...m, message: "This field is required." }));
-          return;
-        }
-        closeModal();
-        await onSubmit(v);
-      },
-      onCancel: closeModal,
-      onClose: closeModal,
-    });
-  };
-
   const guardEdit = () => {
     if (canEdit) return true;
     openInfo({
@@ -99,133 +88,87 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     return false;
   };
 
-  const handleAddCustomer = async () => {
+  const handleOpenAddForm = () => {
     if (!guardEdit()) return;
-
-    openPrompt({
-      title: "Add Customer",
-      placeholder: "Customer name",
-      defaultValue: "",
-      onSubmit: async (name) => {
-        openPrompt({
-          title: "Add Customer (Gross Amount)",
-          placeholder: "Amount to collect before delivery charge",
-          defaultValue: "",
-          type: "number",
-          onSubmit: async (grossAmountInput) => {
-            const grossAmount = Number(grossAmountInput);
-            if (!Number.isFinite(grossAmount) || grossAmount < 0) {
-              openInfo({
-                title: "Invalid Amount",
-                message: "Amount to collect must be a valid number >= 0.",
-              });
-              return;
-            }
-            openPrompt({
-              title: "Add Customer (Delivery Charge)",
-              placeholder: "Delivery charge in USD",
-              defaultValue: "0",
-              type: "number",
-              onSubmit: async (deliveryChargeInput) => {
-                const deliveryCharge = Number(deliveryChargeInput);
-                if (!Number.isFinite(deliveryCharge) || deliveryCharge < 0) {
-                  openInfo({
-                    title: "Invalid Delivery Charge",
-                    message: "Delivery charge must be a valid number >= 0.",
-                  });
-                  return;
-                }
-                const netAmount = Math.max(0, grossAmount - deliveryCharge);
-                openConfirm({
-                  title: "Confirm Customer Amounts",
-                  message:
-                    `Gross amount: $${money(grossAmount)}\n` +
-                    `Delivery charge: $${money(deliveryCharge)}\n` +
-                    `Net to collect (saved): $${money(netAmount)}`,
-                  onYes: async () => {
-                    try {
-                      await addCustomer(cart.id, name, netAmount, deliveryCharge);
-                      await loadCustomers();
-                    } catch (err) {
-                      openInfo({
-                        title: "Add Customer Error",
-                        message: err?.message || "Failed to add customer.",
-                      });
-                    }
-                  },
-                });
-              },
-            });
-          },
-        });
-      },
+    setFormModal({
+      isOpen: true,
+      editingCustomer: null,
+      name: "",
+      grossAmount: "",
+      deliveryCharge: "0",
+      error: "",
+      isSubmitting: false,
     });
   };
 
-  const handleEditCustomer = async (c) => {
+  const handleOpenEditForm = (c) => {
     if (!guardEdit()) return;
+    const currentNet = Number(c.usd_to_collect || 0);
+    const currentDelivery = Number(c.delivery_charge_usd || 0);
+    const currentGross = currentNet + currentDelivery;
 
-    openPrompt({
-      title: "Edit Customer",
-      placeholder: "Customer name",
-      defaultValue: c.customer_name ?? "",
-      onSubmit: async (name) => {
-        const currentNet = Number(c.usd_to_collect || 0);
-        const currentDelivery = Number(c.delivery_charge_usd || 0);
-        const currentGross = currentNet + currentDelivery;
-        openPrompt({
-          title: "Edit Customer (Gross Amount)",
-          placeholder: "Amount to collect before delivery charge",
-          defaultValue: String(currentGross),
-          type: "number",
-          onSubmit: async (grossAmountInput) => {
-            const grossAmount = Number(grossAmountInput);
-            if (!Number.isFinite(grossAmount) || grossAmount < 0) {
-              openInfo({
-                title: "Invalid Amount",
-                message: "Amount to collect must be a valid number >= 0.",
-              });
-              return;
-            }
-            openPrompt({
-              title: "Edit Customer (Delivery Charge)",
-              placeholder: "Delivery charge in USD",
-              defaultValue: String(currentDelivery),
-              type: "number",
-              onSubmit: async (deliveryChargeInput) => {
-                const deliveryCharge = Number(deliveryChargeInput);
-                if (!Number.isFinite(deliveryCharge) || deliveryCharge < 0) {
-                  openInfo({
-                    title: "Invalid Delivery Charge",
-                    message: "Delivery charge must be a valid number >= 0.",
-                  });
-                  return;
-                }
-                const netAmount = Math.max(0, grossAmount - deliveryCharge);
-                openConfirm({
-                  title: "Confirm Customer Amounts",
-                  message:
-                    `Gross amount: $${money(grossAmount)}\n` +
-                    `Delivery charge: $${money(deliveryCharge)}\n` +
-                    `Net to collect (saved): $${money(netAmount)}`,
-                  onYes: async () => {
-                    try {
-                      await updateCustomer(c.id, name, netAmount, deliveryCharge);
-                      await loadCustomers();
-                    } catch (err) {
-                      openInfo({
-                        title: "Update Customer Error",
-                        message: err?.message || "Failed to update customer.",
-                      });
-                    }
-                  },
-                });
-              },
-            });
-          },
-        });
-      },
+    setFormModal({
+      isOpen: true,
+      editingCustomer: c,
+      name: c.customer_name ?? "",
+      grossAmount: String(currentGross),
+      deliveryCharge: String(currentDelivery),
+      error: "",
+      isSubmitting: false,
     });
+  };
+
+  const handleCloseForm = () => {
+    setFormModal({
+      isOpen: false,
+      editingCustomer: null,
+      name: "",
+      grossAmount: "",
+      deliveryCharge: "0",
+      error: "",
+      isSubmitting: false,
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const name = formModal.name.trim();
+    if (!name) {
+      setFormModal((prev) => ({ ...prev, error: "Customer name is required." }));
+      return;
+    }
+
+    const gross = Number(formModal.grossAmount);
+    if (!Number.isFinite(gross) || gross < 0) {
+      setFormModal((prev) => ({ ...prev, error: "Gross amount must be a valid number >= 0." }));
+      return;
+    }
+
+    const delivery = Number(formModal.deliveryCharge || 0);
+    if (!Number.isFinite(delivery) || delivery < 0) {
+      setFormModal((prev) => ({ ...prev, error: "Delivery charge must be a valid number >= 0." }));
+      return;
+    }
+
+    const netAmount = Math.max(0, gross - delivery);
+
+    setFormModal((prev) => ({ ...prev, isSubmitting: true, error: "" }));
+
+    try {
+      if (formModal.editingCustomer) {
+        await updateCustomer(formModal.editingCustomer.id, name, netAmount, delivery);
+      } else {
+        await addCustomer(cart.id, name, netAmount, delivery);
+      }
+      await loadCustomers();
+      handleCloseForm();
+    } catch (err) {
+      setFormModal((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: err?.message || "Failed to save customer.",
+      }));
+    }
   };
 
   const handleDeleteCustomer = async (c) => {
@@ -240,6 +183,10 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       },
     });
   };
+
+  const computedGross = Number(formModal.grossAmount || 0);
+  const computedDelivery = Number(formModal.deliveryCharge || 0);
+  const computedNet = Math.max(0, computedGross - computedDelivery);
 
   return (
     <div className="cuOverlay" role="dialog" aria-modal="true">
@@ -264,13 +211,11 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
         <div className="cuActions">
           <button
             className={canEdit ? "cuBtn" : "cuBtn cuBtnDisabled"}
-            onClick={handleAddCustomer}
+            onClick={handleOpenAddForm}
             disabled={!canEdit}
           >
             Add Customer
           </button>
-
-
         </div>
 
         <div className="cuBody">
@@ -301,7 +246,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                   <div className="cuButtons">
                     <button
                       className={canEdit ? "cuBtnSoft" : "cuBtnSoft cuBtnDisabled"}
-                      onClick={() => handleEditCustomer(c)}
+                      onClick={() => handleOpenEditForm(c)}
                       disabled={!canEdit}
                     >
                       Edit
@@ -327,7 +272,127 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
           </button>
         </div>
 
-        {/* ✅ all alerts / prompts / confirms are modals now */}
+        {/* Unified Customer Form Modal (Single form for adding / editing) */}
+        {formModal.isOpen && (
+          <div className="cuFormOverlay" role="dialog" aria-modal="true">
+            <div className="cuFormModal">
+              <div className="cuFormHead">
+                <div className="cuFormTitle">
+                  {formModal.editingCustomer ? "Edit Customer" : "Add New Customer"}
+                </div>
+                <button type="button" className="cuClose" onClick={handleCloseForm} aria-label="Close">
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleFormSubmit}>
+                <div className="cuFormBody">
+                  {formModal.error && (
+                    <div className="cuFormError">
+                      {formModal.error}
+                    </div>
+                  )}
+
+                  <div className="cuField">
+                    <label className="cuLabel" htmlFor="cuNameInput">
+                      Customer Name <span className="cuReq">*</span>
+                    </label>
+                    <input
+                      id="cuNameInput"
+                      type="text"
+                      className="cuInput"
+                      placeholder="e.g. Sara Ahmed"
+                      value={formModal.name}
+                      onChange={(e) =>
+                        setFormModal((prev) => ({ ...prev, name: e.target.value, error: "" }))
+                      }
+                      autoFocus
+                      required
+                    />
+                  </div>
+
+                  <div className="cuFormRow">
+                    <div className="cuField">
+                      <label className="cuLabel" htmlFor="cuGrossInput">
+                        Gross Amount ($)
+                      </label>
+                      <input
+                        id="cuGrossInput"
+                        type="number"
+                        min="0"
+                        step="any"
+                        className="cuInput"
+                        placeholder="Amount before delivery"
+                        value={formModal.grossAmount}
+                        onChange={(e) =>
+                          setFormModal((prev) => ({ ...prev, grossAmount: e.target.value, error: "" }))
+                        }
+                        required
+                      />
+                    </div>
+
+                    <div className="cuField">
+                      <label className="cuLabel" htmlFor="cuDeliveryInput">
+                        Delivery Charge ($)
+                      </label>
+                      <input
+                        id="cuDeliveryInput"
+                        type="number"
+                        min="0"
+                        step="any"
+                        className="cuInput"
+                        placeholder="0"
+                        value={formModal.deliveryCharge}
+                        onChange={(e) =>
+                          setFormModal((prev) => ({ ...prev, deliveryCharge: e.target.value, error: "" }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="cuCalcSummary">
+                    <div className="cuCalcRow">
+                      <span>Gross Amount:</span>
+                      <b>${money(computedGross)}</b>
+                    </div>
+                    <div className="cuCalcRow">
+                      <span>Delivery Charge:</span>
+                      <b>-${money(computedDelivery)}</b>
+                    </div>
+                    <div className="cuCalcRow cuCalcNet">
+                      <span>Net to Collect (Saved):</span>
+                      <b>${money(computedNet)}</b>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="cuFormFooter">
+                  <button
+                    type="button"
+                    className="cuBtnSoft"
+                    onClick={handleCloseForm}
+                    disabled={formModal.isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="cuBtn"
+                    disabled={formModal.isSubmitting}
+                  >
+                    {formModal.isSubmitting
+                      ? "Saving..."
+                      : formModal.editingCustomer
+                      ? "Save Changes"
+                      : "Add Customer"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Alert & Confirm Modals */}
         <CustomModal {...modal} />
       </div>
     </div>
@@ -335,3 +400,4 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
 };
 
 export default CustomersEditor;
+
