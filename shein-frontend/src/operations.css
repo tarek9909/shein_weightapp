@@ -177,3 +177,289 @@
   font-weight: 750;
   border: 1px solid #c7d2fe;
 }
+
+/* Inline Delivery Number Input in Table */
+.opsDelivNoInput {
+  width: 90px !important;
+  min-height: 28px !important;
+  padding: 3px 8px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  transition: all 0.15s ease;
+}
+.opsDelivNoInput:focus {
+  border-color: #6366f1 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+.opsBtnInlineSave {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+  border: 1px solid #c7d2fe !important;
+  border-radius: 6px !important;
+  padding: 4px 6px !important;
+  font-size: 11px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.opsBtnInlineSave:hover {
+  background: #c7d2fe !important;
+}
+
+/* Preset Checkbox Row / Cards */
+.opsPresetCheckboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.opsPresetRowLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-right: 4px;
+}
+.opsPresetCard {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: all 0.15s ease;
+}
+.opsPresetCard:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.opsPresetCard.active {
+  border-color: #6366f1 !important;
+  background: #eef2ff !important;
+  color: #312e81 !important;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+.opsPresetCard input[type="checkbox"] {
+  accent-color: #4f46e5;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.opsPresetCard b {
+  font-size: 12px;
+  color: #4f46e5;
+  background: #e0e7ff;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.opsPresetCard.active b {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+/* Courier Dispatch Card */
+.opsCourierDispatchCard {
+  background: linear-gradient(135deg, #f8faff, #ffffff);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.opsCourierDispatchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.opsCourierDispatchHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #3730a3;
+}
+.opsCourierDispatchHeader p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Per-Customer Delivery Assignment in Bulk Panel */
+.opsPerCustomerSection {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e0e7ff;
+}
+.opsPerCustomerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.opsPerCustomerHeader h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #1e1b4b;
+}
+.opsPerCustomerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.opsPerCustomerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.opsPerCustomerInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.opsPerCustomerInfo strong {
+  font-size: 13px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.opsPerCustomerInfo small {
+  font-size: 11px;
+  color: #64748b;
+}
+.opsPerCustomerField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.opsPerCustomerField label {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: #475569;
+}
+.opsPerCustomerField input {
+  width: 90px !important;
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+}
+
+/* Customer Delivery Assignment Pop-up Modal */
+.opsModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2200;
+  animation: cmOverlayFadeIn 0.2s ease-out;
+}
+.opsCustomerAssignModal {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 25px 50px -12px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(226, 232, 240, 0.9);
+  display: flex;
+  flex-direction: column;
+  animation: cuPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.opsCustomerAssignModalHead {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.opsCustomerAssignModalBody {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.opsCustomerAssignModalFooter {
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+.opsMethodToggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.opsMethodBtn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.opsMethodBtn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.opsMethodBtn.active {
+  border-color: #6366f1 !important;
+  background: #eef2ff !important;
+  color: #312e81 !important;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+.opsModalInput {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+.opsModalInput:focus {
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}

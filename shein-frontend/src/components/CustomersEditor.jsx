@@ -7,6 +7,7 @@ import {
   getCustomerDirectory,
   createDirectoryCustomer,
 } from "../api/customersApi";
+import { getDeliveryChargePresets } from "../api/deliveryApi";
 import { CustomModal } from "../components/CustomModal";
 import CustomDropdown from "./CustomDropdown";
 import RecordCustomerLossModal from "./RecordCustomerLossModal";
@@ -21,6 +22,7 @@ const money = (n) =>
 const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const [customers, setCustomers] = useState([]);
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
+  const [presets, setPresets] = useState([]);
 
   // modal controller for general alerts / delete confirmation
   const [modal, setModal] = useState({ isOpen: false });
@@ -35,6 +37,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     saveToDirectory: true,
     grossAmount: "",
     deliveryCharge: "0",
+    selectedPresetId: "",
     error: "",
     isSubmitting: false,
   });
@@ -42,8 +45,19 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
   useEffect(() => {
     loadCustomers();
     loadDirectory();
+    loadPresets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart.id]);
+
+  const loadPresets = async () => {
+    try {
+      const res = await getDeliveryChargePresets();
+      const list = Array.isArray(res?.presets) ? res.presets : [];
+      setPresets(list.filter((p) => p.active));
+    } catch {
+      // non-blocking
+    }
+  };
 
   const loadDirectory = async () => {
     try {
@@ -116,6 +130,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       saveToDirectory: true,
       grossAmount: "",
       deliveryCharge: "0",
+      selectedPresetId: "",
       error: "",
       isSubmitting: false,
     });
@@ -129,6 +144,9 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
     const matchedDir = directoryCustomers.find(
       (d) => d.customer_name.toLowerCase() === String(c.customer_name || "").trim().toLowerCase()
     );
+    const matchedPreset = presets.find(
+      (p) => Number(p.adjustment_amount) === currentDelivery
+    );
 
     setFormModal({
       isOpen: true,
@@ -138,6 +156,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       saveToDirectory: false,
       grossAmount: String(currentGross),
       deliveryCharge: String(currentDelivery),
+      selectedPresetId: matchedPreset ? String(matchedPreset.id) : (currentDelivery > 0 ? "custom" : ""),
       error: "",
       isSubmitting: false,
     });
@@ -152,6 +171,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       saveToDirectory: true,
       grossAmount: "",
       deliveryCharge: "0",
+      selectedPresetId: "",
       error: "",
       isSubmitting: false,
     });
@@ -490,42 +510,94 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                     </label>
                   )}
 
-                  <div className="cuFormRow">
-                    <div className="cuField">
-                      <label className="cuLabel" htmlFor="cuGrossInput">
-                        Gross Amount ($)
-                      </label>
-                      <input
-                        id="cuGrossInput"
-                        type="number"
-                        min="0"
-                        step="any"
-                        className="cuInput"
-                        placeholder="Amount before delivery"
-                        value={formModal.grossAmount}
-                        onChange={(e) =>
-                          setFormModal((prev) => ({ ...prev, grossAmount: e.target.value, error: "" }))
-                        }
-                        required
-                      />
-                    </div>
+                  <div className="cuField">
+                    <label className="cuLabel" htmlFor="cuGrossInput">
+                      Gross Amount ($) <span className="cuReq">*</span>
+                    </label>
+                    <input
+                      id="cuGrossInput"
+                      type="number"
+                      min="0"
+                      step="any"
+                      className="cuInput"
+                      placeholder="Amount before delivery"
+                      value={formModal.grossAmount}
+                      onChange={(e) =>
+                        setFormModal((prev) => ({ ...prev, grossAmount: e.target.value, error: "" }))
+                      }
+                      required
+                    />
+                  </div>
 
-                    <div className="cuField">
-                      <label className="cuLabel" htmlFor="cuDeliveryInput">
-                        Delivery Charge ($)
+                  <div className="cuField">
+                    <label className="cuLabel">
+                      Delivery Charge Presets <span className="cuMuted">(Select to assign fee)</span>
+                    </label>
+                    <div className="cuPresetGrid">
+                      <label
+                        className={`cuPresetOption ${!formModal.selectedPresetId || formModal.selectedPresetId === "none" ? "cuPresetOptionActive" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="cuPresetCheckbox"
+                          checked={!formModal.selectedPresetId || formModal.selectedPresetId === "none"}
+                          onChange={() => {
+                            setFormModal((prev) => ({
+                              ...prev,
+                              selectedPresetId: "none",
+                              deliveryCharge: "0",
+                              error: "",
+                            }));
+                          }}
+                        />
+                        <div className="cuPresetInfo">
+                          <span className="cuPresetTitle">No Delivery Charge</span>
+                          <span className="cuPresetSub">Self pickup / store</span>
+                        </div>
+                        <span className="cuPresetBadge">$0.00</span>
                       </label>
-                      <input
-                        id="cuDeliveryInput"
-                        type="number"
-                        min="0"
-                        step="any"
-                        className="cuInput"
-                        placeholder="0"
-                        value={formModal.deliveryCharge}
-                        onChange={(e) =>
-                          setFormModal((prev) => ({ ...prev, deliveryCharge: e.target.value, error: "" }))
-                        }
-                      />
+
+                      {presets.map((p) => {
+                        const isChecked = formModal.selectedPresetId === String(p.id);
+                        return (
+                          <label
+                            key={p.id}
+                            className={`cuPresetOption ${isChecked ? "cuPresetOptionActive" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="cuPresetCheckbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                if (isChecked) {
+                                  setFormModal((prev) => ({
+                                    ...prev,
+                                    selectedPresetId: "none",
+                                    deliveryCharge: "0",
+                                    error: "",
+                                  }));
+                                } else {
+                                  setFormModal((prev) => ({
+                                    ...prev,
+                                    selectedPresetId: String(p.id),
+                                    deliveryCharge: String(p.adjustment_amount),
+                                    error: "",
+                                  }));
+                                }
+                              }}
+                            />
+                            <div className="cuPresetInfo">
+                              <span className="cuPresetTitle">{p.label}</span>
+                              <span className="cuPresetSub">
+                                {Number(p.adjustment_amount) >= 0 ? "+" : ""}${money(p.adjustment_amount)}
+                              </span>
+                            </div>
+                            <span className="cuPresetBadge">
+                              ${money(p.adjustment_amount)}
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
 

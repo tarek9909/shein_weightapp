@@ -5,6 +5,7 @@ import {
   addCustomer,
   createDirectoryCustomer,
 } from "../api/customersApi";
+import { getDeliveryChargePresets } from "../api/deliveryApi";
 import { refreshCartShein } from "../api/sheinTrackerApi";
 import CustomersEditor from "./CustomersEditor";
 import { CustomModal } from "../components/CustomModal";
@@ -19,6 +20,7 @@ const CartsEditor = ({
 }) => {
   const [carts, setCarts] = useState([]);
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
+  const [presets, setPresets] = useState([]);
   const [selectedCart, setSelectedCart] = useState(null);
   const [refreshingCartId, setRefreshingCartId] = useState(null);
   const [selectedProfileByCart, setSelectedProfileByCart] = useState({});
@@ -29,8 +31,19 @@ const CartsEditor = ({
   useEffect(() => {
     loadCarts();
     loadDirectory();
+    loadPresets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [order.id]);
+
+  const loadPresets = async () => {
+    try {
+      const res = await getDeliveryChargePresets();
+      const list = Array.isArray(res?.presets) ? res.presets : [];
+      setPresets(list.filter((p) => p.active));
+    } catch {
+      // non-blocking
+    }
+  };
 
   const loadDirectory = async () => {
     try {
@@ -126,6 +139,7 @@ const CartsEditor = ({
     customer_name: "",
     customer_gross_amount: "",
     customer_delivery_charge: "0",
+    customer_preset_id: "",
     save_to_directory: true,
     error: "",
     isSubmitting: false,
@@ -146,6 +160,7 @@ const CartsEditor = ({
       customer_name: "",
       customer_gross_amount: "",
       customer_delivery_charge: "0",
+      customer_preset_id: "",
       save_to_directory: true,
       error: "",
       isSubmitting: false,
@@ -792,41 +807,88 @@ const CartsEditor = ({
 
                       {cartFormModal.customer_name.trim() && (
                         <>
-                          <div className="ceFormRow">
-                            <div className="ceField">
-                              <label className="ceLabel">Gross Amount ($)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                className="ceInput"
-                                placeholder="0.00"
-                                value={cartFormModal.customer_gross_amount}
-                                onChange={(e) =>
-                                  setCartFormModal((prev) => ({
-                                    ...prev,
-                                    customer_gross_amount: e.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
+                          <div className="ceField">
+                            <label className="ceLabel">Gross Amount ($)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              className="ceInput"
+                              placeholder="0.00"
+                              value={cartFormModal.customer_gross_amount}
+                              onChange={(e) =>
+                                setCartFormModal((prev) => ({
+                                  ...prev,
+                                  customer_gross_amount: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
 
-                            <div className="ceField">
-                              <label className="ceLabel">Delivery Charge ($)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                className="ceInput"
-                                placeholder="0"
-                                value={cartFormModal.customer_delivery_charge}
-                                onChange={(e) =>
-                                  setCartFormModal((prev) => ({
-                                    ...prev,
-                                    customer_delivery_charge: e.target.value,
-                                  }))
-                                }
-                              />
+                          <div className="ceField" style={{ marginTop: "8px" }}>
+                            <label className="ceLabel">Delivery Charge Presets</label>
+                            <div className="cuPresetGrid" style={{ marginTop: "4px" }}>
+                              <label
+                                className={`cuPresetOption ${!cartFormModal.customer_preset_id || cartFormModal.customer_preset_id === "none" ? "cuPresetOptionActive" : ""}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="cuPresetCheckbox"
+                                  checked={!cartFormModal.customer_preset_id || cartFormModal.customer_preset_id === "none"}
+                                  onChange={() => {
+                                    setCartFormModal((prev) => ({
+                                      ...prev,
+                                      customer_preset_id: "none",
+                                      customer_delivery_charge: "0",
+                                    }));
+                                  }}
+                                />
+                                <div className="cuPresetInfo">
+                                  <span className="cuPresetTitle">No Delivery Charge</span>
+                                  <span className="cuPresetSub">Self pickup / store</span>
+                                </div>
+                                <span className="cuPresetBadge">$0.00</span>
+                              </label>
+
+                              {presets.map((p) => {
+                                const isChecked = cartFormModal.customer_preset_id === String(p.id);
+                                return (
+                                  <label
+                                    key={p.id}
+                                    className={`cuPresetOption ${isChecked ? "cuPresetOptionActive" : ""}`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="cuPresetCheckbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        if (isChecked) {
+                                          setCartFormModal((prev) => ({
+                                            ...prev,
+                                            customer_preset_id: "none",
+                                            customer_delivery_charge: "0",
+                                          }));
+                                        } else {
+                                          setCartFormModal((prev) => ({
+                                            ...prev,
+                                            customer_preset_id: String(p.id),
+                                            customer_delivery_charge: String(p.adjustment_amount),
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                    <div className="cuPresetInfo">
+                                      <span className="cuPresetTitle">{p.label}</span>
+                                      <span className="cuPresetSub">
+                                        {Number(p.adjustment_amount) >= 0 ? "+" : ""}${Number(p.adjustment_amount || 0).toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <span className="cuPresetBadge">
+                                      ${Number(p.adjustment_amount || 0).toFixed(2)}
+                                    </span>
+                                  </label>
+                                );
+                              })}
                             </div>
                           </div>
 

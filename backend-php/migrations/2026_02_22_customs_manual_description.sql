@@ -1,3 +1,0 @@
-ALTER TABLE customs
-  ADD COLUMN description VARCHAR(32) DEFAULT NULL AFTER note;
-

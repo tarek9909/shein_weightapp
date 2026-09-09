@@ -34,6 +34,12 @@ export default function DeliveryWorkspace() {
   // Self Delivery Form State (Preset is optional, defaults to $0)
   const [selfPresetId, setSelfPresetId] = useState("");
 
+  // Individual Delivery Numbers Map: { [customerId]: string }
+  const [deliveryNoMap, setDeliveryNoMap] = useState({});
+
+  // Individual Customer Assignment Pop-up Modal
+  const [assignModal, setAssignModal] = useState(null);
+
   // Preset Management
   const [newPresetLabel, setNewPresetLabel] = useState("");
   const [newPresetAmount, setNewPresetAmount] = useState("");
@@ -53,7 +59,17 @@ export default function DeliveryWorkspace() {
     setError("");
     try {
       const response = await getDeliveryCustomers(monthId, query, status);
-      setCustomers(Array.isArray(response?.customers) ? response.customers : []);
+      const list = Array.isArray(response?.customers) ? response.customers : [];
+      setCustomers(list);
+      setDeliveryNoMap((prev) => {
+        const next = { ...prev };
+        list.forEach((c) => {
+          if (c.delivery_number != null && next[c.customer_id] === undefined) {
+            next[c.customer_id] = String(c.delivery_number);
+          }
+        });
+        return next;
+      });
       setSelected([]);
     } catch (err) {
       setError(err.message || "Failed to load delivery customers.");
@@ -187,18 +203,108 @@ export default function DeliveryWorkspace() {
     }
   };
 
-  // Courier Assignment: Bulk Assign with starting number & preset
-  const assignCourierSelected = async () => {
-    if (!selectedAssignable.length || !courierPresetId) return;
-    if (!/^\d+$/.test(startingNumber) || Number(startingNumber) <= 0) {
-      setError("Courier assignment requires a positive starting delivery number (e.g. 1001).");
+  // Open Customer Delivery Pop-up Modal
+  const openAssignModal = (customer) => {
+    const defaultMethod = customer.delivery_method || "courier";
+    const existingNum = deliveryNoMap[customer.customer_id] ?? (customer.delivery_number != null ? String(customer.delivery_number) : "");
+    const existingPreset = customer.delivery_preset_id
+      ? String(customer.delivery_preset_id)
+      : (activePresets[0] ? String(activePresets[0].id) : "");
+    setAssignModal({
+      customer,
+      method: defaultMethod,
+      deliveryNumber: existingNum,
+      presetId: existingPreset,
+      error: "",
+    });
+  };
+
+  // Save Customer Delivery Pop-up Modal
+  const saveAssignModal = async () => {
+    if (!assignModal?.customer) return;
+    const { customer, method, deliveryNumber, presetId } = assignModal;
+    if (method === "courier") {
+      const num = String(deliveryNumber || "").trim();
+      if (!/^\d+$/.test(num) || Number(num) <= 0) {
+        setAssignModal((prev) => ({ ...prev, error: "Courier delivery requires a positive numeric delivery number (e.g. 1042)." }));
+        return;
+      }
+      if (!presetId) {
+        setAssignModal((prev) => ({ ...prev, error: "Please select a delivery charge preset checkbox." }));
+        return;
+      }
+    }
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await assignDeliveries(monthId, [{
+        customer_id: Number(customer.customer_id),
+        delivery_method: method,
+        delivery_number: method === "courier" ? String(deliveryNumber).trim() : null,
+        preset_id: presetId ? Number(presetId) : 0,
+      }]);
+      setNotice(`✅ Delivery assigned for ${customer.customer_name || `Customer #${customer.customer_id}`}.`);
+      setAssignModal(null);
+      await loadCustomers();
+    } catch (err) {
+      setAssignModal((prev) => ({ ...prev, error: err.message || "Failed to assign delivery." }));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Quick Inline Delivery Number Save directly from table row
+  const quickSaveDeliveryNumber = async (customer) => {
+    const rawNo = String(deliveryNoMap[customer.customer_id] || "").trim();
+    if (!/^\d+$/.test(rawNo) || Number(rawNo) <= 0) {
+      setError(`Please enter a valid positive delivery number for ${customer.customer_name || `Customer #${customer.customer_id}`}.`);
       return;
     }
-    const start = Number(startingNumber || 0);
-    const assignments = selectedAssignable.map((customer, index) => ({
+    const presetId = customer.delivery_preset_id
+      ? Number(customer.delivery_preset_id)
+      : (activePresets[0] ? Number(activePresets[0].id) : 0);
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await assignDeliveries(monthId, [{
+        customer_id: Number(customer.customer_id),
+        delivery_method: "courier",
+        delivery_number: rawNo,
+        preset_id: presetId,
+      }]);
+      setNotice(`✅ Delivery #${rawNo} assigned to ${customer.customer_name || `Customer #${customer.customer_id}`}.`);
+      await loadCustomers();
+    } catch (err) {
+      setError(err.message || "Failed to assign delivery number.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Courier Assignment: Bulk Assign with individual delivery numbers & preset checkboxes
+  const assignCourierSelected = async () => {
+    if (!selectedAssignable.length) {
+      setError("No eligible customers selected for courier assignment.");
+      return;
+    }
+    if (!courierPresetId) {
+      setError("Please select a delivery charge preset checkbox for courier assignment.");
+      return;
+    }
+    // Verify each selected customer has a positive numeric delivery number
+    for (const customer of selectedAssignable) {
+      const num = String(deliveryNoMap[customer.customer_id] ?? customer.delivery_number ?? "").trim();
+      if (!/^\d+$/.test(num) || Number(num) <= 0) {
+        setError(`Please enter a valid positive delivery number for ${customer.customer_name || `Customer #${customer.customer_id}`}.`);
+        return;
+      }
+    }
+    const assignments = selectedAssignable.map((customer) => ({
       customer_id: Number(customer.customer_id),
       delivery_method: "courier",
-      delivery_number: String(start + index),
+      delivery_number: String(deliveryNoMap[customer.customer_id] ?? customer.delivery_number).trim(),
       preset_id: Number(courierPresetId),
     }));
     setSaving(true);
@@ -206,10 +312,10 @@ export default function DeliveryWorkspace() {
     setNotice("");
     try {
       await assignDeliveries(monthId, assignments);
-      setNotice(`🚚 ${assignments.length} courier delivery assignment(s) saved (#${start} - #${start + assignments.length - 1}).`);
+      setNotice(`🚚 ${assignments.length} courier delivery assignment(s) saved with individual delivery numbers.`);
       await loadCustomers();
     } catch (err) {
-      setError(err.message || "Failed to save courier assignment.");
+      setError(err.message || "Failed to save courier assignments.");
     } finally {
       setSaving(false);
     }
@@ -445,21 +551,31 @@ export default function DeliveryWorkspace() {
               </div>
             </div>
             <div className="opsBulkActions">
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#334155", fontWeight: 700 }}>
-                Optional Fee/Discount:
-                <select
-                  value={selfPresetId}
-                  onChange={(e) => setSelfPresetId(e.target.value)}
-                  style={{ minHeight: "34px", padding: "4px 8px", fontSize: "12px", borderRadius: "8px" }}
-                >
-                  <option value="">No extra charge ($0.00)</option>
-                  {activePresets.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label} ({Number(preset.adjustment_amount) >= 0 ? "+" : ""}{money(preset.adjustment_amount)})
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="opsPresetCheckboxRow">
+                <span className="opsPresetRowLabel">Fee Preset:</span>
+                <label className={`opsPresetCard ${!selfPresetId ? "active" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={!selfPresetId}
+                    onChange={() => setSelfPresetId("")}
+                  />
+                  <span>No fee ($0.00)</span>
+                </label>
+                {activePresets.map((preset) => {
+                  const isChecked = selfPresetId === String(preset.id);
+                  return (
+                    <label key={preset.id} className={`opsPresetCard ${isChecked ? "active" : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => setSelfPresetId(isChecked ? "" : String(preset.id))}
+                      />
+                      <span>{preset.label}</span>
+                      <b>{Number(preset.adjustment_amount) >= 0 ? "+" : ""}${money(preset.adjustment_amount)}</b>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -546,39 +662,114 @@ export default function DeliveryWorkspace() {
 
       {/* Section 2: Courier Dispatch Section */}
       {workspaceMode === "courier" && (
-        <div className="opsAssignmentPanel" style={{ background: "#f8faff", border: "1.5px solid #c7d2fe", borderRadius: "14px", padding: "16px" }}>
-          <div>
-            <strong>{selectedAssignable.length}</strong>
-            <span>ready received packages selected for courier delivery</span>
+        <div className="opsCourierDispatchCard">
+          <div className="opsCourierDispatchHeader">
+            <div>
+              <h3>🚚 Courier Dispatch Assignment</h3>
+              <p>Select delivery preset via checkboxes and assign each customer their own specific delivery number.</p>
+            </div>
+            <div className="opsBulkMetrics">
+              <span>Ready Selected: <strong className="highlight">{selectedAssignable.length}</strong></span>
+            </div>
           </div>
-          <label>
-            Delivery Preset *
-            <select value={courierPresetId} onChange={(event) => setCourierPresetId(event.target.value)}>
-              <option value="">Choose preset</option>
-              {activePresets.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.label} ({Number(preset.adjustment_amount) >= 0 ? "+" : ""}{money(preset.adjustment_amount)})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Starting delivery # *
-            <input
-              value={startingNumber}
-              onChange={(event) => setStartingNumber(event.target.value)}
-              placeholder="e.g. 1001"
-              inputMode="numeric"
-            />
-          </label>
-          <button
-            type="button"
-            className="opsBtnPrimary"
-            disabled={!selectedAssignable.length || !courierPresetId || saving}
-            onClick={assignCourierSelected}
-          >
-            🚚 Bulk Assign Courier ({selectedAssignable.length})
-          </button>
+
+          <div style={{ marginTop: "12px" }}>
+            <span className="opsPresetRowLabel">Delivery Charge Preset (Select one):</span>
+            <div className="opsPresetCheckboxRow" style={{ marginTop: "6px" }}>
+              {activePresets.map((preset) => {
+                const isChecked = courierPresetId === String(preset.id);
+                return (
+                  <label key={preset.id} className={`opsPresetCard ${isChecked ? "active" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => setCourierPresetId(isChecked ? "" : String(preset.id))}
+                    />
+                    <span>{preset.label}</span>
+                    <b>{Number(preset.adjustment_amount) >= 0 ? "+" : ""}${money(preset.adjustment_amount)}</b>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedAssignable.length > 0 ? (
+            <div className="opsPerCustomerSection">
+              <div className="opsPerCustomerHeader">
+                <h4>Assign Individual Delivery Numbers ({selectedAssignable.length} selected):</h4>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Quick sequential start (e.g. 1001)"
+                    value={startingNumber}
+                    onChange={(e) => setStartingNumber(e.target.value)}
+                    style={{ width: "210px", padding: "4px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                  />
+                  <button
+                    type="button"
+                    className="opsBtnOutline"
+                    style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
+                    onClick={() => {
+                      const start = parseInt(startingNumber, 10);
+                      if (isNaN(start) || start <= 0) {
+                        setError("Enter a starting number first (e.g. 1001) to auto-fill.");
+                        return;
+                      }
+                      const nextMap = { ...deliveryNoMap };
+                      selectedAssignable.forEach((c, idx) => {
+                        nextMap[c.customer_id] = String(start + idx);
+                      });
+                      setDeliveryNoMap(nextMap);
+                    }}
+                  >
+                    Auto-Fill Sequential
+                  </button>
+                </div>
+              </div>
+
+              <div className="opsPerCustomerGrid">
+                {selectedAssignable.map((cust) => {
+                  const cid = Number(cust.customer_id);
+                  return (
+                    <div key={cid} className="opsPerCustomerCard">
+                      <div className="opsPerCustomerInfo">
+                        <strong>{cust.customer_name || `Customer #${cid}`}</strong>
+                        <small>Cart {cust.cart_order_number || `#${cust.cart_id}`} • Base: ${money(cust.base_amount)}</small>
+                      </div>
+                      <div className="opsPerCustomerField">
+                        <label>Deliv #:</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 1042"
+                          value={deliveryNoMap[cid] ?? (cust.delivery_number != null ? String(cust.delivery_number) : "")}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDeliveryNoMap((prev) => ({ ...prev, [cid]: val }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="opsBtnPrimary"
+                  disabled={!selectedAssignable.length || !courierPresetId || saving}
+                  onClick={assignCourierSelected}
+                  style={{ padding: "8px 18px", fontSize: "13px" }}
+                >
+                  🚚 Save Courier Assignments ({selectedAssignable.length})
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: "12px", padding: "12px", background: "#ffffff", borderRadius: "8px", border: "1px dashed #cbd5e1", color: "#64748b", fontSize: "13px" }}>
+              👉 Select one or more ready received customers in the table below to assign their individual delivery numbers, or click <strong>🚚 Assign Delivery</strong> directly on any row.
+            </div>
+          )}
         </div>
       )}
 
@@ -646,8 +837,9 @@ export default function DeliveryWorkspace() {
                   <th>Order / Cart</th>
                   <th>Cargo Status</th>
                   <th>Delivery Status</th>
+                  <th>Delivery #</th>
                   <th>Amount to Collect</th>
-                  <th style={{ minWidth: "220px" }}>Actions</th>
+                  <th style={{ minWidth: "250px" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -690,13 +882,45 @@ export default function DeliveryWorkspace() {
                         ) : isSelf ? (
                           <span className="opsPill opsPillSelf">🏃 Self-Delivery</span>
                         ) : isCourier ? (
-                          <span className="opsPill opsPillCourier">🚚 Courier #{customer.delivery_number || "-"}</span>
+                          <span className="opsPill opsPillCourier">🚚 Courier</span>
                         ) : (
                           <span className="opsPill">{customer.delivery_assignment_status}</span>
                         )}
                         {customer.delivery_adjustment ? (
                           <small>Adj: {Number(customer.delivery_adjustment) >= 0 ? "+" : ""}${money(customer.delivery_adjustment)}</small>
                         ) : null}
+                      </td>
+
+                      <td>
+                        {collected ? (
+                          <span style={{ fontWeight: 750, color: "#334155" }}>
+                            {customer.delivery_number ? `#${customer.delivery_number}` : "—"}
+                          </span>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <input
+                              type="text"
+                              className="opsDelivNoInput"
+                              placeholder="Deliv #"
+                              value={deliveryNoMap[id] ?? (customer.delivery_number != null ? String(customer.delivery_number) : "")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setDeliveryNoMap((prev) => ({ ...prev, [id]: val }));
+                              }}
+                              title="Assign delivery number on its own for this customer"
+                            />
+                            {deliveryNoMap[id] && deliveryNoMap[id] !== String(customer.delivery_number ?? "") && (
+                              <button
+                                type="button"
+                                className="opsBtnInlineSave"
+                                title="Quick-save this delivery number"
+                                onClick={() => quickSaveDeliveryNumber(customer)}
+                              >
+                                💾
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       <td>
@@ -712,6 +936,19 @@ export default function DeliveryWorkspace() {
                             <span className="opsPill opsPillGood">✅ Paid & Collected</span>
                           ) : (
                             <>
+                              {/* Assign or Edit Delivery Pop-up Modal Button */}
+                              {customer.is_received && (
+                                <button
+                                  type="button"
+                                  className={isUnassigned ? "opsBtnPrimary" : "opsBtnOutline"}
+                                  style={{ padding: "4px 8px", fontSize: "11px", borderRadius: "6px" }}
+                                  onClick={() => openAssignModal(customer)}
+                                  title={isUnassigned ? "Assign delivery number and preset" : "Edit delivery number and preset"}
+                                >
+                                  {isUnassigned ? "🚚 Assign Delivery" : "✏️ Edit Deliv"}
+                                </button>
+                              )}
+
                               {/* Quick 1-Click Self Collect or Regular Collect */}
                               {customer.is_received && (
                                 <button
@@ -822,6 +1059,200 @@ export default function DeliveryWorkspace() {
             loadCustomers();
           }}
         />
+      )}
+
+      {/* Customer Delivery Assignment Pop-up Modal */}
+      {assignModal && (
+        <div
+          className="opsModalOverlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setAssignModal(null);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAssignModal(null);
+          }}
+        >
+          <div className="opsCustomerAssignModal">
+            <div className="opsCustomerAssignModalHead">
+              <div>
+                <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800 }}>
+                  🚚 Assign Delivery — {assignModal.customer.customer_name || `Customer #${assignModal.customer.customer_id}`}
+                </h3>
+                <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#64748b" }}>
+                  Cart {assignModal.customer.cart_order_number || `#${assignModal.customer.cart_id}`} • {assignModal.customer.order_name || `Order #${assignModal.customer.order_id}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="cuClose"
+                onClick={() => setAssignModal(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="opsCustomerAssignModalBody">
+              {assignModal.error && (
+                <div className="opsAlert opsAlertError" style={{ margin: "0 0 14px" }}>
+                  ⚠️ {assignModal.error}
+                </div>
+              )}
+
+              {/* Delivery Method Selection */}
+              <div className="cuField">
+                <label className="cuLabel">Delivery Method</label>
+                <div className="opsMethodToggle">
+                  <button
+                    type="button"
+                    className={`opsMethodBtn ${assignModal.method === "courier" ? "active" : ""}`}
+                    onClick={() => setAssignModal((prev) => ({ ...prev, method: "courier", error: "" }))}
+                  >
+                    🚚 Courier Delivery
+                  </button>
+                  <button
+                    type="button"
+                    className={`opsMethodBtn ${assignModal.method === "self" ? "active" : ""}`}
+                    onClick={() => setAssignModal((prev) => ({ ...prev, method: "self", error: "" }))}
+                  >
+                    🏃 Self-Delivery / Store Pickup
+                  </button>
+                </div>
+              </div>
+
+              {/* Individual Delivery Number Input */}
+              {assignModal.method === "courier" && (
+                <div className="cuField" style={{ marginTop: "12px" }}>
+                  <label className="cuLabel">
+                    Delivery Number <span className="cuReq">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="opsModalInput"
+                    placeholder="Enter delivery number (e.g. 1042)"
+                    value={assignModal.deliveryNumber}
+                    onChange={(e) =>
+                      setAssignModal((prev) => ({
+                        ...prev,
+                        deliveryNumber: e.target.value,
+                        error: "",
+                      }))
+                    }
+                    autoFocus
+                  />
+                  <small style={{ color: "#64748b", fontSize: "11.5px", marginTop: "4px" }}>
+                    Assigned on its own for this customer package.
+                  </small>
+                </div>
+              )}
+
+              {/* Delivery Charge Presets Checkboxes */}
+              <div className="cuField" style={{ marginTop: "14px" }}>
+                <label className="cuLabel">
+                  Delivery Charge Preset <span className="cuMuted">(Check to assign fee)</span>
+                </label>
+                <div className="cuPresetGrid" style={{ marginTop: "6px" }}>
+                  {assignModal.method === "self" && (
+                    <label
+                      className={`cuPresetOption ${!assignModal.presetId ? "cuPresetOptionActive" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="cuPresetCheckbox"
+                        checked={!assignModal.presetId}
+                        onChange={() => {
+                          setAssignModal((prev) => ({ ...prev, presetId: "", error: "" }));
+                        }}
+                      />
+                      <div className="cuPresetInfo">
+                        <span className="cuPresetTitle">No Extra Charge</span>
+                        <span className="cuPresetSub">Self pickup: $0.00</span>
+                      </div>
+                      <span className="cuPresetBadge">$0.00</span>
+                    </label>
+                  )}
+
+                  {activePresets.map((preset) => {
+                    const isChecked = assignModal.presetId === String(preset.id);
+                    return (
+                      <label
+                        key={preset.id}
+                        className={`cuPresetOption ${isChecked ? "cuPresetOptionActive" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="cuPresetCheckbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setAssignModal((prev) => ({
+                              ...prev,
+                              presetId: isChecked ? "" : String(preset.id),
+                              error: "",
+                            }));
+                          }}
+                        />
+                        <div className="cuPresetInfo">
+                          <span className="cuPresetTitle">{preset.label}</span>
+                          <span className="cuPresetSub">
+                            {Number(preset.adjustment_amount) >= 0 ? "+" : ""}${money(preset.adjustment_amount)}
+                          </span>
+                        </div>
+                        <span className="cuPresetBadge">
+                          ${money(preset.adjustment_amount)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Real-Time Calculation Summary */}
+              {(() => {
+                const base = Number(assignModal.customer.base_amount || assignModal.customer.usd_to_collect || 0);
+                const matchedPreset = activePresets.find((p) => String(p.id) === String(assignModal.presetId));
+                const adjustment = matchedPreset ? Number(matchedPreset.adjustment_amount || 0) : 0;
+                const total = Math.max(0, base + adjustment);
+
+                return (
+                  <div className="cuCalcSummary" style={{ marginTop: "16px" }}>
+                    <div className="cuCalcRow">
+                      <span>Package Base Amount:</span>
+                      <b>${money(base)}</b>
+                    </div>
+                    <div className="cuCalcRow">
+                      <span>Delivery Adjustment:</span>
+                      <b>{adjustment >= 0 ? "+" : ""}${money(adjustment)}</b>
+                    </div>
+                    <div className="cuCalcRow cuCalcNet">
+                      <span>Total Collection from Customer:</span>
+                      <b>${money(total)}</b>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="opsCustomerAssignModalFooter">
+              <button
+                type="button"
+                className="opsBtnOutline"
+                onClick={() => setAssignModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="opsBtnPrimary"
+                disabled={saving}
+                onClick={saveAssignModal}
+              >
+                {saving ? "Saving..." : "Save Delivery Assignment"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
