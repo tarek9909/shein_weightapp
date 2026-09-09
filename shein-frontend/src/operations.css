@@ -23,3 +23,157 @@
 .opsSectionTitle { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; }.opsSectionTitle p { margin-top: 5px; }.opsInlineForm { align-items: center; margin: 12px 0; }.opsInlineForm input, .opsInlineForm select { flex: 1; min-width: 130px; }.opsPresetList { display: grid; gap: 8px; }.opsPreset { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #eef2f7; border-radius: 10px; }.opsPreset strong { min-width: 50px; }.opsPreset span:nth-child(3) { margin-right: auto; }.opsChoiceList { display: grid; gap: 7px; margin-top: 12px; max-height: 240px; overflow: auto; }.opsChoice { display: flex; justify-content: space-between; padding: 11px; border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; cursor: pointer; text-align: left; }.opsChoiceActive { border-color: #6366f1; background: #eef2ff; }.opsChoice span { color: #64748b; }.opsSelectedContext { display: grid; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eef2f7; }.opsWideInput { width: 100%; box-sizing: border-box; }.opsEventList { display: grid; gap: 8px; }.opsEvent { border: 1px solid #e2e8f0; border-radius: 11px; background: #fbfdff; }.opsEvent summary { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; cursor: pointer; padding: 12px; list-style: none; }.opsEvent summary span:nth-last-of-type(1) { margin-left: auto; }.opsEvent summary small { color: #64748b; }.opsEventBody { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 12px 12px; }.opsEventBody pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; min-height: 40px; background: #f1f5f9; border-radius: 8px; font-size: 11px; }
 .opsDetailGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }.opsDetailGrid > div { display: grid; gap: 5px; padding: 12px; background: #f8fafc; border-radius: 10px; }.opsDetailGrid span { color: #64748b; font-size: 13px; }
 @media (max-width: 760px) { .opsPage { padding: 22px 12px 48px; }.opsHeader { display: grid; align-items: stretch; }.opsControlGroup { display: grid; }.opsControlGroup input { min-width: 0; width: 100%; box-sizing: border-box; }.opsCard { padding: 14px; border-radius: 14px; }.opsAssignmentPanel { display: grid; align-items: stretch; }.opsAssignmentPanel > div { margin-right: 0; }.opsEventBody, .opsDetailGrid { grid-template-columns: 1fr; }.opsPreset { flex-wrap: wrap; } }
+
+/* Self Delivery & Bulk Collection Additions */
+.opsModeSwitch {
+  display: inline-flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+}
+.opsModeSwitch button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease-in-out;
+}
+.opsModeSwitch button.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.opsSelfDeliveryCard {
+  background: linear-gradient(135deg, #f0fdfa, #f8fafc);
+  border: 1.5px solid #99f6e4;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.opsSelfDeliveryCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.opsSelfDeliveryTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.opsSelfDeliveryTitle h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f766e;
+}
+.opsSelfDeliveryTitle p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.opsBulkQuickBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.opsBulkChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.opsChip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.opsChip:hover {
+  background: #e2e8f0;
+}
+.opsBulkMetrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.opsBulkMetrics span.highlight {
+  color: #0d9488;
+}
+.opsBulkActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.opsBtnPrimary {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+.opsBtnSuccess {
+  background: #0d9488 !important;
+  color: #ffffff !important;
+}
+.opsBtnSuccess:hover {
+  background: #0f766e !important;
+}
+.opsBtnDanger {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+.opsBtnDanger:hover {
+  background: #dc2626 !important;
+}
+.opsBtnOutline {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.opsBtnOutline:hover {
+  background: #f1f5f9 !important;
+}
+.opsPillWarning {
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 750;
+  border: 1px solid #fde68a;
+}
+.opsPillSelf {
+  background: #ccfbf1;
+  color: #0f766e;
+  font-weight: 750;
+  border: 1px solid #99f6e4;
+}
+.opsPillCourier {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 750;
+  border: 1px solid #c7d2fe;
+}

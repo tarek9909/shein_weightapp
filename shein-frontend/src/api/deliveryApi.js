@@ -16,10 +16,10 @@ export const assignDeliveries = (monthId, assignments) =>
     body: JSON.stringify({ month_id: monthId, assignments }),
   });
 
-export const collectDeliveries = (monthId, customerIds, note = "") =>
+export const collectDeliveries = (monthId, customerIds, note = "", selfCollect = false) =>
   apiFetch(`${REDESIGN_BASE_URL}/collect`, {
     method: "POST",
-    body: JSON.stringify({ month_id: monthId, customer_ids: customerIds, note }),
+    body: JSON.stringify({ month_id: monthId, customer_ids: customerIds, note, self_collect: Boolean(selfCollect) }),
   });
 
 export const revertDeliveries = (monthId, customerIds) =>
