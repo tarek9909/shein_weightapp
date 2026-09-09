@@ -12,6 +12,7 @@ import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UserAccountsPage from "./pages/UserAccountsPage.jsx";
+import CustomersPage from "./pages/CustomersPage.jsx";
 import HamburgerMenu from "./components/HamburgerMenu";
 import PrivateRoute from "./components/PrivateRoute";
 import "./App.css";
@@ -89,6 +90,15 @@ function AppLayout() {
             element={
               <PrivateRoute allowedRoles={["admin"]}>
                 <UserAccountsPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/customers"
+            element={
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
+                <CustomersPage />
               </PrivateRoute>
             }
           />
