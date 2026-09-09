@@ -1,6 +1,7 @@
+import { API_ORIGIN } from "./baseUrl";
 import { apiFetch } from "./http";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL + "/ordersDetails/";
+const BASE_URL = API_ORIGIN + "/ordersDetails/";
 export const getCustomersWithDelivery = (search = "", cartId = "") => {
   const url = new URL(`${BASE_URL}/getCustomersWithDeliverytrack.php`);
   if (search) url.searchParams.append("search", search);
@@ -8,11 +9,16 @@ export const getCustomersWithDelivery = (search = "", cartId = "") => {
   return apiFetch(url.toString());
 };
 
-export const markCustomerCollected = (id) =>
-  apiFetch(`${BASE_URL}/markCollected.php`, {
+export const markCustomerCollected = (idOrPayload, extra = {}) => {
+  const body =
+    typeof idOrPayload === "object" && idOrPayload !== null
+      ? idOrPayload
+      : { id: idOrPayload, ...extra };
+  return apiFetch(`${BASE_URL}/markCollected.php`, {
     method: "POST",
-    body: JSON.stringify({ id }),
+    body: JSON.stringify(body),
   });
+};
 
 export const getCustomersWithAddedDelivery = (search = "") => {
   const url = new URL(`${BASE_URL}/getCustomersWithAddedDelivery.php`);
@@ -26,11 +32,16 @@ export const revertCustomerDelivery = (id) =>
     body: JSON.stringify({ id }),
   });
 
-export const confirmCustomerDelivery = (id) =>
-  apiFetch(`${BASE_URL}/confirmCustomerDelivery.php`, {
+export const confirmCustomerDelivery = (idOrPayload, extra = {}) => {
+  const body =
+    typeof idOrPayload === "object" && idOrPayload !== null
+      ? idOrPayload
+      : { id: idOrPayload, ...extra };
+  return apiFetch(`${BASE_URL}/confirmCustomerDelivery.php`, {
     method: "POST",
-    body: JSON.stringify({ id }),
+    body: JSON.stringify(body),
   });
+};
 
 export const markCustomerPaid = (ids) =>
   apiFetch(`${BASE_URL}/markCustomerPaid.php`, {

@@ -4,14 +4,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import OrdersPage from "./pages/OrdersPage";
-import DeliveryPage from "./pages/DeliveryPage";
-import DeliveryTrackingPage from "./pages/DeliveryTrackingPage";
-import AddedDeliveriesPage from "./pages/AddedDeliveriesPage";
-import History from "./pages/History";
+import SheinAccountsPage from "./pages/SheinAccountsPage";
+import DeliveryWorkspace from "./pages/DeliveryWorkspace";
+import CargoPage from "./pages/CargoPage";
+import LossesWorkspace from "./pages/LossesWorkspace";
+import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import HamburgerMenu from "./components/HamburgerMenu";
 import PrivateRoute from "./components/PrivateRoute";
+import "./App.css";
 
 /* Separate layout so we can hide hamburger on login */
 function AppLayout() {
@@ -55,28 +57,28 @@ function AppLayout() {
           />
 
           <Route
+            path="/shein-accounts"
+            element={
+              <PrivateRoute>
+                <SheinAccountsPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
             path="/delivery"
             element={
               <PrivateRoute>
-                <DeliveryPage />
+                <DeliveryWorkspace />
               </PrivateRoute>
             }
           />
 
           <Route
-            path="/deliverytrack"
+            path="/cargo"
             element={
               <PrivateRoute>
-                <DeliveryTrackingPage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/addeddelivery"
-            element={
-              <PrivateRoute>
-                <AddedDeliveriesPage />
+                <CargoPage />
               </PrivateRoute>
             }
           />
@@ -85,7 +87,15 @@ function AppLayout() {
             path="/history"
             element={
               <PrivateRoute>
-                <History />
+                <ActivityHistoryPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/losses"
+            element={
+              <PrivateRoute>
+                <LossesWorkspace />
               </PrivateRoute>
             }
           />

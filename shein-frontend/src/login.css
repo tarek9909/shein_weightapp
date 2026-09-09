@@ -1,92 +1,142 @@
-/* src/login.css */
+/* login.css - Authentication Modern Styling */
+
 .loginPage {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
-  background: linear-gradient(180deg, #fafafa, #ffffff);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  padding: 24px 20px;
+  background:
+    radial-gradient(1000px 500px at 50% 10%, rgba(79, 70, 229, 0.08) 0%, transparent 60%),
+    radial-gradient(800px 400px at 10% 90%, rgba(14, 165, 233, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  font-family: inherit;
 }
 
 .loginCard {
   width: 100%;
-  max-width: 420px;
-  border: 1px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(8px);
+  max-width: 440px;
+  border: 1px solid var(--line, #e2e8f0);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  padding: 32px 28px;
+  box-shadow: 
+    0 20px 40px -10px rgba(15, 23, 42, 0.1),
+    0 0 0 1px rgba(226, 232, 240, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
 }
 
 .loginHead {
-  margin-bottom: 14px;
+  margin-bottom: 24px;
+  text-align: center;
 }
 
 .loginTitle {
   margin: 0;
-  font-size: 26px;
-  letter-spacing: -0.4px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   color: #0f172a;
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .loginSub {
-  margin-top: 6px;
-  color: #64748b;
+  margin-top: 8px;
+  color: var(--muted, #64748b);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .loginLabel {
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted, #64748b);
   font-weight: 700;
-  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
 }
 
 .loginInput {
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 11px 12px;
-  background: #fff;
+  border-radius: 10px;
+  border: 1.5px solid var(--line, #e2e8f0);
+  padding: 11px 14px;
+  background: #ffffff;
   outline: none;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.18s ease;
 }
 
-.loginInput:focus {
+.loginInput:hover {
   border-color: #cbd5e1;
 }
 
+.loginInput:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3.5px rgba(79, 70, 229, 0.14);
+}
+
 .loginBtn {
-  margin-top: 10px;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 12px;
+  margin-top: 14px;
+  border: 1px solid #4338ca;
+  border-radius: 10px;
+  padding: 12px 16px;
   cursor: pointer;
-  background: #0f172a;
-  color: #fff;
-  font-weight: 800;
-  transition: transform 0.08s ease, opacity 0.12s ease;
+  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14.5px;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loginBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+  filter: brightness(1.04);
 }
 
 .loginBtn:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
-.loginBtnDisabled {
-  opacity: 0.55;
+.loginBtnDisabled,
+.loginBtn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .loginHint {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #64748b;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--muted, #64748b);
   text-align: center;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .loginCard {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+  .loginTitle {
+    font-size: 24px;
+  }
 }

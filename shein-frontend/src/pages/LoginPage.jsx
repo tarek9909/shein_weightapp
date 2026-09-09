@@ -2,9 +2,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomModal } from "../components/CustomModal";
+import { API_ORIGIN } from "../api/baseUrl";
 import "../login.css";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL + "/auth";
+const BASE_URL = API_ORIGIN + "/auth";
 
 export default function LoginPage() {
   // IMPORTANT: backend expects "username", not "email"

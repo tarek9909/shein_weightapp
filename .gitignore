@@ -1,1 +1,7 @@
 /profiles
+node_modules/
+__pycache__/
+*.pyc
+service-logs/
+.venv/
+.env

@@ -1,14 +1,12 @@
-body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-}
-
-input, select, button {
-  margin: 5px;
-}
 @keyframes sk {
   0% { background-position: 0% 0; }
   100% { background-position: 200% 0; }
 }
-details > summary { list-style: none; }
-details > summary::-webkit-details-marker { display: none; }
+
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}

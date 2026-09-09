@@ -1,6 +1,7 @@
+import { API_ORIGIN } from "./baseUrl";
 import { apiFetch } from "./http";
 
- const BASE_URL = process.env.REACT_APP_BASE_URL + "/auth";
+ const BASE_URL = API_ORIGIN + "/auth";
 export const login = async (username, password) => {
   const res = await fetch(`${BASE_URL}/login.php`, {
     method: "POST",

@@ -108,13 +108,54 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       defaultValue: "",
       onSubmit: async (name) => {
         openPrompt({
-          title: "Add Customer",
-          placeholder: "USD to collect",
+          title: "Add Customer (Gross Amount)",
+          placeholder: "Amount to collect before delivery charge",
           defaultValue: "",
           type: "number",
-          onSubmit: async (amount) => {
-            await addCustomer(cart.id, name, amount);
-            await loadCustomers();
+          onSubmit: async (grossAmountInput) => {
+            const grossAmount = Number(grossAmountInput);
+            if (!Number.isFinite(grossAmount) || grossAmount < 0) {
+              openInfo({
+                title: "Invalid Amount",
+                message: "Amount to collect must be a valid number >= 0.",
+              });
+              return;
+            }
+            openPrompt({
+              title: "Add Customer (Delivery Charge)",
+              placeholder: "Delivery charge in USD",
+              defaultValue: "0",
+              type: "number",
+              onSubmit: async (deliveryChargeInput) => {
+                const deliveryCharge = Number(deliveryChargeInput);
+                if (!Number.isFinite(deliveryCharge) || deliveryCharge < 0) {
+                  openInfo({
+                    title: "Invalid Delivery Charge",
+                    message: "Delivery charge must be a valid number >= 0.",
+                  });
+                  return;
+                }
+                const netAmount = Math.max(0, grossAmount - deliveryCharge);
+                openConfirm({
+                  title: "Confirm Customer Amounts",
+                  message:
+                    `Gross amount: $${money(grossAmount)}\n` +
+                    `Delivery charge: $${money(deliveryCharge)}\n` +
+                    `Net to collect (saved): $${money(netAmount)}`,
+                  onYes: async () => {
+                    try {
+                      await addCustomer(cart.id, name, netAmount, deliveryCharge);
+                      await loadCustomers();
+                    } catch (err) {
+                      openInfo({
+                        title: "Add Customer Error",
+                        message: err?.message || "Failed to add customer.",
+                      });
+                    }
+                  },
+                });
+              },
+            });
           },
         });
       },
@@ -129,14 +170,58 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       placeholder: "Customer name",
       defaultValue: c.customer_name ?? "",
       onSubmit: async (name) => {
+        const currentNet = Number(c.usd_to_collect || 0);
+        const currentDelivery = Number(c.delivery_charge_usd || 0);
+        const currentGross = currentNet + currentDelivery;
         openPrompt({
-          title: "Edit Customer",
-          placeholder: "USD to collect",
-          defaultValue: c.usd_to_collect ?? "",
+          title: "Edit Customer (Gross Amount)",
+          placeholder: "Amount to collect before delivery charge",
+          defaultValue: String(currentGross),
           type: "number",
-          onSubmit: async (amount) => {
-            await updateCustomer(c.id, name, amount);
-            await loadCustomers();
+          onSubmit: async (grossAmountInput) => {
+            const grossAmount = Number(grossAmountInput);
+            if (!Number.isFinite(grossAmount) || grossAmount < 0) {
+              openInfo({
+                title: "Invalid Amount",
+                message: "Amount to collect must be a valid number >= 0.",
+              });
+              return;
+            }
+            openPrompt({
+              title: "Edit Customer (Delivery Charge)",
+              placeholder: "Delivery charge in USD",
+              defaultValue: String(currentDelivery),
+              type: "number",
+              onSubmit: async (deliveryChargeInput) => {
+                const deliveryCharge = Number(deliveryChargeInput);
+                if (!Number.isFinite(deliveryCharge) || deliveryCharge < 0) {
+                  openInfo({
+                    title: "Invalid Delivery Charge",
+                    message: "Delivery charge must be a valid number >= 0.",
+                  });
+                  return;
+                }
+                const netAmount = Math.max(0, grossAmount - deliveryCharge);
+                openConfirm({
+                  title: "Confirm Customer Amounts",
+                  message:
+                    `Gross amount: $${money(grossAmount)}\n` +
+                    `Delivery charge: $${money(deliveryCharge)}\n` +
+                    `Net to collect (saved): $${money(netAmount)}`,
+                  onYes: async () => {
+                    try {
+                      await updateCustomer(c.id, name, netAmount, deliveryCharge);
+                      await loadCustomers();
+                    } catch (err) {
+                      openInfo({
+                        title: "Update Customer Error",
+                        message: err?.message || "Failed to update customer.",
+                      });
+                    }
+                  },
+                });
+              },
+            });
           },
         });
       },
@@ -202,7 +287,15 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                     <div className="cuCardTitle">
                       {c.customer_name?.trim() ? c.customer_name : "(empty name)"}
                     </div>
-                    <div className="cuBadgeSoft">${money(c.usd_to_collect)}</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <div className="cuBadgeSoft">
+                        Gross: ${money(Number(c.usd_to_collect || 0) + Number(c.delivery_charge_usd || 0))}
+                      </div>
+                      <div className="cuBadgeSoft">
+                        Delivery: ${money(c.delivery_charge_usd || 0)}
+                      </div>
+                      <div className="cuBadgeSoft">Net: ${money(c.usd_to_collect)}</div>
+                    </div>
                   </div>
 
                   <div className="cuButtons">

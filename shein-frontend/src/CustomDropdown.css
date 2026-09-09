@@ -1,0 +1,242 @@
+/* CustomDropdown.css - Ultra-Premium Luxury Dropdown Component */
+
+.cddContainer {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  font-family: inherit;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* Trigger Button */
+.cddTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9.5px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  min-height: 40px;
+}
+
+.cddTrigger:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background-color: #fafbfd;
+}
+
+.cddContainer.cddOpen .cddTrigger,
+.cddTrigger:focus-visible {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3.5px rgba(79, 70, 229, 0.14);
+  background-color: #ffffff;
+}
+
+.cddLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.cddPlaceholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.cddChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.cddContainer.cddOpen .cddChevron {
+  transform: rotate(180deg);
+  color: #4f46e5;
+}
+
+/* Disabled State */
+.cddDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cddDisabled .cddTrigger {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* Dropdown Menu */
+.cddMenu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(440px, 92vw);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  box-shadow: 
+    0 16px 36px -4px rgba(15, 23, 42, 0.16),
+    0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  z-index: 2500;
+  overflow: hidden;
+  animation: cddPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes cddPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Search Box Inside Menu */
+.cddSearchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.cddSearchIcon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.cddSearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  outline: none;
+  font-family: inherit;
+  padding: 2px 0;
+}
+
+.cddSearchInput::placeholder {
+  color: #94a3b8;
+}
+
+.cddSearchClear {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.cddSearchClear:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+/* Options List */
+.cddOptionsList {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.cddOptionsList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cddOptionsList::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+/* Single Option Item */
+.cddOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8.5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.cddOption:hover,
+.cddHighlighted {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.cddSelected {
+  background-color: #eef2ff !important;
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+
+.cddCheckmark {
+  display: flex;
+  align-items: center;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.cddOptionText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cddOptDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cddEmpty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}

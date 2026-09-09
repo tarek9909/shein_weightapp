@@ -2,6 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOrders } from "../api/ordersApi";
 import { getMonths } from "../api/monthApi";
+import { getHistory } from "../api/historyApi";
+import {
+  listSheinUsers,
+  refreshOrderSheinTrack,
+  refreshOrderSheinWeight,
+} from "../api/sheinTrackerApi";
 import MonthSelector from "../components/MonthSelector";
 import CartsEditor from "../components/CartsEditor";
 import { CustomModal } from "../components/CustomModal";
@@ -19,6 +25,12 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshingTrackOrderId, setRefreshingTrackOrderId] = useState(null);
+  const [refreshingWeightOrderId, setRefreshingWeightOrderId] = useState(null);
+  const [sheinUsers, setSheinUsers] = useState([]);
+  const [chromeProfiles, setChromeProfiles] = useState([]);
+  const [sheinEmail, setSheinEmail] = useState("");
+  const [orderCustomerCollectByOrderId, setOrderCustomerCollectByOrderId] = useState({});
 
   // Modal state (same pattern used in other pages)
   const [modal, setModal] = useState({ isOpen: false });
@@ -81,8 +93,21 @@ const OrdersPage = () => {
 
     setLoading(true);
     try {
-      const data = await getOrders(mId); // should also be apiFetch-based
-      setOrders(data || []);
+      const [ordersData, historyData] = await Promise.all([
+        getOrders(mId),
+        getHistory(mId).catch(() => null),
+      ]);
+      setOrders(ordersData || []);
+
+      const map = {};
+      if (historyData && (historyData.ok === true || historyData.success === true) && Array.isArray(historyData.orders)) {
+        for (const ho of historyData.orders) {
+          const oid = Number(ho?.id || 0);
+          if (!oid) continue;
+          map[oid] = Number(ho?.collected_total || 0);
+        }
+      }
+      setOrderCustomerCollectByOrderId(map);
     } catch (err) {
       console.error(err);
       openInfo({
@@ -97,10 +122,40 @@ const OrdersPage = () => {
     }
   };
 
+  const loadSheinUsers = async () => {
+    try {
+      const data = await listSheinUsers();
+      setSheinUsers(data?.users || []);
+      setChromeProfiles(data?.chrome_profiles || []);
+    } catch {
+      setSheinUsers([]);
+      setChromeProfiles([]);
+    }
+  };
+
   useEffect(() => {
+    let currentUser = null;
+    try {
+      currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      currentUser = null;
+    }
+
+    const storedEmail = localStorage.getItem("shein_api_email") || "";
+    const fallbackUserEmail = currentUser?.email || "";
+    const initialEmail = storedEmail || fallbackUserEmail;
+    if (initialEmail) {
+      setSheinEmail(initialEmail);
+    }
+
     loadMonths();
+    loadSheinUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (sheinEmail) localStorage.setItem("shein_api_email", sheinEmail);
+  }, [sheinEmail]);
 
   useEffect(() => {
     setSelectedOrder(null);
@@ -113,6 +168,83 @@ const OrdersPage = () => {
     () => orders.reduce((sum, o) => sum + Number(o.order_details || 0), 0),
     [orders]
   );
+  const totalToCollect = useMemo(
+    () => orders.reduce((sum, o) => sum + Number(o.amount_to_collect || 0), 0),
+    [orders]
+  );
+  const totalEstimatedWeight = useMemo(
+    () => orders.reduce((sum, o) => sum + Number(o.shein_total_weight_plus_2kg_sum || 0), 0),
+    [orders]
+  );
+
+  const orderCollectIssues = useMemo(() => {
+    const issues = [];
+    for (const o of orders || []) {
+      const oid = Number(o?.id || 0);
+      if (!oid) continue;
+      const orderCollect = Number(o?.amount_to_collect || 0);
+      const customersCollect = Number(orderCustomerCollectByOrderId[oid] || 0);
+      const diff = Number((orderCollect - customersCollect).toFixed(2));
+      if (Math.abs(diff) > 0.009) {
+        issues.push({
+          order_id: oid,
+          order_name: o?.order_name || "",
+          order_collect: orderCollect,
+          customers_collect: customersCollect,
+          diff,
+        });
+      }
+    }
+    return issues;
+  }, [orders, orderCustomerCollectByOrderId]);
+
+  const handleRefreshOrderTrack = async (order) => {
+    setRefreshingTrackOrderId(order.id);
+    try {
+      const res = await refreshOrderSheinTrack(order.id);
+      await loadOrders(monthId);
+      const errCount = Array.isArray(res?.errors) ? res.errors.length : 0;
+      openInfo({
+        title: "Track Refreshed",
+        message:
+          `Updated carts: ${Number(res?.updated || 0)}\n` +
+          `Skipped carts: ${Number(res?.skipped || 0)}\n` +
+          `Errors: ${errCount}`,
+      });
+    } catch (err) {
+      openInfo({
+        title: "Refresh Error",
+        message: err?.message || "Failed to refresh order track.",
+      });
+    } finally {
+      setRefreshingTrackOrderId(null);
+    }
+  };
+
+  const handleRefreshOrderWeight = async (order) => {
+    setRefreshingWeightOrderId(order.id);
+    try {
+      const res = await refreshOrderSheinWeight(order.id);
+      await loadOrders(monthId);
+      const totalPlus2 = Number(res?.summary?.total_weight_plus_2kg || 0);
+      const errCount = Array.isArray(res?.errors) ? res.errors.length : 0;
+      openInfo({
+        title: "Weight Updated",
+        message:
+          `Updated carts: ${Number(res?.updated || 0)}\n` +
+          `Skipped carts: ${Number(res?.skipped || 0)}\n` +
+          `Order total (+2kg/cart): ${totalPlus2.toFixed(3)} kg\n` +
+          `Errors: ${errCount}`,
+      });
+    } catch (err) {
+      openInfo({
+        title: "Weight Error",
+        message: err?.message || "Failed to refresh order weight.",
+      });
+    } finally {
+      setRefreshingWeightOrderId(null);
+    }
+  };
 
   return (
     <div className="ordPage">
@@ -147,7 +279,28 @@ const OrdersPage = () => {
           <div className="ordStatTitle">Total Amount</div>
           <div className="ordStatValue">${money(totalOrdersAmount)}</div>
         </div>
+        <div className="ordStatCard">
+          <div className="ordStatTitle">To Collect</div>
+          <div className="ordStatValue">${money(totalToCollect)}</div>
+        </div>
+        <div className="ordStatCard">
+          <div className="ordStatTitle">Estimated Weight</div>
+          <div className="ordStatValue">{Number(totalEstimatedWeight).toFixed(3)} kg</div>
+        </div>
       </div>
+
+        {orderCollectIssues.length > 0 ? (
+        <div className="ordAlert">
+          <div className="ordAlertTitle">
+            Collect mismatch found in {orderCollectIssues.length} order{orderCollectIssues.length > 1 ? "s" : ""}
+          </div>
+          {orderCollectIssues.map((x) => (
+            <div key={x.order_id} className="ordAlertRow">
+              Order #{x.order_id} ({x.order_name || "-"}) | To Collect: ${money(x.order_collect)} | Customers: ${money(x.customers_collect)} | Diff: ${money(x.diff)}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="ordGrid">
         {loading ? (
@@ -172,6 +325,30 @@ const OrdersPage = () => {
                   <span className="ordBadgeSoft">
                     Amount: ${money(order.order_details)}
                   </span>
+                  <span className="ordBadgeSoft">
+                    To Collect: ${money(order.amount_to_collect)}
+                  </span>
+                  {(() => {
+                    const customersCollect = Number(orderCustomerCollectByOrderId[order.id] || 0);
+                    const diff = Number((Number(order.amount_to_collect || 0) - customersCollect).toFixed(2));
+                    if (Math.abs(diff) <= 0.009) return null;
+                    return (
+                      <span className="ordBadgeSoft ordBadgeAlert">
+                        Collect mismatch | Customers: ${money(customersCollect)} | Diff: ${money(diff)}
+                      </span>
+                    );
+                  })()}
+                  <span className="ordBadgeSoft">
+                    Undelivered: {Number(order.shein_undelivered_carts || 0)}
+                  </span>
+                  <span className="ordBadgeSoft">
+                    Weight+2: {Number(order.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
+                  </span>
+                  {Number(order.joint_shipment_carts || 0) > 0 ? (
+                    <span className="ordBadgeSoft">
+                      Joint Shipment: {Number(order.joint_shipment_carts || 0)} carts
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -184,9 +361,25 @@ const OrdersPage = () => {
                   )}
                 </div>
 
-                <button className="ordBtn" onClick={() => setSelectedOrder(order)}>
-                  Edit Carts
-                </button>
+                <div className="ordButtonsRow">
+                  <button
+                    className="ordBtnSoft"
+                    onClick={() => handleRefreshOrderTrack(order)}
+                    disabled={refreshingTrackOrderId === order.id}
+                  >
+                    {refreshingTrackOrderId === order.id ? "Refreshing Track..." : "Refresh Order"}
+                  </button>
+                  <button
+                    className="ordBtnSoft"
+                    onClick={() => handleRefreshOrderWeight(order)}
+                    disabled={refreshingWeightOrderId === order.id}
+                  >
+                    {refreshingWeightOrderId === order.id ? "Getting Weight..." : "Get Weight"}
+                  </button>
+                  <button className="ordBtn" onClick={() => setSelectedOrder(order)}>
+                    Edit Carts
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -197,6 +390,9 @@ const OrdersPage = () => {
         <CartsEditor
           key={selectedOrder.id}
           order={selectedOrder}
+          sheinUsers={sheinUsers}
+          chromeProfiles={chromeProfiles}
+          defaultSheinEmail={sheinEmail}
           onClose={() => setSelectedOrder(null)}
           onUpdated={() => loadOrders(monthId)}
         />

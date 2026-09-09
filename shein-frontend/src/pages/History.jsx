@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { getHistory } from "../api/historyApi";
 import { getMonths } from "../api/monthApi"; // ✅ use your API instead of raw URL
+import CustomDropdown from "../components/CustomDropdown";
 
 const money = (n) =>
   Number(n || 0).toLocaleString(undefined, {
@@ -111,9 +112,14 @@ function Accordion({
           style={{
             ...styles.chev2,
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          ⌄
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </span>
       </button>
 
@@ -234,18 +240,16 @@ export default function History() {
 
         <div style={{ ...styles.controls, ...(isMobile ? styles.controlsMobile : null) }}>
           <label style={styles.label}>Month</label>
-          <select
+          <CustomDropdown
             value={monthId}
             onChange={(e) => setMonthId(e.target.value)}
             disabled={loadingMonths || !months.length}
-            style={{ ...styles.select, ...(isMobile ? styles.selectMobile : null) }}
-          >
-            {months.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} (#{m.id})
-              </option>
-            ))}
-          </select>
+            placeholder="Select Month"
+            options={months.map((m) => ({
+              value: String(m.id),
+              label: `${m.name} (#${m.id})`,
+            }))}
+          />
         </div>
       </div>
 
@@ -258,10 +262,11 @@ export default function History() {
             style={{
               ...styles.statsGrid,
               gridTemplateColumns: isMobile
-                ? "repeat(1, minmax(0, 1fr))"
+                ? "repeat(2, minmax(0, 1fr))"
                 : isTablet
                 ? "repeat(2, minmax(0, 1fr))"
                 : "repeat(4, minmax(0, 1fr))",
+              gap: isMobile ? 8 : 14,
             }}
           >
             <Stat title="Customs" value={`$${money(summary?.customs_fee)}`} />
@@ -442,106 +447,135 @@ function Td({ children, colSpan }) {
 /* styles object unchanged (keep yours) */
 const styles = {
   page: {
-    maxWidth: 1100,
+    width: "100%",
+    maxWidth: "100%",
     margin: "0 auto",
-    padding: 20,
-    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    padding: "16px 0 48px",
+    fontFamily: "inherit",
     color: "#0f172a",
-    background: "linear-gradient(180deg, #fafafa, #ffffff)",
-    minHeight: "100vh",
   },
-  pageMobile: { padding: 14 },
+  pageMobile: { padding: "8px 0 32px" },
 
   headerRow: {
     display: "flex",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    gap: 16,
-    marginBottom: 16,
+    gap: 20,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottom: "1px solid #e2e8f0",
   },
-  headerRowMobile: { flexDirection: "column", alignItems: "stretch" },
+  headerRowMobile: { flexDirection: "column", alignItems: "stretch", gap: 14 },
 
-  h1: { margin: 0, fontSize: 28, letterSpacing: -0.4 },
-  h1Mobile: { fontSize: 22 },
+  h1: {
+    margin: 0,
+    fontSize: 30,
+    fontWeight: 800,
+    letterSpacing: -0.6,
+    color: "#0f172a",
+  },
+  h1Mobile: { fontSize: 24 },
 
-  sub: { color: "#64748b", marginTop: 6, fontSize: 14 },
+  sub: { color: "#64748b", marginTop: 6, fontSize: 14, fontWeight: 500 },
 
-  controls: { display: "flex", flexDirection: "column", gap: 6, minWidth: 260 },
+  controls: { display: "flex", flexDirection: "column", gap: 8, minWidth: 280 },
   controlsMobile: { minWidth: "unset", width: "100%" },
 
-  label: { fontSize: 12, color: "#64748b", fontWeight: 600 },
+  label: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
 
   select: {
-    borderRadius: 12,
-    border: "1px solid #e2e8f0",
-    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1.5px solid #e2e8f0",
+    padding: "10px 14px",
     background: "#fff",
     outline: "none",
-    boxShadow: "0 1px 0 rgba(15,23,42,0.03)",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+    fontSize: 14,
+    fontWeight: 600,
+    color: "#0f172a",
   },
   selectMobile: { width: "100%" },
 
-  statsGrid: { display: "grid", gap: 12, marginTop: 12 },
+  statsGrid: { display: "grid", gap: 14, marginTop: 14, marginBottom: 14 },
 
   stat: {
     border: "1px solid #e2e8f0",
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(255,255,255,0.8)",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
-    backdropFilter: "blur(6px)",
+    borderRadius: 14,
+    padding: 16,
+    background: "#ffffff",
+    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
   },
-  statTitle: { fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 6 },
-  statValue: { fontSize: 18, fontWeight: 800, wordBreak: "break-word" },
+  statTitle: {
+    fontSize: 11.5,
+    color: "#64748b",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: 800,
+    color: "#0f172a",
+    letterSpacing: -0.3,
+    wordBreak: "break-word",
+  },
 
   metaRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, marginBottom: 6 },
 
   pill: {
-    fontSize: 12,
-    padding: "6px 10px",
+    fontSize: 11.5,
+    padding: "4px 10px",
     borderRadius: 999,
     border: "1px solid #e2e8f0",
-    background: "#fff",
+    background: "#f8fafc",
     color: "#334155",
+    fontWeight: 700,
     maxWidth: "100%",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
 
-  list: { marginTop: 12, display: "flex", flexDirection: "column", gap: 12 },
+  list: { marginTop: 16, display: "flex", flexDirection: "column", gap: 14 },
 
   card: {
     border: "1px solid #e2e8f0",
     borderRadius: 18,
     background: "#fff",
-    boxShadow: "0 10px 30px rgba(15,23,42,0.05)",
+    boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
     overflow: "hidden",
   },
 
-  cardTitle: { fontWeight: 900, fontSize: 15, wordBreak: "break-word" },
+  cardTitle: { fontWeight: 800, fontSize: 16, color: "#0f172a", wordBreak: "break-word", letterSpacing: -0.2 },
 
   innerCard: {
     border: "1px solid #eef2f7",
-    borderRadius: 16,
-    background: "#fbfdff",
+    borderRadius: 14,
+    background: "#f8fafc",
     marginBottom: 10,
     overflow: "hidden",
-    color: "black",
+    color: "#0f172a",
   },
 
-  innerTitle: { fontWeight: 800, fontSize: 14, wordBreak: "break-word" },
-  innerBody: { paddingTop: 2 },
+  innerTitle: { fontWeight: 700, fontSize: 14, wordBreak: "break-word" },
+  innerBody: { paddingTop: 4 },
 
   muted: { color: "#64748b", fontWeight: 600 },
 
-  cardBadgesRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 },
+  cardBadgesRow: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 },
 
   badge: {
-    fontSize: 12,
-    padding: "6px 10px",
+    fontSize: 11.5,
+    padding: "4px 10px",
     borderRadius: 999,
-    background: "#0f172a",
+    background: "#4f46e5",
     color: "#fff",
     fontWeight: 700,
     maxWidth: "100%",
@@ -551,13 +585,13 @@ const styles = {
   },
 
   badgeSoft: {
-    fontSize: 12,
-    padding: "6px 10px",
+    fontSize: 11.5,
+    padding: "4px 10px",
     borderRadius: 999,
     background: "#eef2ff",
-    color: "#3730a3",
-    fontWeight: 800,
-    border: "1px solid #e0e7ff",
+    color: "#4338ca",
+    fontWeight: 700,
+    border: "1px solid #c7d2fe",
     maxWidth: "100%",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -567,7 +601,7 @@ const styles = {
   tableWrap: {
     overflowX: "auto",
     borderRadius: 12,
-    border: "1px solid #eef2f7",
+    border: "1px solid #e2e8f0",
     background: "#fff",
     WebkitOverflowScrolling: "touch",
   },
@@ -576,36 +610,39 @@ const styles = {
 
   th: {
     textAlign: "left",
-    padding: 10,
-    fontSize: 12,
-    color: "#475569",
+    padding: "10px 12px",
+    fontSize: 11.5,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    color: "#64748b",
     background: "#f8fafc",
-    borderBottom: "1px solid #eef2f7",
+    borderBottom: "1.5px solid #e2e8f0",
     whiteSpace: "nowrap",
   },
 
   td: {
-    padding: 10,
+    padding: "10px 12px",
     borderBottom: "1px solid #f1f5f9",
     fontSize: 13,
     color: "#0f172a",
+    fontWeight: 500,
     whiteSpace: "nowrap",
   },
 
   alert: {
     marginTop: 12,
-    padding: 12,
-    borderRadius: 14,
-    border: "1px solid #fecaca",
+    padding: 14,
+    borderRadius: 12,
+    border: "1px solid #fecdd3",
     background: "#fff1f2",
-    color: "#9f1239",
+    color: "#be123c",
     fontWeight: 700,
     wordBreak: "break-word",
   },
 
-  empty: { border: "1px dashed #e2e8f0", borderRadius: 14, background: "#ffffff", color: "#334155" },
+  empty: { border: "1.5px dashed #e2e8f0", borderRadius: 14, background: "#ffffff", color: "#334155", padding: 24, textAlign: "center" },
 
-  skelWrap: { marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 16, background: "#fff", padding: 14 },
+  skelWrap: { marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 14, background: "#fff", padding: 16 },
 
   skel: {
     height: 12,
@@ -623,7 +660,7 @@ const styles = {
     background: "transparent",
     textAlign: "left",
     cursor: "pointer",
-    padding: 14,
+    padding: "14px 16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -632,7 +669,7 @@ const styles = {
 
   accBodyOuter: { overflow: "hidden", willChange: "max-height, opacity, transform" },
 
-  accBodyInner: { padding: 14, paddingTop: 0, scrollbarGutter: "stable" },
+  accBodyInner: { padding: "14px 16px", paddingTop: 0, scrollbarGutter: "stable" },
 
   chev2: { color: "#94a3b8", fontWeight: 900, transition: "transform 220ms ease" },
 };

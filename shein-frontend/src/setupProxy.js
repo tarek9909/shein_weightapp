@@ -4,9 +4,9 @@ module.exports = function (app) {
   app.use(
     "/api",
     createProxyMiddleware({
-      target: "https://sheinapp.xo.je",
+      target: "http://localhost",
       changeOrigin: true,
-      secure: true,
+      secure: false,
     })
   );
 };

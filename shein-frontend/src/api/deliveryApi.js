@@ -1,37 +1,66 @@
+import { API_ORIGIN } from "./baseUrl";
 import { apiFetch } from "./http";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL + "/ordersDetails";
+const BASE_URL = API_ORIGIN + "/ordersDetails";
 
-// ✅ Month-only: load customers by month
-export const getCustomersForDeliveryByMonth = (monthId) =>
-  apiFetch(`${BASE_URL}/getCustomersForDeliveryByMonth.php?month_id=${monthId}`);
+const REDESIGN_BASE_URL = API_ORIGIN + "/delivery";
 
-// ✅ Month-only: check delivery number uniqueness (month scoped)
-// If you prefer GLOBAL uniqueness, you can make backend global and keep same function name.
-export const checkDeliveryNumberByMonth = (monthId, deliveryNumber) =>
+export const getDeliveryCustomers = (monthId, q = "", status = "all") =>
   apiFetch(
-    `${BASE_URL}/checkDeliveryNumberByMonth.php?month_id=${monthId}&delivery_number=${encodeURIComponent(
-      deliveryNumber
-    )}`
+    `${REDESIGN_BASE_URL}/getCustomers.php?month_id=${encodeURIComponent(monthId)}&q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`
   );
 
-// ✅ Keep update as-is
-export const updateCustomerDelivery = async (id, delivery_number, status) => {
-  const res = await fetch(`${BASE_URL}/updateCustomerDelivery.php`, {
+export const assignDeliveries = (monthId, assignments) =>
+  apiFetch(`${REDESIGN_BASE_URL}/assign.php`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify({ id, delivery_number, status }),
+    body: JSON.stringify({ month_id: monthId, assignments }),
   });
 
-  // keep same return shape you already use
-  return res.json();
-};
- // ✅ ADD this in your deliveryApi:
-export const updateCustomerUsdToCollect = (id, usd_to_collect) =>
-  apiFetch(`${BASE_URL}/updateCustomerUsdToCollect.php`, {
+export const collectDeliveries = (monthId, customerIds, note = "") =>
+  apiFetch(`${REDESIGN_BASE_URL}/collect.php`, {
     method: "POST",
-    body: JSON.stringify({ id, usd_to_collect }),
+    body: JSON.stringify({ month_id: monthId, customer_ids: customerIds, note }),
+  });
+
+export const revertDeliveries = (monthId, customerIds) =>
+  apiFetch(`${REDESIGN_BASE_URL}/revertAssignment.php`, {
+    method: "POST",
+    body: JSON.stringify({ month_id: monthId, customer_ids: customerIds }),
+  });
+
+export const getDeliveryChargePresets = () =>
+  apiFetch(`${API_ORIGIN}/settings/getDeliveryChargePresets.php`);
+
+export const addDeliveryChargePreset = (payload) =>
+  apiFetch(`${API_ORIGIN}/settings/addDeliveryChargePreset.php`, { method: "POST", body: JSON.stringify(payload) });
+
+export const updateDeliveryChargePreset = (payload) =>
+  apiFetch(`${API_ORIGIN}/settings/updateDeliveryChargePreset.php`, { method: "POST", body: JSON.stringify(payload) });
+
+export const deleteDeliveryChargePreset = (id) =>
+  apiFetch(`${API_ORIGIN}/settings/deleteDeliveryChargePreset.php`, { method: "POST", body: JSON.stringify({ id }) });
+
+export const getCustomerDebts = (month_id, status = "") =>
+  apiFetch(
+    `${BASE_URL}/getCustomerDebts.php?month_id=${month_id}${
+      status ? `&status=${encodeURIComponent(status)}` : ""
+    }`
+  );
+
+export const addCustomerDebt = (payload) =>
+  apiFetch(`${BASE_URL}/addCustomerDebt.php`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateCustomerDebt = (id, payload) =>
+  apiFetch(`${BASE_URL}/updateCustomerDebt.php`, {
+    method: "POST",
+    body: JSON.stringify({ id, ...payload }),
+  });
+
+export const closeCustomerDebt = (id, paid_amount, note = "") =>
+  apiFetch(`${BASE_URL}/closeCustomerDebt.php`, {
+    method: "POST",
+    body: JSON.stringify({ id, paid_amount, note }),
   });

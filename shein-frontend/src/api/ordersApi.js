@@ -1,20 +1,21 @@
+import { API_ORIGIN } from "./baseUrl";
 import { apiFetch } from "./http";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL + "/orders";
+const BASE_URL = API_ORIGIN + "/orders";
 
 export const getOrders = (month_id) =>
   apiFetch(`${BASE_URL}/getOrders.php?month_id=${month_id}`);
 
-export const addOrder = (month_id, order_name, order_details) =>
+export const addOrder = (month_id, order_name, order_details, amount_to_collect = 0) =>
   apiFetch(`${BASE_URL}/addOrder.php`, {
     method: "POST",
-    body: JSON.stringify({ month_id, order_name, order_details }),
+    body: JSON.stringify({ month_id, order_name, order_details, amount_to_collect }),
   });
 
-export const updateOrder = (id, order_name, order_details) =>
+export const updateOrder = (id, order_name, order_details, amount_to_collect = 0) =>
   apiFetch(`${BASE_URL}/updateOrder.php`, {
     method: "POST",
-    body: JSON.stringify({ id, order_name, order_details }),
+    body: JSON.stringify({ id, order_name, order_details, amount_to_collect }),
   });
 
 export const deleteOrder = (id) =>

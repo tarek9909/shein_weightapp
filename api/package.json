@@ -1,0 +1,17 @@
+{
+  "name": "shein-api-v2",
+  "private": true,
+  "main": "api v2.js",
+  "scripts": {
+    "start:v2": "node \"api v2.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "imapflow": "^1.0.181",
+    "mailparser": "^3.7.2",
+    "mysql2": "^3.15.3",
+    "playwright": "^1.58.0"
+  }
+}

@@ -1,6 +1,7 @@
+import { API_ORIGIN } from "./baseUrl";
 import { apiFetch } from "./http";
 
-const BASE_URL = process.env.REACT_APP_BASE_URL + "/month";
+const BASE_URL = API_ORIGIN + "/month";
 
 export const getMonths = () => apiFetch(`${BASE_URL}/getMonths.php`);
 
