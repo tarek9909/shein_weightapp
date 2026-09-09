@@ -10,9 +10,7 @@ const CartsEditor = ({
   order,
   onClose,
   onUpdated,
-  sheinUsers = [],
   chromeProfiles = [],
-  defaultSheinEmail = "",
 }) => {
   const [carts, setCarts] = useState([]);
   const [selectedCart, setSelectedCart] = useState(null);
@@ -40,28 +38,16 @@ const CartsEditor = ({
     }
   };
 
-
-  const profileByEmail = useMemo(() => {
-    const map = new Map();
-    for (const user of sheinUsers || []) {
-      const email = String(user?.email || "").trim().toLowerCase();
-      const profileKey = String(user?.profile_key || "").trim();
-      if (email && profileKey) map.set(email, profileKey);
-    }
-    return map;
-  }, [sheinUsers]);
-
   const profileLabel = (profile) => {
-    const name = profile?.name || profile?.profile_key || "Unnamed profile";
-    const accountName = profile?.account_name ? ` — ${profile.account_name}` : "";
-    const email = profile?.email ? ` (${profile.email})` : "";
-    return `${name}${accountName}${email}`;
+    const key = String(profile?.profile_key || "").trim();
+    const name = profile?.name || key || "Unnamed profile";
+    return name === key || !key ? name : `${name} (${key})`;
   };
 
   const getCartProfileKey = (cart) => {
     const selected = selectedProfileByCart[cart.id];
     if (selected) return selected;
-    return profileByEmail.get(String(cart.shein_email || "").trim().toLowerCase()) || "";
+    return String(cart.chrome_profile_key || "").trim();
   };
 
   const jointMetaByTracking = useMemo(() => {
@@ -180,6 +166,10 @@ const CartsEditor = ({
       setCartFormModal((prev) => ({ ...prev, error: "Cart order number is required." }));
       return;
     }
+    if (!cartFormModal.profile_key.trim()) {
+      setCartFormModal((prev) => ({ ...prev, error: "Chrome profile is required." }));
+      return;
+    }
 
     setCartFormModal((prev) => ({ ...prev, isSubmitting: true, error: "" }));
 
@@ -198,6 +188,7 @@ const CartsEditor = ({
     }
 
     const payloadExtra = {
+      chrome_profile_key: cartFormModal.profile_key.trim() || null,
       shein_order_no: cartFormModal.shein_order_no.trim() || null,
       shein_carrier: cartFormModal.shein_carrier.trim() || null,
       shein_tracking_no: cartFormModal.shein_tracking_no.trim() || null,
@@ -260,6 +251,29 @@ const CartsEditor = ({
         }
       },
     });
+  };
+
+  const handleChromeProfileChange = async (cart, profileKey) => {
+    const normalizedProfile = String(profileKey || "").trim();
+    setSelectedProfileByCart((current) => ({
+      ...current,
+      [cart.id]: normalizedProfile,
+    }));
+    try {
+      await updateCart(cart.id, cart.cart_order_number, cart.cart_price ?? 0, {
+        chrome_profile_key: normalizedProfile || null,
+      });
+      setCarts((current) =>
+        current.map((item) =>
+          item.id === cart.id ? { ...item, chrome_profile_key: normalizedProfile } : item
+        )
+      );
+    } catch (err) {
+      openInfo({
+        title: "Profile Error",
+        message: err?.message || "Failed to save the Chrome profile.",
+      });
+    }
   };
 
   const handleRefreshSheinForCart = async (cart) => {
@@ -380,13 +394,7 @@ const CartsEditor = ({
                         value: profile.profile_key,
                         label: profileLabel(profile),
                       }))}
-                      onChange={(e) => {
-                        const profileKey = e.target.value;
-                        setSelectedProfileByCart((current) => ({
-                          ...current,
-                          [cart.id]: profileKey,
-                        }));
-                      }}
+                      onChange={(e) => handleChromeProfileChange(cart, e.target.value)}
                     />
                   </div>
                   {Number(cart.is_joint_shipment || 0) === 1 ? (
@@ -514,7 +522,9 @@ const CartsEditor = ({
                   </div>
 
                   <div className="ceField">
-                    <label className="ceLabel">Chrome Profile</label>
+                    <label className="ceLabel">
+                      Chrome Profile <span className="ceReq">*</span>
+                    </label>
                     <CustomDropdown
                       className="ceInput"
                       value={cartFormModal.profile_key}

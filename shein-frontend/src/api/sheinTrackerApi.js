@@ -6,6 +6,9 @@ const BASE_URL = API_ORIGIN;
 export const listSheinUsers = () =>
   apiFetch(`${BASE_URL}/sheinAccounts/getAccounts.php`);
 
+export const listChromeProfiles = () =>
+  apiFetch(`${BASE_URL}/sheinAccounts/getAccounts.php`);
+
 export const registerSheinAccount = (payload) =>
   apiFetch(`${BASE_URL}/sheinAccounts/saveAccount.php`, {
     method: "POST",

@@ -64,6 +64,9 @@ async function ensureRuntimeSchema() {
   await addColumnIfMissing("users", "is_active", "TINYINT(1) NOT NULL DEFAULT 1");
   await addColumnIfMissing("users", "auth_version", "INT NOT NULL DEFAULT 0");
   await addColumnIfMissing("users", "last_login_at", "DATETIME NULL");
+  await addColumnIfMissing("order_carts", "chrome_profile_key", "VARCHAR(255) NULL");
+  await addColumnIfMissing("orders", "profit_put_aside", "DECIMAL(10,2) NULL");
+  await addColumnIfMissing("orders", "profit_put_aside_at", "DATETIME NULL");
   await addColumnIfMissing("shein_accounts", "shein_password_enc", "TEXT NULL");
   await addColumnIfMissing("shein_accounts", "gmail_app_password_enc", "TEXT NULL");
   await addColumnIfMissing("shein_accounts", "storage_state_enc", "MEDIUMTEXT NULL");

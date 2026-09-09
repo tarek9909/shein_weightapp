@@ -11,6 +11,7 @@ import {
   updateDeliveryChargePreset,
 } from "../api/deliveryApi";
 import "../operations.css";
+import RecordCustomerLossModal from "../components/RecordCustomerLossModal";
 
 const money = (value) => Number(value || 0).toFixed(2);
 
@@ -29,6 +30,7 @@ export default function DeliveryWorkspace() {
   const [newPresetAmount, setNewPresetAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [lossCustomer, setLossCustomer] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -237,7 +239,36 @@ export default function DeliveryWorkspace() {
           <button disabled={!selectedAssignable.length || !presetId || saving} onClick={assignSelected}>Assign selected</button>
         </div>
 
-        {loading ? <div className="opsEmpty">Loading customers…</div> : !customers.length ? <div className="opsEmpty">No customers match this queue.</div> : <div className="opsTableWrap"><table className="opsTable"><thead><tr><th><input type="checkbox" checked={customers.length > 0 && selected.length === customers.length} onChange={(event) => setSelected(event.target.checked ? customers.map((row) => Number(row.customer_id)) : [])} /></th><th>Customer</th><th>Order / cart</th><th>Receipt</th><th>Delivery</th><th>Amount</th><th>Actions</th></tr></thead><tbody>{customers.map((customer) => { const id = Number(customer.customer_id); const collected = customer.is_collected; return <tr key={id}><td><input type="checkbox" checked={selected.includes(id)} onChange={() => toggleSelected(id)} /></td><td><strong>{customer.customer_name || "(empty name)"}</strong><small>Customer #{id}</small></td><td>{customer.order_name || `Order #${customer.order_id}`}<small>Cart {customer.cart_order_number || `#${customer.cart_id}`} · SHEIN {customer.shein_order_no || "-"}</small></td><td><span className={customer.is_received ? "opsPill opsPillGood" : "opsPill"}>{customer.is_received ? "Received" : "Awaiting cargo"}</span></td><td>{customer.delivery_assignment_status}<small>{customer.delivery_method || "-"}{customer.delivery_number ? ` · #${customer.delivery_number}` : ""}</small></td><td><strong>${money(customer.final_amount)}</strong><small>Base ${money(customer.base_amount)} · Adj {Number(customer.delivery_adjustment) >= 0 ? "+" : ""}{money(customer.delivery_adjustment)}</small></td><td>{collected ? <span className="opsPill opsPillGood">Collected</span> : customer.delivery_assignment_status === "assigned" ? <span className="opsPill">Ready to collect</span> : <span className="opsMuted">Select to assign</span>}</td></tr>; })}</tbody></table></div>}
+        {loading ? <div className="opsEmpty">Loading customers…</div> : !customers.length ? <div className="opsEmpty">No customers match this queue.</div> : <div className="opsTableWrap"><table className="opsTable"><thead><tr><th><input type="checkbox" checked={customers.length > 0 && selected.length === customers.length} onChange={(event) => setSelected(event.target.checked ? customers.map((row) => Number(row.customer_id)) : [])} /></th><th>Customer</th><th>Order / cart</th><th>Receipt</th><th>Delivery</th><th>Amount</th><th>Actions</th></tr></thead><tbody>{customers.map((customer) => { const id = Number(customer.customer_id); const collected = customer.is_collected; return <tr key={id}><td><input type="checkbox" checked={selected.includes(id)} onChange={() => toggleSelected(id)} /></td><td><strong>{customer.customer_name || "(empty name)"}</strong><small>Customer #{id}</small></td><td>{customer.order_name || `Order #${customer.order_id}`}<small>Cart {customer.cart_order_number || `#${customer.cart_id}`} · SHEIN {customer.shein_order_no || "-"}</small></td><td><span className={customer.is_received ? "opsPill opsPillGood" : "opsPill"}>{customer.is_received ? "Received" : "Awaiting cargo"}</span></td><td>{customer.delivery_assignment_status}<small>{customer.delivery_method || "-"}{customer.delivery_number ? ` · #${customer.delivery_number}` : ""}</small></td><td><strong>${money(customer.final_amount)}</strong><small>Base ${money(customer.base_amount)} · Adj {Number(customer.delivery_adjustment) >= 0 ? "+" : ""}{money(customer.delivery_adjustment)}</small></td><td>
+  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+    {collected ? <span className="opsPill opsPillGood">Collected</span> : customer.delivery_assignment_status === "assigned" ? <span className="opsPill">Ready to collect</span> : <span className="opsMuted">Select to assign</span>}
+    <button
+      type="button"
+      style={{
+        padding: "3px 8px",
+        background: "rgba(239, 68, 68, 0.15)",
+        border: "1px solid rgba(239, 68, 68, 0.4)",
+        color: "#f87171",
+        borderRadius: "6px",
+        fontSize: "11px",
+        fontWeight: 600,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+      onClick={() => setLossCustomer({
+        customer_id: customer.customer_id,
+        customer_name: customer.customer_name,
+        order_id: customer.order_id,
+        order_name: customer.order_name,
+        month_id: monthId,
+        usd_to_collect: customer.final_amount,
+      })}
+      title="Record immediate customer loss"
+    >
+      📉 Loss
+    </button>
+  </div>
+</td></tr>; })}</tbody></table></div>}
       </section>
 
       <section className="opsCard">
@@ -245,6 +276,16 @@ export default function DeliveryWorkspace() {
         <form className="opsInlineForm" onSubmit={addPreset}><input value={newPresetLabel} onChange={(event) => setNewPresetLabel(event.target.value)} placeholder="Label e.g. +15" /><input value={newPresetAmount} onChange={(event) => setNewPresetAmount(event.target.value)} type="number" step="0.01" placeholder="Adjustment" /><button>Add preset</button></form>
         <div className="opsPresetList">{presets.map((preset, index) => <div className="opsPreset" key={preset.id}><span className={preset.active ? "opsPill opsPillGood" : "opsPill"}>{preset.active ? "Active" : "Disabled"}</span><strong>{preset.label}</strong><span>{Number(preset.adjustment_amount) >= 0 ? "+" : ""}{money(preset.adjustment_amount)}</span><button onClick={() => togglePreset(preset)}>{preset.active ? "Disable" : "Enable"}</button><button onClick={() => editPreset(preset)}>Edit</button><button disabled={index === 0} onClick={() => movePreset(preset, -1)}>↑</button><button disabled={index === presets.length - 1} onClick={() => movePreset(preset, 1)}>↓</button><button onClick={() => removePreset(preset)}>Remove</button></div>)}</div>
       </section>
+      {lossCustomer && (
+        <RecordCustomerLossModal
+          customer={lossCustomer}
+          onClose={() => setLossCustomer(null)}
+          onSuccess={() => {
+            setLossCustomer(null);
+            loadCustomers();
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -5,13 +5,15 @@ import { getMonths } from "../api/monthApi";
 import { getHistory } from "../api/historyApi";
 import { getKgPrice } from "../api/settingsApi";
 import {
-  listSheinUsers,
+  listChromeProfiles,
   refreshOrderSheinTrack,
   refreshOrderSheinWeight,
 } from "../api/sheinTrackerApi";
 import { getCustomerDirectory } from "../api/customersApi";
 import MonthSelector from "../components/MonthSelector";
 import CartsEditor from "../components/CartsEditor";
+import OrderCollectionModal from "../components/OrderCollectionModal";
+import RecordCustomerLossModal from "../components/RecordCustomerLossModal";
 import { CustomModal } from "../components/CustomModal";
 import { isAuthenticated, triggerSessionExpired } from "../utils/auth";
 import "../orders.css";
@@ -31,13 +33,13 @@ const OrdersPage = () => {
   const [loading, setLoading] = useState(false);
   const [refreshingTrackOrderId, setRefreshingTrackOrderId] = useState(null);
   const [refreshingWeightOrderId, setRefreshingWeightOrderId] = useState(null);
-  const [sheinUsers, setSheinUsers] = useState([]);
   const [chromeProfiles, setChromeProfiles] = useState([]);
-  const [sheinEmail, setSheinEmail] = useState("");
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customersLoading, setCustomersLoading] = useState(false);
   const [orderCustomerCollectByOrderId, setOrderCustomerCollectByOrderId] = useState({});
+  const [collectionOrder, setCollectionOrder] = useState(null);
+  const [lossCustomer, setLossCustomer] = useState(null);
 
   // Order Add / Edit Modal state
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -160,13 +162,11 @@ const OrdersPage = () => {
     }
   };
 
-  const loadSheinUsers = async () => {
+  const loadChromeProfiles = async () => {
     try {
-      const data = await listSheinUsers();
-      setSheinUsers(data?.users || []);
+      const data = await listChromeProfiles();
       setChromeProfiles(data?.chrome_profiles || []);
     } catch {
-      setSheinUsers([]);
       setChromeProfiles([]);
     }
   };
@@ -188,29 +188,11 @@ const OrdersPage = () => {
   };
 
   useEffect(() => {
-    let currentUser = null;
-    try {
-      currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-    } catch {
-      currentUser = null;
-    }
-
-    const storedEmail = localStorage.getItem("shein_api_email") || "";
-    const fallbackUserEmail = currentUser?.email || "";
-    const initialEmail = storedEmail || fallbackUserEmail;
-    if (initialEmail) {
-      setSheinEmail(initialEmail);
-    }
-
     loadMonths();
-    loadSheinUsers();
+    loadChromeProfiles();
     loadDirectoryCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (sheinEmail) localStorage.setItem("shein_api_email", sheinEmail);
-  }, [sheinEmail]);
 
   useEffect(() => {
     setSelectedOrder(null);
@@ -506,6 +488,11 @@ const OrdersPage = () => {
             const orderCost = Number(order.order_details || 0);
             const orderProfit = toCollect - orderCost - orderShipping;
 
+            const collectedSum = Number(order.customers_collected_sum || 0);
+            const budgetToCollect = toCollect > 0 ? toCollect : customerSum;
+            const collectionPct = budgetToCollect > 0 ? Math.min(100, Math.round((collectedSum / budgetToCollect) * 1000) / 10) : 0;
+            const isCollectionComplete = budgetToCollect > 0 && collectedSum >= budgetToCollect;
+
             return (
               <div key={order.id} className="ordCard">
                 <div className="ordCardHead">
@@ -533,7 +520,53 @@ const OrdersPage = () => {
                     </div>
                   </div>
 
+                  {/* Budget Collection Progress Bar */}
+                  <div style={{ marginTop: "8px", marginBottom: "8px", background: "rgba(15, 23, 42, 0.6)", padding: "8px 12px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", fontSize: "12px" }}>
+                      <span style={{ color: "#94a3b8", fontWeight: 600 }}>Collection Progress:</span>
+                      <span style={{ fontWeight: 700, color: isCollectionComplete ? "#10b981" : "#38bdf8" }}>
+                        ${money(collectedSum)} / ${money(budgetToCollect)} ({collectionPct}%)
+                      </span>
+                    </div>
+                    <div style={{ height: "6px", background: "rgba(255, 255, 255, 0.1)", borderRadius: "3px", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${collectionPct}%`,
+                          background: isCollectionComplete ? "linear-gradient(90deg, #10b981, #34d399)" : "linear-gradient(90deg, #3b82f6, #06b6d4)",
+                          borderRadius: "3px",
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="ordBadges">
+                    {order.profit_put_aside != null && (
+                      <span
+                        className="ordBadgeSoft"
+                        style={{
+                          color: "#10b981",
+                          background: "rgba(16, 185, 129, 0.15)",
+                          border: "1px solid rgba(16, 185, 129, 0.4)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✓ Profit Secured: ${money(order.profit_put_aside)}
+                      </span>
+                    )}
+                    {isCollectionComplete && (
+                      <span
+                        className="ordBadgeSoft"
+                        style={{
+                          color: "#34d399",
+                          background: "rgba(16, 185, 129, 0.2)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✓ 100% Collected
+                      </span>
+                    )}
                     <span className="ordBadgeSoft">
                       Cost: ${money(order.order_details)}
                     </span>
@@ -588,6 +621,25 @@ const OrdersPage = () => {
 
                   <div className="ordButtonsRow">
                     <button
+                      type="button"
+                      className="ordBtn"
+                      style={{
+                        background: isCollectionComplete
+                          ? "linear-gradient(135deg, #10b981, #059669)"
+                          : "linear-gradient(135deg, #6366f1, #4f46e5)",
+                        border: "none",
+                        color: "#ffffff",
+                        fontWeight: 700,
+                        boxShadow: isCollectionComplete
+                          ? "0 2px 10px rgba(16, 185, 129, 0.4)"
+                          : "0 2px 10px rgba(99, 102, 241, 0.3)",
+                      }}
+                      onClick={() => setCollectionOrder(order)}
+                      title="Collect payments and calculate/put aside pure profit"
+                    >
+                      {isCollectionComplete ? "🎉 Put Aside Profit" : "💰 Collect & Profit"}
+                    </button>
+                    <button
                       className="ordBtnSoft"
                       onClick={() => handleRefreshOrderTrack(order)}
                       disabled={refreshingTrackOrderId === order.id}
@@ -622,9 +674,7 @@ const OrdersPage = () => {
         <CartsEditor
           key={selectedOrder.id}
           order={selectedOrder}
-          sheinUsers={sheinUsers}
           chromeProfiles={chromeProfiles}
-          defaultSheinEmail={sheinEmail}
           onClose={() => setSelectedOrder(null)}
           onUpdated={() => loadOrders(monthId)}
         />
@@ -769,6 +819,27 @@ const OrdersPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Order Collection & Profit Modal */}
+      {collectionOrder && (
+        <OrderCollectionModal
+          order={collectionOrder}
+          onClose={() => setCollectionOrder(null)}
+          onOrderUpdated={() => loadOrders(monthId)}
+        />
+      )}
+
+      {/* Record Customer Loss Modal */}
+      {lossCustomer && (
+        <RecordCustomerLossModal
+          customer={lossCustomer}
+          onClose={() => setLossCustomer(null)}
+          onSuccess={() => {
+            setLossCustomer(null);
+            loadOrders(monthId);
+          }}
+        />
       )}
 
       <CustomModal {...modal} />

@@ -8,8 +8,9 @@ const { normEmail } = require("../lib/shein");
 const { seal } = require("../lib/secretBox");
 
 const router = express.Router();
-router.use(requireAuth, requireOperations);
+router.use(requireAuth);
 const uid = (req) => Number(req.user.user_id);
+const isChromeProfileKey = (value) => value === "Default" || /^Profile \d+$/.test(value);
 
 router.get(paths("getAccounts", true), asyncHandler(async (req, res) => {
   const users = await rows(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,created_at,updated_at, (shein_password_enc IS NOT NULL) AS has_shein_password, (gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password, (storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE user_id=? ORDER BY id DESC", [uid(req)]);
@@ -19,13 +20,15 @@ router.get(paths("getAccounts", true), asyncHandler(async (req, res) => {
     const file = path.join(local, "Google", "Chrome", "User Data", "Local State");
     try {
       const data = JSON.parse(fs.readFileSync(file, "utf8"));
-      profiles = Object.entries(data?.profile?.info_cache || {}).map(([key, info]) => ({ profile_key: key, name: trim(info?.name) || key, account_name: trim(info?.gaia_name), email: trim(info?.user_name) }));
+      profiles = Object.entries(data?.profile?.info_cache || {})
+        .filter(([key]) => isChromeProfileKey(key))
+        .map(([key, info]) => ({ profile_key: key, name: trim(info?.name) || key }));
     } catch (_) { /* Chrome is optional. */ }
   }
   res.json({ ok: true, users, chrome_profiles: profiles });
 }));
 
-router.get(paths("getAccountDetail", true), asyncHandler(async (req, res) => {
+router.get(paths("getAccountDetail", true), requireOperations, asyncHandler(async (req, res) => {
   const id = int(req.query.id);
   const email = normEmail(req.query.email);
   if (id <= 0 && !email) return res.status(400).json({ ok: false, error: "id or email is required" });
@@ -36,7 +39,7 @@ router.get(paths("getAccountDetail", true), asyncHandler(async (req, res) => {
   res.json({ ok: true, user: row });
 }));
 
-router.post(paths("saveAccount", true), asyncHandler(async (req, res) => {
+router.post(paths("saveAccount", true), requireOperations, asyncHandler(async (req, res) => {
   const d = req.body || {};
   const api = normEmail(d.email), shein = normEmail(d.shein_email), gmail = normEmail(d.gmail_email);
   const password = String(d.shein_password || "");
@@ -68,7 +71,7 @@ router.post(paths("saveAccount", true), asyncHandler(async (req, res) => {
   }
 }));
 
-router.post(paths("deleteAccount", true), asyncHandler(async (req, res) => {
+router.post(paths("deleteAccount", true), requireOperations, asyncHandler(async (req, res) => {
   const id = int(req.body?.id);
   const email = normEmail(req.body?.email);
   if (id <= 0 && !email) return res.status(400).json({ ok: false, error: "id or email is required" });

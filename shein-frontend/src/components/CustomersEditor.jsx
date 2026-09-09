@@ -6,6 +6,7 @@ import {
   deleteCustomer,
 } from "../api/customersApi";
 import { CustomModal } from "../components/CustomModal";
+import RecordCustomerLossModal from "./RecordCustomerLossModal";
 import "../customersEditor.css";
 
 const money = (n) =>
@@ -19,6 +20,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
 
   // modal controller for general alerts / delete confirmation
   const [modal, setModal] = useState({ isOpen: false });
+  const [lossCustomer, setLossCustomer] = useState(null);
 
   // single unified form modal state for adding/editing customers
   const [formModal, setFormModal] = useState({
@@ -243,23 +245,46 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
                     </div>
                   </div>
 
-                  <div className="cuButtons">
-                    <button
-                      className={canEdit ? "cuBtnSoft" : "cuBtnSoft cuBtnDisabled"}
-                      onClick={() => handleOpenEditForm(c)}
-                      disabled={!canEdit}
-                    >
-                      Edit
-                    </button>
+                    <div className="cuButtons">
+                      <button
+                        className={canEdit ? "cuBtnSoft" : "cuBtnSoft cuBtnDisabled"}
+                        onClick={() => handleOpenEditForm(c)}
+                        disabled={!canEdit}
+                      >
+                        Edit
+                      </button>
 
-                    <button
-                      className={canEdit ? "cuBtnDanger" : "cuBtnDanger cuBtnDisabled"}
-                      onClick={() => handleDeleteCustomer(c)}
-                      disabled={!canEdit}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="cuBtnDanger"
+                        style={{
+                          background: "rgba(239, 68, 68, 0.12)",
+                          borderColor: "rgba(239, 68, 68, 0.35)",
+                          color: "#f87171",
+                          padding: "5px 10px",
+                          fontSize: "12px",
+                        }}
+                        onClick={() =>
+                          setLossCustomer({
+                            customer_id: c.id,
+                            customer_name: c.customer_name,
+                            usd_to_collect: c.usd_to_collect,
+                            order_id: cart?.order_id,
+                          })
+                        }
+                        title="Record immediate loss on customer"
+                      >
+                        📉 Loss
+                      </button>
+
+                      <button
+                        className={canEdit ? "cuBtnDanger" : "cuBtnDanger cuBtnDisabled"}
+                        onClick={() => handleDeleteCustomer(c)}
+                        disabled={!canEdit}
+                      >
+                        Delete
+                      </button>
+                    </div>
                 </div>
               ))}
             </div>
@@ -390,6 +415,17 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
               </form>
             </div>
           </div>
+        )}
+
+        {lossCustomer && (
+          <RecordCustomerLossModal
+            customer={lossCustomer}
+            onClose={() => setLossCustomer(null)}
+            onSuccess={() => {
+              setLossCustomer(null);
+              loadCustomers();
+            }}
+          />
         )}
 
         {/* Alert & Confirm Modals */}

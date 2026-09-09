@@ -119,20 +119,20 @@ class UserDetailReq(BaseModel):
 
 class DirectScrapeReq(BaseModel):
     order_no: str
-    shein_email: str
-    shein_password: str
-    gmail_email: str
-    gmail_app_password: str
+    shein_email: str = ""
+    shein_password: str = ""
+    gmail_email: str = ""
+    gmail_app_password: str = ""
     profile_key: str = "default"
     storage_state_json: str | None = None
 
 
 class DirectScrapeBatchReq(BaseModel):
     order_nos: list[str]
-    shein_email: str
-    shein_password: str
-    gmail_email: str
-    gmail_app_password: str
+    shein_email: str = ""
+    shein_password: str = ""
+    gmail_email: str = ""
+    gmail_app_password: str = ""
     profile_key: str = "default"
     storage_state_json: str | None = None
 

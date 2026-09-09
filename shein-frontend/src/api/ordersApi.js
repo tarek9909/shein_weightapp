@@ -15,6 +15,21 @@ export const addOrder = (month_id, order_name, order_details, amount_to_collect 
 export const getOrderCustomers = (order_id) =>
   apiFetch(`${BASE_URL}/${order_id}/customers`);
 
+export const getOrderCustomersDetail = (order_id) =>
+  apiFetch(`${BASE_URL}/getOrderCustomers.php?order_id=${encodeURIComponent(order_id)}`);
+
+export const collectCustomerPayment = (payload) =>
+  apiFetch(`${BASE_URL}/collectCustomerPayment.php`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const putProfitAside = (payload) =>
+  apiFetch(`${BASE_URL}/putProfitAside.php`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
 export const updateOrder = (id, order_name, order_details, amount_to_collect = 0) =>
   apiFetch(`${BASE_URL}/updateOrder.php`, {
     method: "POST",
