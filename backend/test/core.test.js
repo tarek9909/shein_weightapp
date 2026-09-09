@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 process.env.JWT_SECRET = "test-jwt-secret-with-more-than-32-characters";
 process.env.CREDENTIAL_ENCRYPTION_KEY = "test-encryption-key-with-more-than-32-characters";
 
-const { number, finite } = require("../lib/helpers");
+const { number, finite, paths } = require("../lib/helpers");
 const { seal, open } = require("../lib/secretBox");
 const { createToken } = require("../middleware/auth");
 
@@ -14,6 +14,11 @@ test("numeric parsing rejects invalid input instead of converting it to zero", (
   assert.equal(finite("12.50"), true);
   assert.equal(finite("not-a-number"), false);
   assert.equal(Number.isNaN(number("not-a-number")), true);
+});
+
+test("Node routes use extensionless paths", () => {
+  assert.deepEqual(paths("login"), ["/login"]);
+  assert.deepEqual(paths("summary", true), ["/summary", "/"]);
 });
 
 test("credential encryption round-trips and does not store plaintext", () => {

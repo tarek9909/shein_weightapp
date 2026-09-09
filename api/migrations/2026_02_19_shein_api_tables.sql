@@ -1,4 +1,4 @@
--- FastAPI tables in shared database (separate from PHP app tables)
+-- FastAPI tables in the shared application database
 -- Safe to run multiple times.
 
 CREATE TABLE IF NOT EXISTS `shein_api_users` (

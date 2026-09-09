@@ -345,11 +345,11 @@ Fix:
 Add admin-only endpoints with strict ownership checks:
 
 ```text
-GET    /auth/users.php
-POST   /auth/users.php
-PATCH  /auth/users/:id.php       # role, display metadata, status
-POST   /auth/users/:id/reset.php
-DELETE /auth/users/:id.php       # soft-delete or disable first
+GET    /auth/users
+POST   /auth/users
+PATCH  /auth/users/:id           # role, display metadata, status
+POST   /auth/users/:id/reset
+DELETE /auth/users/:id           # soft-delete or disable first
 ```
 
 Recommended schema additions:
@@ -422,7 +422,7 @@ If composite keys are too disruptive for the existing schema, enforce the invari
 
 Evidence:
 
-- The account migration exists at [`backend-php/migrations/2026_09_09_user_accounts.sql`](backend-php/migrations/2026_09_09_user_accounts.sql), but the Node startup path does not execute migrations.
+- The account migration is maintained at [`backend/migrations/2026_09_09_user_accounts.sql`](backend/migrations/2026_09_09_user_accounts.sql), and Node runs the migration set during startup.
 - [`start_services.py:24`](start_services.py#L24) launches Node directly.
 - A clean database can therefore start the Node process without the required `role` column.
 
