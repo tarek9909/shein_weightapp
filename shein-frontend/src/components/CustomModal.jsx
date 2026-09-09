@@ -118,6 +118,9 @@ export function CustomModal({
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) handleCancel();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleCancel();
+      }}
     >
       <div className={`cmModal cmModal--${activeVariant}`}>
         <div className="cmHead">

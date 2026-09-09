@@ -139,6 +139,9 @@ export default function OrderCollectionModal({
         zIndex: 9998,
         padding: "1rem",
       }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

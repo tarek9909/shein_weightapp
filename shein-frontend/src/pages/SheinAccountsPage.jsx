@@ -251,7 +251,17 @@ export default function SheinAccountsPage() {
       </div>
 
       {editOpen && (
-        <div className="cmOverlay" role="dialog" aria-modal="true">
+        <div
+          className="cmOverlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setEditOpen(false);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditOpen(false);
+          }}
+        >
           <div className="cmModal">
             <div className="cmHead">
               <div className="cmTitle">Edit SHEIN Account</div>

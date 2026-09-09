@@ -19,7 +19,7 @@ const SHEIN_REFRESH_PATHS = new Set([
 ]);
 router.use(requireAuth);
 router.use((req, res, next) => {
-  const action = String(req.path || "").replace(/^\//, "").replace(/\.php$/i, "");
+  const action = String(req.path || "").replace(/^\//, "");
   if (req.method === "POST" && SHEIN_REFRESH_PATHS.has(action)) return next();
   // Dashboard users may save the Chrome profile used by a cart refresh. This
   // narrow update does not grant them general cart-edit access.
@@ -216,7 +216,7 @@ router.post(paths("closeCustomerDebt"), asyncHandler(async (req, res) => {
 router.get(paths("checkDeliveryNumber", true), asyncHandler(async (req, res) => { const cartId = int(req.query.cart_id); const numberValue = trim(req.query.delivery_number); if (cartId <= 0 || !numberValue) return res.status(400).json({ exists: false, error: "cart_id and delivery_number are required" }); if (!(await ensureCart(pool, uid(req), cartId))) return res.status(403).json({ exists: false, error: "Invalid cart for this user" }); const found = await first(pool, "SELECT 1 FROM cart_customers WHERE cart_id=? AND delivery_number=? AND user_id=? LIMIT 1", [cartId, numberValue, uid(req)]); res.json({ exists: Boolean(found) }); }));
 router.get(paths("checkDeliveryNumberByMonth"), asyncHandler(async (req, res) => { const monthId = int(req.query.month_id); const numberValue = trim(req.query.delivery_number); if (monthId <= 0 || !numberValue) return res.status(400).json({ exists: false, error: "month_id and delivery_number are required" }); if (!(await ensureMonth(pool, uid(req), monthId))) return res.status(403).json({ exists: false, error: "Invalid month for this user" }); const found = await first(pool, `SELECT cc.id FROM cart_customers cc JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=cc.user_id JOIN orders o ON o.id=oc.order_id AND o.user_id=oc.user_id WHERE cc.user_id=? AND o.month_id=? AND CAST(cc.delivery_number AS CHAR)=? LIMIT 1`, [uid(req), monthId, numberValue]); res.json({ exists: Boolean(found) }); }));
 
-// Minimal XLSX parser matching the PHP importer's supported worksheet format.
+// Minimal XLSX parser matching the supported worksheet format.
 const xmlUnescape = (value) => String(value).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const colIndex = (ref) => { const match = String(ref).match(/^([A-Z]+)/i); if (!match) return -1; return [...match[1].toUpperCase()].reduce((n, c) => n * 26 + c.charCodeAt(0) - 64, 0) - 1; };
 function sharedStrings(xml) { const out = []; for (const m of String(xml || "").matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)) out.push([...m[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((x) => xmlUnescape(x[1])).join("")); return out; }

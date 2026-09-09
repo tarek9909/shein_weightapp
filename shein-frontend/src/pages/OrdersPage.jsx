@@ -723,8 +723,21 @@ const OrdersPage = () => {
 
       {/* Unified Add / Edit Order Modal */}
       {isOrderModalOpen && (
-        <div className="modalBackdrop" onClick={() => setIsOrderModalOpen(false)}>
-          <div className="modalCard" style={{ maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modalBackdrop"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setIsOrderModalOpen(false);
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOrderModalOpen(false);
+          }}
+        >
+          <div
+            className="modalCard"
+            style={{ maxWidth: "480px" }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modalHeader">
               <h3 className="modalTitle">
                 {orderModalMode === "add" ? "Create New Order" : `Edit ${editingOrder?.order_name || "Order"}`}

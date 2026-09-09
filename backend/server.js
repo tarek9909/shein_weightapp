@@ -46,7 +46,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 // A few existing frontend helpers concatenate a trailing slash with another
-// slash. Normalize that request spelling while preserving the PHP route names.
+// slash. Normalize that request spelling before dispatching Node routes.
 app.use((req, _res, next) => {
   req.url = req.url.replace(/\/{2,}/g, "/");
   next();

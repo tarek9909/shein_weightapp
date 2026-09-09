@@ -30,7 +30,10 @@ const jsonDecode = (value, fallback = null) => {
   try { return typeof value === "string" ? JSON.parse(value) : value; } catch (_) { return fallback; }
 };
 const jsonEncode = (value) => JSON.stringify(value);
-const paths = (name, root = false) => [`/${name}.php`, `/${name}`, ...(root ? ["/"] : [])];
+// Every API route is owned and served by this Node application. The optional
+// root alias is used only by legacy route shapes that also serve the module
+// root; route names themselves are intentionally extensionless.
+const paths = (name, root = false) => [`/${name}`, ...(root ? ["/"] : [])];
 
 async function first(db, sql, params = []) {
   const [rows] = await db.execute(sql, params);

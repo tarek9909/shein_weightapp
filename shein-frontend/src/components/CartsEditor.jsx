@@ -379,7 +379,17 @@ const CartsEditor = ({
   const fmtKg = (v) => (v === null || v === undefined || v === "" ? "-" : Number(v).toFixed(3));
 
   return (
-    <div className="ceOverlay" role="dialog" aria-modal="true">
+    <div
+      className="ceOverlay"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="ceModal">
         <div className="ceHead">
           <div>
@@ -532,7 +542,17 @@ const CartsEditor = ({
 
         {/* Unified Cart Form Modal (Single form displaying and editing all cart details) */}
         {cartFormModal.isOpen && (
-          <div className="ceFormOverlay" role="dialog" aria-modal="true">
+          <div
+            className="ceFormOverlay"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) handleCloseCartForm();
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleCloseCartForm();
+            }}
+          >
             <div className="ceFormModal">
               <div className="ceFormHead">
                 <div className="ceFormTitle">

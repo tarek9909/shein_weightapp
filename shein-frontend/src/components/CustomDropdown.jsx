@@ -31,12 +31,48 @@ export default function CustomDropdown({
   id,
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
 
   const containerRef = useRef(null);
   const searchInputRef = useRef(null);
   const listRef = useRef(null);
+
+  // Check available space below to decide if dropdown should open upwards (drop-up)
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < 280 && spaceAbove > spaceBelow) {
+        setDropUp(true);
+      } else {
+        setDropUp(false);
+      }
+    }
+  }, [isOpen]);
+
+  // Elevate parent stacking context when dropdown is open to prevent underlying/clipping
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const parentCard = containerRef.current.closest(
+        ".ceCard, .cuModal, .ceModal, .cuFormModal, .ceFormModal, .modalCard, .card, .opsCard"
+      );
+      if (parentCard) {
+        const prevZIndex = parentCard.style.zIndex;
+        const prevPosition = parentCard.style.position;
+        parentCard.style.zIndex = "10000";
+        if (!prevPosition || prevPosition === "static") {
+          parentCard.style.position = "relative";
+        }
+        return () => {
+          parentCard.style.zIndex = prevZIndex;
+          parentCard.style.position = prevPosition;
+        };
+      }
+    }
+  }, [isOpen]);
 
   // Normalize options from options prop OR <option> children
   const parsedOptions = useMemo(() => {
@@ -176,7 +212,7 @@ export default function CustomDropdown({
   return (
     <div
       ref={containerRef}
-      className={`cddContainer ${isOpen ? "cddOpen" : ""} ${disabled ? "cddDisabled" : ""} ${className}`}
+      className={`cddContainer ${isOpen ? "cddOpen" : ""} ${dropUp ? "cddDropUp" : ""} ${disabled ? "cddDisabled" : ""} ${className}`}
       style={style}
       onKeyDown={handleKeyDown}
       id={id}
@@ -277,7 +313,12 @@ export default function CustomDropdown({
                     onClick={() => handleSelect(opt)}
                     onMouseEnter={() => setHighlightIndex(idx)}
                   >
-                    <span className="cddOptionText">{opt.label}</span>
+                    <span
+                      className="cddOptionText"
+                      title={typeof opt.label === "string" ? opt.label : String(opt.label || "")}
+                    >
+                      {opt.label}
+                    </span>
                     {isSelected && (
                       <span className="cddCheckmark">
                         <svg

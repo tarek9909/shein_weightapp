@@ -24,7 +24,7 @@ function assertStatus(result, expected, label) {
 }
 
 async function login(username, password) {
-  const result = await request(NODE_BASE, "/auth/login.php", {
+  const result = await request(NODE_BASE, "/auth/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
@@ -50,16 +50,16 @@ async function main() {
   let managedToken = "";
 
   try {
-    const dashboardWrite = await request(NODE_BASE, "/month/addMonth.php", {
+    const dashboardWrite = await request(NODE_BASE, "/month/addMonth", {
       method: "POST", headers: { ...auth(dashboardToken), "Content-Type": "application/json" },
       body: JSON.stringify({ name: `should-not-write-${Date.now()}` }),
     });
     assertStatus(dashboardWrite, 403, "Dashboard write protection");
 
-    const managedUsers = await request(NODE_BASE, "/auth/users.php", { headers: auth(operationsToken) });
+    const managedUsers = await request(NODE_BASE, "/auth/users", { headers: auth(operationsToken) });
     assertStatus(managedUsers, 403, "Operations account-management protection");
 
-    const addMonth = await request(NODE_BASE, "/month/addMonth.php", {
+    const addMonth = await request(NODE_BASE, "/month/addMonth", {
       method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
       body: JSON.stringify({ name: `smoke-${Date.now()}` }),
     });
@@ -67,29 +67,29 @@ async function main() {
     createdMonthId = Number(addMonth.body?.id || 0);
     if (!createdMonthId) throw new Error("Operations month creation did not return an id");
 
-    const otherUserMonths = await request(NODE_BASE, `/month/getMonths.php`, { headers: auth(operationsToken2) });
+    const otherUserMonths = await request(NODE_BASE, "/month/getMonths", { headers: auth(operationsToken2) });
     assertStatus(otherUserMonths, 200, "Second-user month listing");
     if (Array.isArray(otherUserMonths.body) && otherUserMonths.body.some((month) => Number(month.id) === createdMonthId)) {
       throw new Error("Second operations user can see the first user's month");
     }
 
-    const invalidBudget = await request(NODE_BASE, "/budget/addBudget.php", {
+    const invalidBudget = await request(NODE_BASE, "/budget/addBudget", {
       method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
       body: JSON.stringify({ month_id: createdMonthId, value: "not-a-number" }),
     });
     assertStatus(invalidBudget, 400, "Invalid numeric input rejection");
 
-    const reports = await request(NODE_BASE, "/reports/summary.php", { headers: auth(operationsToken) });
+    const reports = await request(NODE_BASE, "/reports/summary", { headers: auth(operationsToken) });
     assertStatus(reports, 200, "Operations reports route");
 
-    const accounts = await request(NODE_BASE, "/sheinAccounts/getAccounts.php", { headers: auth(operationsToken) });
+    const accounts = await request(NODE_BASE, "/sheinAccounts/getAccounts", { headers: auth(operationsToken) });
     assertStatus(accounts, 200, "SHEIN account listing");
     if (/shein_password|gmail_app_password|cookies_json/i.test(JSON.stringify(accounts.body))) {
       throw new Error("SHEIN account response contains a secret field");
     }
 
     const forged = jwt.sign({ user_id: 1, role: "admin" }, "CHANGE_THIS_SECRET_123", { algorithm: "HS256" });
-    const oldSecret = await request(NODE_BASE, "/month/getMonths.php", { headers: { Authorization: `Bearer ${forged}` } });
+    const oldSecret = await request(NODE_BASE, "/month/getMonths", { headers: { Authorization: `Bearer ${forged}` } });
     assertStatus(oldSecret, 401, "Old default JWT rejection");
 
     const smokeAdminUsername = `smoke_admin_${Date.now()}`;
@@ -99,7 +99,7 @@ async function main() {
     const adminToken = await login(smokeAdminUsername, smokeAdminPassword);
     const managedUsername = `smoke_managed_${Date.now()}`;
     const managedPassword = "SmokeManagedPassword!123";
-    const createManaged = await request(NODE_BASE, "/auth/users.php", {
+    const createManaged = await request(NODE_BASE, "/auth/users", {
       method: "POST", headers: { ...auth(adminToken), "Content-Type": "application/json" },
       body: JSON.stringify({ username: managedUsername, password: managedPassword, role: "dashboard" }),
     });
@@ -107,36 +107,36 @@ async function main() {
     managedUserId = Number(createManaged.body?.user?.id || 0);
     if (!managedUserId) throw new Error("Managed account creation did not return an id");
     managedToken = await login(managedUsername, managedPassword);
-    const disableManaged = await request(NODE_BASE, "/auth/disableUser.php", {
+    const disableManaged = await request(NODE_BASE, "/auth/disableUser", {
       method: "POST", headers: { ...auth(adminToken), "Content-Type": "application/json" },
       body: JSON.stringify({ id: managedUserId, is_active: false }),
     });
     assertStatus(disableManaged, 200, "Managed account disable");
-    const disabledToken = await request(NODE_BASE, "/month/getMonths.php", { headers: auth(managedToken) });
+    const disabledToken = await request(NODE_BASE, "/month/getMonths", { headers: auth(managedToken) });
     assertStatus(disabledToken, 401, "Disabled account token invalidation");
-    const enableManaged = await request(NODE_BASE, "/auth/disableUser.php", {
+    const enableManaged = await request(NODE_BASE, "/auth/disableUser", {
       method: "POST", headers: { ...auth(adminToken), "Content-Type": "application/json" },
       body: JSON.stringify({ id: managedUserId, is_active: true }),
     });
     assertStatus(enableManaged, 200, "Managed account enable");
-    const resetManaged = await request(NODE_BASE, "/auth/resetUserPassword.php", {
+    const resetManaged = await request(NODE_BASE, "/auth/resetUserPassword", {
       method: "POST", headers: { ...auth(adminToken), "Content-Type": "application/json" },
       body: JSON.stringify({ id: managedUserId, password: "SmokeManagedPassword!456" }),
     });
     assertStatus(resetManaged, 200, "Managed account password reset");
-    const revokedToken = await request(NODE_BASE, "/month/getMonths.php", { headers: auth(managedToken) });
+    const revokedToken = await request(NODE_BASE, "/month/getMonths", { headers: auth(managedToken) });
     assertStatus(revokedToken, 401, "Password reset token invalidation");
     const reauthenticated = await login(managedUsername, "SmokeManagedPassword!456");
-    const roleUpdate = await request(NODE_BASE, "/auth/updateUser.php", {
+    const roleUpdate = await request(NODE_BASE, "/auth/updateUser", {
       method: "POST", headers: { ...auth(adminToken), "Content-Type": "application/json" },
       body: JSON.stringify({ id: managedUserId, role: "operations" }),
     });
     assertStatus(roleUpdate, 200, "Managed account role update");
-    const deleteManaged = await request(NODE_BASE, `/auth/users/${managedUserId}.php`, {
+    const deleteManaged = await request(NODE_BASE, `/auth/users/${managedUserId}`, {
       method: "DELETE", headers: auth(adminToken),
     });
     assertStatus(deleteManaged, 200, "Managed account soft delete");
-    const deletedLogin = await request(NODE_BASE, "/auth/login.php", {
+    const deletedLogin = await request(NODE_BASE, "/auth/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: managedUsername, password: "SmokeManagedPassword!456" }),
     });
@@ -156,7 +156,7 @@ async function main() {
     console.log("Backend smoke tests passed");
   } finally {
     if (createdMonthId) {
-      await request(NODE_BASE, "/month/deleteMonth.php", {
+      await request(NODE_BASE, "/month/deleteMonth", {
         method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
         body: JSON.stringify({ id: createdMonthId }),
       }).catch(() => {});

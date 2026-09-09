@@ -129,6 +129,9 @@ export default function RecordCustomerLossModal({
         zIndex: 9999,
         padding: "1rem",
       }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

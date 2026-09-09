@@ -128,7 +128,7 @@ router.post(paths("disableUser"), requireAuth, requireAdmin, asyncHandler(async 
   res.json({ ok: true, is_active: Boolean(active) });
 }));
 
-router.delete(["/users/:id.php", "/users/:id"], requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.delete("/users/:id", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   const id = Number(req.params.id || 0);
   if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: "A valid managed account id is required" });
   if (!(await ownedAccount(req, id))) return res.status(404).json({ ok: false, error: "Managed account not found" });

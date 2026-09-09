@@ -1064,6 +1064,9 @@ const DeliveryPage = () => {
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) setLossesModalOpen(false);
           }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setLossesModalOpen(false);
+          }}
         >
           <div className="cmModal" style={{ width: "min(1100px, 100%)" }}>
             <div className="cmHead">

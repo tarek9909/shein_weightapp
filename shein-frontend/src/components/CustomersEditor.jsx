@@ -244,7 +244,17 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const isExistingDirectoryName = Boolean(selectedCustomerObj);
 
   return (
-    <div className="cuOverlay" role="dialog" aria-modal="true">
+    <div
+      className="cuOverlay"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="cuModal">
         <div className="cuHead">
           <div>
@@ -363,7 +373,17 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
 
         {/* Unified Customer Form Modal (Single form for adding / editing) */}
         {formModal.isOpen && (
-          <div className="cuFormOverlay" role="dialog" aria-modal="true">
+          <div
+            className="cuFormOverlay"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) handleCloseForm();
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleCloseForm();
+            }}
+          >
             <div className="cuFormModal">
               <div className="cuFormHead">
                 <div className="cuFormTitle">

@@ -16,7 +16,21 @@ export const ModalProvider = ({ children }) => {
     <ModalContext.Provider value={{ showModal, closeModal }}>
       {children}
       {modal && (
-        <div className="modal-overlay">
+        <div
+          className="modal-overlay"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              modal.onCancel?.();
+              closeModal();
+            }
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              modal.onCancel?.();
+              closeModal();
+            }
+          }}
+        >
           <div className="modal">
             <h2>{modal.title}</h2>
             {modal.message && <p>{modal.message}</p>}

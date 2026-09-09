@@ -2,7 +2,7 @@
   "name": "shein-backend-node",
   "version": "1.0.0",
   "private": true,
-  "description": "Node.js replacement for the legacy SHEIN PHP REST backend",
+  "description": "Node.js backend for the SHEIN order and delivery application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
