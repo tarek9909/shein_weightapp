@@ -937,7 +937,25 @@ export default function Dashboard() {
                   key={o.id}
                   header={
                     <div className="dashAccHeaderContent">
-                      <div className="dashAccTitle">{o.order_name || "Order"}</div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                        <div className="dashAccTitle">{o.order_name || "Order"}</div>
+                        <button
+                          type="button"
+                          className="dashBtnSoft"
+                          style={{ padding: "4px 10px", fontSize: "12px", gap: "4px" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            nav("/orders");
+                          }}
+                          title="Navigate immediately to Orders workspace"
+                        >
+                          <span>Open in Orders</span>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                            <polyline points="12 5 19 12 12 19" />
+                          </svg>
+                        </button>
+                      </div>
                       <div className="dashAccMetaRow">
                         <span className="dashAccPill">Amount: ${money(o.order_details)}</span>
                         <span className="dashAccPill">Collect: ${money(o.amount_to_collect)}</span>
@@ -999,7 +1017,21 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                    <div className="dashOrderActionsLine">
+                    <div className="dashOrderActionsLine" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="dashBtn"
+                        onClick={() => nav("/orders")}
+                        title="Navigate immediately to Orders workspace"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                          <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                        <span>Open Orders Workspace</span>
+                      </button>
+
                       <button
                         className="dashBtnDanger"
                         onClick={() =>
