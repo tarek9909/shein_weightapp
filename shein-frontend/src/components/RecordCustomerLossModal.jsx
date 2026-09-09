@@ -121,8 +121,9 @@ export default function RecordCustomerLossModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(15, 23, 42, 0.75)",
-        backdropFilter: "blur(4px)",
+        backgroundColor: "rgba(15, 23, 42, 0.48)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -132,19 +133,16 @@ export default function RecordCustomerLossModal({
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <div
         style={{
-          background: "linear-gradient(145deg, #1e293b, #0f172a)",
-          border: "1px solid rgba(239, 68, 68, 0.35)",
-          borderRadius: "16px",
+          background: "#ffffff",
+          border: "1.5px solid #fecaca",
+          borderRadius: "18px",
           width: "100%",
           maxWidth: isBulk ? "540px" : "480px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 24px rgba(239, 68, 68, 0.18)",
-          color: "#f8fafc",
+          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9)",
+          color: "#0f172a",
           overflow: "hidden",
         }}
       >
@@ -152,29 +150,30 @@ export default function RecordCustomerLossModal({
         <div
           style={{
             padding: "1.25rem 1.5rem",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            borderBottom: "1px solid #f1f5f9",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            background: "#ffffff",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <span
               style={{
-                background: "rgba(239, 68, 68, 0.2)",
-                color: "#f87171",
+                background: "#fee2e2",
+                color: "#b91c1c",
                 padding: "0.4rem 0.6rem",
-                borderRadius: "8px",
+                borderRadius: "10px",
                 fontSize: "1.1rem",
               }}
             >
               📉
             </span>
             <div>
-              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700 }}>
+              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
                 {isBulk ? `Record Bulk Loss (${targetList.length} Customers)` : "Record Customer Loss"}
               </h3>
-              <p style={{ margin: 0, fontSize: "0.8rem", color: "#94a3b8" }}>
+              <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748b" }}>
                 {isBulk
                   ? `Immediately register losses across ${targetList.length} selected customers`
                   : "Immediately register a loss against this customer & order"}
@@ -183,14 +182,20 @@ export default function RecordCustomerLossModal({
           </div>
           <button
             onClick={onClose}
+            title="Close"
             style={{
-              background: "transparent",
-              border: "none",
-              color: "#94a3b8",
-              fontSize: "1.25rem",
+              border: "1.5px solid #e2e8f0",
+              background: "#ffffff",
+              color: "#64748b",
+              borderRadius: "10px",
+              width: "32px",
+              height: "32px",
               cursor: "pointer",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: "15px",
             }}
           >
             ✕
@@ -203,26 +208,26 @@ export default function RecordCustomerLossModal({
             style={{
               margin: "1rem 1.5rem 0",
               padding: "0.85rem 1rem",
-              borderRadius: "10px",
-              background: "rgba(30, 41, 59, 0.8)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "12px",
+              background: "#f8fafc",
+              border: "1.5px solid #e2e8f0",
               fontSize: "0.875rem",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-              <span style={{ color: "#94a3b8" }}>Selected Customers:</span>
-              <span style={{ fontWeight: 700, color: "#f87171" }}>{targetList.length} customers</span>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>Selected Customers:</span>
+              <span style={{ fontWeight: 750, color: "#b91c1c" }}>{targetList.length} customers</span>
             </div>
-            <div style={{ maxHeight: "80px", overflowY: "auto", color: "#cbd5e1", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
+            <div style={{ maxHeight: "80px", overflowY: "auto", color: "#1e293b", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
               {targetList.map((c, i) => (
-                <span key={i} style={{ display: "inline-block", background: "#334155", padding: "2px 8px", borderRadius: "4px", margin: "2px 4px 2px 0" }}>
+                <span key={i} style={{ display: "inline-block", background: "#e2e8f0", padding: "2px 8px", borderRadius: "5px", margin: "2px 4px 2px 0", fontWeight: 600 }}>
                   {c.customer_name || `Customer #${c.customer_id || c.id}`} (${Number(c.usd_to_collect || c.final_amount || 0).toFixed(2)})
                 </span>
               ))}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #334155", paddingTop: "0.35rem" }}>
-              <span style={{ color: "#94a3b8" }}>Total Customer Value:</span>
-              <span style={{ color: "#38bdf8", fontWeight: 700 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.35rem" }}>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>Total Customer Value:</span>
+              <span style={{ color: "#0284c7", fontWeight: 800 }}>
                 ${targetList.reduce((sum, c) => sum + Number(c.usd_to_collect || c.final_amount || c.base_amount || 0), 0).toFixed(2)}
               </span>
             </div>
@@ -232,26 +237,26 @@ export default function RecordCustomerLossModal({
             style={{
               margin: "1rem 1.5rem 0",
               padding: "0.75rem 1rem",
-              borderRadius: "10px",
-              background: "rgba(30, 41, 59, 0.8)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "12px",
+              background: "#f8fafc",
+              border: "1.5px solid #e2e8f0",
               fontSize: "0.875rem",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-              <span style={{ color: "#94a3b8" }}>Customer:</span>
-              <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{single.customer_name || "Unknown"}</span>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>Customer:</span>
+              <span style={{ fontWeight: 750, color: "#0f172a" }}>{single.customer_name || "Unknown"}</span>
             </div>
             {single.order_name && (
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-                <span style={{ color: "#94a3b8" }}>Order:</span>
-                <span style={{ color: "#cbd5e1" }}>{single.order_name}</span>
+                <span style={{ color: "#64748b", fontWeight: 600 }}>Order:</span>
+                <span style={{ color: "#334155", fontWeight: 600 }}>{single.order_name}</span>
               </div>
             )}
             {(single.usd_to_collect !== undefined || single.final_amount !== undefined) && (
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#94a3b8" }}>Target to Collect:</span>
-                <span style={{ color: "#38bdf8", fontWeight: 600 }}>
+                <span style={{ color: "#64748b", fontWeight: 600 }}>Target to Collect:</span>
+                <span style={{ color: "#0284c7", fontWeight: 800 }}>
                   ${Number(single.usd_to_collect ?? single.final_amount ?? 0).toFixed(2)}
                 </span>
               </div>
@@ -267,10 +272,11 @@ export default function RecordCustomerLossModal({
                 marginBottom: "1rem",
                 padding: "0.6rem 0.85rem",
                 borderRadius: "8px",
-                background: "rgba(239, 68, 68, 0.15)",
-                border: "1px solid rgba(239, 68, 68, 0.4)",
-                color: "#fca5a5",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                color: "#b91c1c",
                 fontSize: "0.85rem",
+                fontWeight: 600,
               }}
             >
               ⚠️ {error}
@@ -278,7 +284,7 @@ export default function RecordCustomerLossModal({
           )}
 
           <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "#cbd5e1" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 750, marginBottom: "0.4rem", color: "#334155" }}>
               Loss Reason / Category
             </label>
             <select
@@ -286,12 +292,15 @@ export default function RecordCustomerLossModal({
               onChange={(e) => setLossType(e.target.value)}
               style={{
                 width: "100%",
-                padding: "0.6rem 0.75rem",
-                background: "#0f172a",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                color: "#f8fafc",
+                padding: "0.65rem 0.85rem",
+                background: "#ffffff",
+                border: "1.5px solid #cbd5e1",
+                borderRadius: "9px",
+                color: "#0f172a",
                 fontSize: "0.9rem",
+                fontWeight: 600,
+                outline: "none",
+                boxSizing: "border-box",
               }}
             >
               {LOSS_TYPES.map((t) => (
@@ -304,27 +313,29 @@ export default function RecordCustomerLossModal({
 
           {isBulk ? (
             <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "#cbd5e1" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 750, marginBottom: "0.4rem", color: "#334155" }}>
                 Bulk Loss Calculation Mode
               </label>
-              <div style={{ display: "flex", gap: "10px", marginBottom: "0.75rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "0.75rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, color: "#1e293b" }}>
                   <input
                     type="radio"
                     name="bulkAmountMode"
                     value="individual"
                     checked={bulkAmountMode === "individual"}
                     onChange={() => setBulkAmountMode("individual")}
+                    style={{ accentColor: "#ef4444" }}
                   />
                   <span>Each customer's target value (${totalCalculatedLoss.toFixed(2)})</span>
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.85rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, color: "#1e293b" }}>
                   <input
                     type="radio"
                     name="bulkAmountMode"
                     value="fixed"
                     checked={bulkAmountMode === "fixed"}
                     onChange={() => setBulkAmountMode("fixed")}
+                    style={{ accentColor: "#ef4444" }}
                   />
                   <span>Fixed amount per customer</span>
                 </label>
@@ -332,7 +343,7 @@ export default function RecordCustomerLossModal({
 
               {bulkAmountMode === "fixed" && (
                 <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "0.3rem" }}>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#64748b", marginBottom: "0.3rem", fontWeight: 600 }}>
                     Amount per customer ($ USD):
                   </label>
                   <input
@@ -344,13 +355,15 @@ export default function RecordCustomerLossModal({
                     onChange={(e) => setAmount(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "0.6rem 0.75rem",
-                      background: "#0f172a",
-                      border: "1px solid #334155",
-                      borderRadius: "8px",
-                      color: "#f8fafc",
+                      padding: "0.65rem 0.85rem",
+                      background: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      borderRadius: "9px",
+                      color: "#0f172a",
                       fontSize: "0.95rem",
+                      fontWeight: 600,
                       boxSizing: "border-box",
+                      outline: "none",
                     }}
                   />
                 </div>
@@ -359,7 +372,7 @@ export default function RecordCustomerLossModal({
           ) : (
             <div style={{ marginBottom: "1rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#cbd5e1" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 750, color: "#334155" }}>
                   Loss Amount ($ USD) *
                 </label>
                 {(single?.usd_to_collect != null || single?.final_amount != null) && (
@@ -367,12 +380,13 @@ export default function RecordCustomerLossModal({
                     type="button"
                     onClick={() => setAmount(String(Number(single.usd_to_collect || single.final_amount || 0).toFixed(2)))}
                     style={{
-                      background: "rgba(56, 189, 248, 0.15)",
-                      border: "1px solid rgba(56, 189, 248, 0.3)",
-                      color: "#38bdf8",
-                      borderRadius: "4px",
-                      padding: "2px 6px",
+                      background: "#e0f2fe",
+                      border: "1px solid #7dd3fc",
+                      color: "#0369a1",
+                      borderRadius: "6px",
+                      padding: "2px 8px",
                       fontSize: "0.75rem",
+                      fontWeight: 700,
                       cursor: "pointer",
                     }}
                   >
@@ -390,20 +404,22 @@ export default function RecordCustomerLossModal({
                 onChange={(e) => setAmount(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "0.6rem 0.75rem",
-                  background: "#0f172a",
-                  border: "1px solid #334155",
-                  borderRadius: "8px",
-                  color: "#f8fafc",
+                  padding: "0.65rem 0.85rem",
+                  background: "#ffffff",
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: "9px",
+                  color: "#0f172a",
                   fontSize: "0.95rem",
+                  fontWeight: 600,
                   boxSizing: "border-box",
+                  outline: "none",
                 }}
               />
             </div>
           )}
 
           <div style={{ marginBottom: "1.25rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "#cbd5e1" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 750, marginBottom: "0.4rem", color: "#334155" }}>
               Description / Notes
             </label>
             <textarea
@@ -413,14 +429,15 @@ export default function RecordCustomerLossModal({
               onChange={(e) => setDescription(e.target.value)}
               style={{
                 width: "100%",
-                padding: "0.6rem 0.75rem",
-                background: "#0f172a",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                color: "#f8fafc",
+                padding: "0.65rem 0.85rem",
+                background: "#ffffff",
+                border: "1.5px solid #cbd5e1",
+                borderRadius: "9px",
+                color: "#0f172a",
                 fontSize: "0.875rem",
                 boxSizing: "border-box",
                 resize: "vertical",
+                outline: "none",
               }}
             />
           </div>
@@ -431,12 +448,12 @@ export default function RecordCustomerLossModal({
               onClick={onClose}
               disabled={loading}
               style={{
-                padding: "0.6rem 1.2rem",
-                background: "#334155",
-                color: "#f1f5f9",
-                border: "none",
+                padding: "0.6rem 1.3rem",
+                background: "#f1f5f9",
+                color: "#475569",
+                border: "1.5px solid #cbd5e1",
                 borderRadius: "8px",
-                fontWeight: 600,
+                fontWeight: 750,
                 cursor: "pointer",
                 fontSize: "0.875rem",
               }}
@@ -447,15 +464,15 @@ export default function RecordCustomerLossModal({
               type="submit"
               disabled={loading || (isBulk && bulkAmountMode === "fixed" && (!amount || parseFloat(amount) <= 0)) || (!isBulk && (!amount || parseFloat(amount) <= 0))}
               style={{
-                padding: "0.6rem 1.2rem",
-                background: loading ? "#7f1d1d" : "linear-gradient(135deg, #ef4444, #dc2626)",
+                padding: "0.6rem 1.4rem",
+                background: loading ? "#991b1b" : "linear-gradient(135deg, #ef4444, #dc2626)",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "8px",
-                fontWeight: 600,
+                fontWeight: 750,
                 cursor: loading ? "wait" : "pointer",
                 fontSize: "0.875rem",
-                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.4)",
+                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)",
               }}
             >
               {loading ? "Recording..." : isBulk ? `Record Loss ($${totalCalculatedLoss.toFixed(2)})` : "Record Loss"}
