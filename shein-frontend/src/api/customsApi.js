@@ -48,3 +48,7 @@ export const getPendingCargoPayrolls = (monthId) =>
 
 export const acceptPendingCargoPayroll = (payload) =>
   apiFetch(`${BASE_URL}/acceptPendingCargoPayroll`, { method: "POST", body: JSON.stringify(payload) });
+
+export const getWeightTrackings = (monthId) =>
+  apiFetch(`${BASE_URL}/getWeightTrackings?month_id=${encodeURIComponent(monthId)}`);
+

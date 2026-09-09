@@ -36,4 +36,131 @@ router.post(paths("acceptPendingCargoPayroll"),asyncHandler(async(req,res)=>{con
 router.post(paths("setCargoPackageStatus"),asyncHandler(async(req,res)=>{const monthId=int(req.body?.month_id);const groupKey=trim(req.body?.group_key);const status=trim(req.body?.status);if(monthId<=0||!groupKey)return err(res,400,"month_id and group_key are required","ok");if(!["sorted","not_sorted"].includes(status))return err(res,400,"status must be sorted or not_sorted","ok");if(!(await ensureMonth(monthId,uid(req))))return err(res,403,"Invalid month for this user","ok");await execute(pool,`INSERT INTO cargo_package_sort_status (month_id,user_id,group_key,group_type,display_label,tracking_numbers_json,status,confirmed_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE group_type=VALUES(group_type),display_label=VALUES(display_label),tracking_numbers_json=VALUES(tracking_numbers_json),status=VALUES(status),confirmed_at=NOW()`,[monthId,uid(req),groupKey,trim(req.body?.group_type)||"single",trim(req.body?.display_label),Array.isArray(req.body?.tracking_numbers)?JSON.stringify(req.body.tracking_numbers):null,status]);res.json({ok:true,group_key:groupKey,status});}));
 router.get(paths("getDeliveredNotInCustoms"),asyncHandler(async(req,res)=>{const monthId=int(req.query.month_id);if(monthId<=0)return err(res,400,"month_id is required","ok");if(!(await ensureMonth(monthId,uid(req))))return err(res,403,"Invalid month for this user","ok");res.json({ok:true,packages:await getDeliveredNotInCustoms(pool,uid(req),monthId)});}));
 
+router.get(paths("getWeightTrackings", true), asyncHandler(async (req, res) => {
+  const monthId = int(req.query.month_id);
+  if (monthId <= 0) return err(res, 400, "month_id is required", "ok");
+  if (!(await ensureMonth(monthId, uid(req)))) return err(res, 403, "Invalid month for this user", "ok");
+
+  const settingsRow = await first(pool, "SELECT kg_price FROM user_settings WHERE user_id=? LIMIT 1", [uid(req)]);
+  const kgPrice = Number(settingsRow?.kg_price || 0);
+
+  const existingCustoms = await rows(pool, "SELECT id, tracking_no, customs_fee, weight_kg FROM customs WHERE user_id=? AND month_id=? AND tracking_no IS NOT NULL AND TRIM(tracking_no)<>''", [uid(req), monthId]);
+  const customTrackMap = new Map();
+  for (const c of existingCustoms) {
+    customTrackMap.set(String(c.tracking_no).trim().toUpperCase(), c);
+  }
+
+  const carts = await rows(pool, `
+    SELECT 
+      oc.id AS cart_id,
+      oc.order_id,
+      oc.cart_order_number,
+      oc.shein_order_no,
+      oc.shein_tracking_no,
+      oc.shein_split_tracking_numbers_json,
+      oc.shein_is_split_shipment,
+      oc.shein_total_weight_kg,
+      oc.shein_total_weight_plus_2kg,
+      o.order_name,
+      o.month_id
+    FROM order_carts oc
+    JOIN orders o ON o.id = oc.order_id AND o.user_id = oc.user_id
+    WHERE oc.user_id = ? AND o.month_id = ?
+      AND (
+        (oc.shein_tracking_no IS NOT NULL AND TRIM(oc.shein_tracking_no) <> '')
+        OR (oc.shein_split_tracking_numbers_json IS NOT NULL AND TRIM(oc.shein_split_tracking_numbers_json) <> '' AND oc.shein_split_tracking_numbers_json <> '[]')
+        OR (oc.shein_total_weight_kg IS NOT NULL AND oc.shein_total_weight_kg > 0)
+        OR (oc.shein_total_weight_plus_2kg IS NOT NULL AND oc.shein_total_weight_plus_2kg > 0)
+      )
+    ORDER BY oc.id DESC
+  `, [uid(req), monthId]);
+
+  const items = [];
+  for (const cart of carts) {
+    const rawWeightKg = cart.shein_total_weight_kg != null ? Number(cart.shein_total_weight_kg) : null;
+    const plus2WeightKg = cart.shein_total_weight_plus_2kg != null ? Number(cart.shein_total_weight_plus_2kg) : (rawWeightKg != null ? rawWeightKg + 2 : null);
+    const effectiveWeightKg = plus2WeightKg != null ? plus2WeightKg : rawWeightKg;
+
+    const tracks = [];
+    if (cart.shein_split_tracking_numbers_json) {
+      try {
+        const parsed = JSON.parse(cart.shein_split_tracking_numbers_json);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((t) => {
+            const tr = String(t || "").trim();
+            if (tr && !tracks.includes(tr)) tracks.push(tr);
+          });
+        }
+      } catch (_) {}
+    }
+    if (cart.shein_tracking_no && !tracks.includes(cart.shein_tracking_no.trim())) {
+      tracks.push(cart.shein_tracking_no.trim());
+    }
+
+    if (tracks.length > 0) {
+      for (let i = 0; i < tracks.length; i++) {
+        const tr = tracks[i];
+        const upper = tr.toUpperCase();
+        const inCustoms = customTrackMap.has(upper);
+        const existingCustom = customTrackMap.get(upper);
+        const isSplit = tracks.length > 1;
+        const weightForTrack = effectiveWeightKg;
+        const fee = weightForTrack != null && kgPrice > 0 ? Number((weightForTrack * kgPrice).toFixed(2)) : 0;
+
+        items.push({
+          key: `cart_${cart.cart_id}_track_${tr}`,
+          tracking_no: tr,
+          weight_kg: weightForTrack,
+          raw_weight_kg: rawWeightKg,
+          plus2_weight_kg: plus2WeightKg,
+          kg_price: kgPrice,
+          calculated_fee: fee,
+          order_id: cart.order_id,
+          cart_id: cart.cart_id,
+          order_name: cart.order_name,
+          cart_order_number: cart.cart_order_number,
+          shein_order_no: cart.shein_order_no,
+          is_split: isSplit,
+          split_index: isSplit ? i + 1 : 1,
+          split_total: tracks.length,
+          already_in_customs: inCustoms,
+          customs_fee: inCustoms ? Number(existingCustom.customs_fee) : null,
+          customs_id: inCustoms ? Number(existingCustom.id) : null,
+        });
+      }
+    } else {
+      const fee = effectiveWeightKg != null && kgPrice > 0 ? Number((effectiveWeightKg * kgPrice).toFixed(2)) : 0;
+      items.push({
+        key: `cart_${cart.cart_id}_notrack`,
+        tracking_no: cart.shein_order_no || "",
+        weight_kg: effectiveWeightKg,
+        raw_weight_kg: rawWeightKg,
+        plus2_weight_kg: plus2WeightKg,
+        kg_price: kgPrice,
+        calculated_fee: fee,
+        order_id: cart.order_id,
+        cart_id: cart.cart_id,
+        order_name: cart.order_name,
+        cart_order_number: cart.cart_order_number,
+        shein_order_no: cart.shein_order_no,
+        is_split: false,
+        split_index: 1,
+        split_total: 1,
+        already_in_customs: false,
+        customs_fee: null,
+        customs_id: null,
+      });
+    }
+  }
+
+  items.sort((a, b) => {
+    if (a.already_in_customs !== b.already_in_customs) {
+      return a.already_in_customs ? 1 : -1;
+    }
+    return b.cart_id - a.cart_id;
+  });
+
+  res.json({ ok: true, success: true, kg_price: kgPrice, items });
+}));
+
 module.exports = router;

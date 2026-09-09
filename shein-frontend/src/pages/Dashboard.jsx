@@ -17,6 +17,7 @@ import {
   addCustom,
   updateCustom,
   deleteCustom,
+  getWeightTrackings,
 } from "../api/customsApi";
 import { getDashboardSummary } from "../api/dashboardApi";
 import { getBudgets, addBudget, updateBudget, deleteBudget } from "../api/budgetApi";
@@ -91,7 +92,10 @@ export default function Dashboard() {
   const [newCustom, setNewCustom] = useState("");
   const [newCustomWeight, setNewCustomWeight] = useState("");
   const [newCustomTracking, setNewCustomTracking] = useState("");
-  const [newCustomDescription, setNewCustomDescription] = useState("benzene");
+  const [newCustomDescription, setNewCustomDescription] = useState("freight");
+  const [weightTrackings, setWeightTrackings] = useState([]);
+  const [selectedWeightTrackingKey, setSelectedWeightTrackingKey] = useState("");
+  const [selectedCartRef, setSelectedCartRef] = useState(null);
   const [newBudgetValue, setNewBudgetValue] = useState("");
   const [newBudgetDesc, setNewBudgetDesc] = useState("");
   const [kgPrice, setKgPrice] = useState("0");
@@ -100,6 +104,16 @@ export default function Dashboard() {
   const [confirm, setConfirm] = useState({ isOpen: false });
 
   const closeModal = () => setModal({ isOpen: false });
+
+  const loadWeightTrackings = async (monthId = selectedMonth) => {
+    if (!monthId) return;
+    try {
+      const res = await getWeightTrackings(monthId);
+      if (res?.ok && Array.isArray(res.items)) {
+        setWeightTrackings(res.items);
+      }
+    } catch (_) {}
+  };
 
   const openError = (message, title = "Error") => {
     setModal({
@@ -139,7 +153,11 @@ export default function Dashboard() {
         throw new Error("KG price must be a valid number greater than or equal to 0.");
       }
       const res = await saveKgPrice(parsed);
-      setKgPrice(String(res?.kg_price ?? parsed));
+      const savedPrice = String(res?.kg_price ?? parsed);
+      setKgPrice(savedPrice);
+      if (selectedMonth) {
+        loadWeightTrackings(selectedMonth);
+      }
     } catch (err) {
       openError(err?.message || "Failed to save KG price.");
     }
@@ -201,17 +219,20 @@ export default function Dashboard() {
     setPaymentCustomerOptions([]);
     setSelectedPaymentCustomers([]);
     setPaymentCustomerSearch("");
+    setSelectedWeightTrackingKey("");
+    setSelectedCartRef(null);
 
     (async () => {
       try {
         const monthId = selectedMonth;
 
-        const [oRes, pRes, cRes, bRes, summaryRes] = await Promise.all([
+        const [oRes, pRes, cRes, bRes, summaryRes, wtRes] = await Promise.all([
           getOrders(monthId),
           getPayments(monthId),
           getCustoms(monthId),
           getBudgets(monthId),
           getDashboardSummary(monthId),
+          getWeightTrackings(monthId).catch(() => null),
         ]);
 
         const o = normalizeArrayResponse(oRes);
@@ -236,6 +257,7 @@ export default function Dashboard() {
         setCustoms(c.data || []);
         setBudgets(b.data || []);
         setServerSummary(summaryRes?.summary || null);
+        setWeightTrackings(Array.isArray(wtRes?.items) ? wtRes.items : []);
 
       } catch (err) {
         openError("Failed to load month data.");
@@ -510,6 +532,10 @@ export default function Dashboard() {
         description: newCustomDescription,
         tracking_no: newCustomTracking.trim() || null,
         weight_kg: weight,
+        order_id: selectedCartRef?.order_id || null,
+        cart_id: selectedCartRef?.cart_id || null,
+        order_ref: selectedCartRef?.order_name ? `order ${selectedCartRef.order_name}` : null,
+        cart_ref: selectedCartRef?.cart_order_number ? `cart ${selectedCartRef.cart_order_number}` : null,
       });
       if (res?.ok === false || res?.success === false) {
         if (isAuthErrorPayload(res)) return handleAuthFail();
@@ -521,7 +547,10 @@ export default function Dashboard() {
       setNewCustom("");
       setNewCustomWeight("");
       setNewCustomTracking("");
-      setNewCustomDescription("benzene");
+      setNewCustomDescription("freight");
+      setSelectedWeightTrackingKey("");
+      setSelectedCartRef(null);
+      loadWeightTrackings(selectedMonth);
       const notifications = Array.isArray(res?.notifications) ? res.notifications.filter(Boolean) : [];
       if (notifications.length) {
         openError(notifications.join("\n"), "Customs Notice");
@@ -618,6 +647,80 @@ export default function Dashboard() {
       );
     } catch (err) {
       openError(err?.message || "Failed to update budget.");
+    }
+  };
+
+  const availableTrackingsCount = useMemo(() => {
+    return weightTrackings.filter((t) => !t.already_in_customs).length;
+  }, [weightTrackings]);
+
+  const isDuplicateTracking = useMemo(() => {
+    const tr = String(newCustomTracking || "").trim().toUpperCase();
+    if (!tr) return false;
+    return customs.some((c) => String(c.tracking_no || "").trim().toUpperCase() === tr);
+  }, [newCustomTracking, customs]);
+
+  const weightTrackingOptions = useMemo(() => {
+    if (!weightTrackings || !weightTrackings.length) {
+      return [{ value: "", label: "-- No weights or tracking numbers found --", disabled: true }];
+    }
+    const currentKg = Number(kgPrice || 0);
+    return [
+      { value: "", label: `-- Select tracking # / cart (${availableTrackingsCount} available) --` },
+      ...weightTrackings.map((item) => {
+        const orderPart = item.order_name ? `Order ${item.order_name}` : "";
+        const cartPart = item.cart_order_number ? `Cart ${item.cart_order_number}` : "";
+        const refPart = [orderPart, cartPart].filter(Boolean).join(" / ") || "Cart";
+        const splitPart = item.is_split ? ` (Split ${item.split_index}/${item.split_total})` : "";
+        const weightNum = item.weight_kg != null ? Number(item.weight_kg) : null;
+        const weightPart = weightNum != null ? `${weightNum.toFixed(3)} kg` : "no weight";
+        const calcFee = weightNum != null && currentKg > 0 ? (weightNum * currentKg).toFixed(2) : null;
+        const feePart = calcFee != null ? `→ $${calcFee}` : "";
+        const statusPart = item.already_in_customs
+          ? ` [In Customs: $${money(item.customs_fee)}]`
+          : "";
+
+        const label = `${item.already_in_customs ? "✓ " : "📦 "}${item.tracking_no || "(No track #)"} • ${refPart}${splitPart} • ${weightPart} ${feePart}${statusPart}`;
+        return {
+          value: item.key,
+          label,
+          disabled: false,
+        };
+      }),
+    ];
+  }, [weightTrackings, kgPrice, availableTrackingsCount]);
+
+  const handleSelectWeightTracking = (e) => {
+    const key = e.target.value;
+    setSelectedWeightTrackingKey(key);
+    if (!key) {
+      setSelectedCartRef(null);
+      return;
+    }
+    const item = weightTrackings.find((t) => t.key === key);
+    if (!item) return;
+
+    setSelectedCartRef(item);
+    setNewCustomTracking(item.tracking_no || "");
+    const w = item.weight_kg != null ? Number(item.weight_kg) : null;
+    setNewCustomWeight(w != null ? String(w) : "");
+
+    const currentKgPrice = Number(kgPrice || item.kg_price || 0);
+    if (w != null && currentKgPrice > 0) {
+      setNewCustom((w * currentKgPrice).toFixed(2));
+    } else if (item.calculated_fee != null && item.calculated_fee > 0) {
+      setNewCustom(String(item.calculated_fee));
+    }
+    setNewCustomDescription("freight");
+  };
+
+  const handleWeightChange = (e) => {
+    const val = e.target.value;
+    setNewCustomWeight(val);
+    const w = Number(val);
+    const currentKgPrice = Number(kgPrice || 0);
+    if (val !== "" && Number.isFinite(w) && w >= 0 && currentKgPrice > 0) {
+      setNewCustom((w * currentKgPrice).toFixed(2));
     }
   };
 
@@ -1255,6 +1358,127 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Quick Auto-Fill from Get-Weight Trackings with Searchable Dropdown */}
+            <div
+              style={{
+                marginBottom: "12px",
+                background: "rgba(99, 102, 241, 0.04)",
+                border: "1px solid rgba(99, 102, 241, 0.16)",
+                borderRadius: "10px",
+                padding: "10px 12px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "6px",
+                  flexWrap: "wrap",
+                  gap: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: "var(--ce-primary, #6366f1)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>📦 Autofill from Get-Weight & Tracking</span>
+                  {availableTrackingsCount > 0 && (
+                    <span
+                      style={{
+                        background: "#10b981",
+                        color: "#fff",
+                        fontSize: "10px",
+                        padding: "1px 6px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {availableTrackingsCount} available
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--ce-muted, #64748b)" }}>
+                  Customs rate:{" "}
+                  <strong style={{ color: Number(kgPrice) > 0 ? "#10b981" : "#f59e0b" }}>
+                    ${money(kgPrice)}/kg
+                  </strong>
+                </div>
+              </div>
+
+              <CustomDropdown
+                searchable={true}
+                placeholder="🔍 Search tracking #, cart, order or weight..."
+                value={selectedWeightTrackingKey}
+                onChange={handleSelectWeightTracking}
+                options={weightTrackingOptions}
+              />
+
+              {selectedCartRef && (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "11px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "4px",
+                    color: "var(--ce-muted, #64748b)",
+                  }}
+                >
+                  <span>
+                    Selected: <strong>{selectedCartRef.tracking_no || "Cart"}</strong>
+                    {selectedCartRef.order_name ? ` (Order ${selectedCartRef.order_name}` : ""}
+                    {selectedCartRef.cart_order_number ? ` / Cart ${selectedCartRef.cart_order_number})` : selectedCartRef.order_name ? ")" : ""}
+                  </span>
+                  {Number(newCustomWeight) > 0 && Number(kgPrice) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setNewCustom((Number(newCustomWeight) * Number(kgPrice)).toFixed(2))}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        color: "#10b981",
+                        fontWeight: "600",
+                        textDecoration: "underline",
+                      }}
+                      title="Click to recalculate fee with formula"
+                    >
+                      Formula: {Number(newCustomWeight).toFixed(3)} kg × ${money(kgPrice)} = ${money(Number(newCustomWeight) * Number(kgPrice))}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {isDuplicateTracking && (
+                <div
+                  style={{
+                    marginTop: "6px",
+                    padding: "6px 10px",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "6px",
+                    color: "#b91c1c",
+                    fontSize: "11px",
+                    fontWeight: "500",
+                  }}
+                >
+                  ⚠️ Tracking number "{newCustomTracking}" is already recorded in customs for this month. Duplicate tracking entries cannot be added.
+                </div>
+              )}
+            </div>
+
             <div className="dashFormRow" style={{ flexWrap: "wrap", gap: "8px" }}>
               <input
                 className="dashInput"
@@ -1273,7 +1497,7 @@ export default function Dashboard() {
                 min="0"
                 style={{ minWidth: "100px", flex: 1 }}
                 value={newCustomWeight}
-                onChange={(e) => setNewCustomWeight(e.target.value)}
+                onChange={handleWeightChange}
                 placeholder="Weight (kg)"
               />
               <input
@@ -1289,14 +1513,19 @@ export default function Dashboard() {
                 value={newCustomDescription}
                 onChange={(e) => setNewCustomDescription(e.target.value)}
                 options={[
-                  { value: "benzene", label: "benzene" },
-                  { value: "bags", label: "bags" },
                   { value: "freight", label: "freight" },
                   { value: "customs", label: "customs" },
+                  { value: "benzene", label: "benzene" },
+                  { value: "bags", label: "bags" },
                   { value: "other", label: "other" },
                 ]}
               />
-              <button className="dashBtn" onClick={handleAddCustom}>
+              <button 
+                className="dashBtn" 
+                onClick={handleAddCustom}
+                disabled={isDuplicateTracking || !newCustom || Number(newCustom) < 0}
+                title={isDuplicateTracking ? "Tracking number already in customs" : "Add custom entry"}
+              >
                 + Add
               </button>
             </div>
@@ -1380,6 +1609,7 @@ export default function Dashboard() {
                             const res = await deleteCustom(c.id);
                             if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
                             setCustoms((prev) => prev.filter((x) => x.id !== c.id));
+                            loadWeightTrackings(selectedMonth);
                           },
                         })
                       }
