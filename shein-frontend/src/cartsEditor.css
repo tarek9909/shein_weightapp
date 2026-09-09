@@ -357,3 +357,140 @@
     width: 100%;
   }
 }
+
+/* Single Cart Form Modal Styling */
+.ceFormOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2200;
+  animation: cmOverlayFadeIn 0.2s ease-out;
+}
+
+.ceFormModal {
+  width: min(580px, 100%);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 25px 50px -12px rgba(15, 23, 42, 0.3),
+    0 0 0 1px rgba(226, 232, 240, 0.9);
+  overflow: hidden;
+  animation: cePopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ceFormHead {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ceFormTitle {
+  font-weight: 800;
+  font-size: 17px;
+  color: #0f172a;
+}
+
+.ceFormBody {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ceFormError {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ceField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.ceLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.ceReq {
+  color: #e11d48;
+}
+
+.ceInput {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.ceInput:focus {
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.ceFormRow {
+  display: flex;
+  gap: 14px;
+}
+
+.ceCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  user-select: none;
+}
+
+.ceCheckboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+@media (max-width: 540px) {
+  .ceFormRow {
+    flex-direction: column;
+  }
+}
+
+.ceFormFooter {
+  padding: 14px 22px 18px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f8fafc;
+}
+

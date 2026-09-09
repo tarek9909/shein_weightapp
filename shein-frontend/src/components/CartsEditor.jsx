@@ -139,90 +139,138 @@ const CartsEditor = ({
     });
   };
 
-  const handleAddCart = async () => {
-    openPrompt({
-      title: "Add Cart",
-      placeholder: "Cart order number",
-      defaultValue: "",
-      onSubmit: async (cartOrderNumber) => {
-        try {
-          await addCart(order.id, cartOrderNumber, 0);
-          await loadCarts();
-        } catch (err) {
-          openInfo({
-            title: "Add Cart Error",
-            message: err?.message || "Failed to add cart.",
-          });
-        }
-      },
+  const [cartFormModal, setCartFormModal] = useState({
+    isOpen: false,
+    editingCart: null,
+    cart_order_number: "",
+    shein_order_no: "",
+    profile_key: "",
+    shein_tracking_no: "",
+    shein_carrier: "",
+    shein_total_weight_kg: "",
+    shein_delivered: false,
+    error: "",
+    isSubmitting: false,
+  });
+
+  const handleOpenAddCart = () => {
+    setCartFormModal({
+      isOpen: true,
+      editingCart: null,
+      cart_order_number: "",
+      shein_order_no: "",
+      profile_key: chromeProfiles[0]?.profile_key || "",
+      shein_tracking_no: "",
+      shein_carrier: "",
+      shein_total_weight_kg: "",
+      shein_delivered: false,
+      error: "",
+      isSubmitting: false,
     });
   };
 
-  const handleEditCart = async (cart) => {
-    openPrompt({
-      title: "Edit Cart",
-      placeholder: "Cart order number",
-      defaultValue: cart.cart_order_number ?? "",
-      onSubmit: async (newNumber) => {
-        try {
-          await updateCart(cart.id, newNumber, cart.cart_price ?? 0);
-          await loadCarts();
-        } catch (err) {
-          openInfo({
-            title: "Update Cart Error",
-            message: err?.message || "Failed to update cart.",
-          });
-        }
-      },
+  const handleOpenEditCart = (cart) => {
+    setCartFormModal({
+      isOpen: true,
+      editingCart: cart,
+      cart_order_number: cart.cart_order_number || "",
+      shein_order_no: cart.shein_order_no || "",
+      profile_key: getCartProfileKey(cart),
+      shein_tracking_no: cart.shein_tracking_no || "",
+      shein_carrier: cart.shein_carrier || "",
+      shein_total_weight_kg:
+        cart.shein_total_weight_kg != null ? String(cart.shein_total_weight_kg) : "",
+      shein_delivered: Number(cart.shein_delivered || 0) === 1,
+      error: "",
+      isSubmitting: false,
     });
   };
 
-  const handleDeleteCart = async (cart) => {
-    openConfirm({
-      title: "Delete Cart",
-      message: `Delete cart "${cart.cart_order_number}"? This will also delete its customers.`,
-      onYes: async () => {
-        try {
-          await deleteCart(cart.id);
-          await loadCarts();
-        } catch (err) {
-          openInfo({
-            title: "Delete Cart Error",
-            message: err?.message || "Failed to delete cart.",
-          });
-        }
-      },
+  const handleCloseCartForm = () => {
+    setCartFormModal({
+      isOpen: false,
+      editingCart: null,
+      cart_order_number: "",
+      shein_order_no: "",
+      profile_key: "",
+      shein_tracking_no: "",
+      shein_carrier: "",
+      shein_total_weight_kg: "",
+      shein_delivered: false,
+      error: "",
+      isSubmitting: false,
     });
   };
 
-  const handleAssignShein = async (cart) => {
-    openPrompt({
-      title: "Assign SHEIN Order Number",
-      placeholder: "Order number (GSH...)",
-      defaultValue: cart.shein_order_no || "",
-      onSubmit: async (sheinOrderNo) => {
-        const normalizedOrderNo = sheinOrderNo.trim();
-        if (normalizedOrderNo.length < 3) {
-          openInfo({
-            title: "Invalid Order Number",
-            message: "Please enter a valid SHEIN order number.",
-          });
-          return;
+  const handleCartFormSubmit = async (e) => {
+    e.preventDefault();
+    const cartNumber = cartFormModal.cart_order_number.trim();
+    if (!cartNumber) {
+      setCartFormModal((prev) => ({ ...prev, error: "Cart order number is required." }));
+      return;
+    }
+
+    setCartFormModal((prev) => ({ ...prev, isSubmitting: true, error: "" }));
+
+    const weightKg =
+      cartFormModal.shein_total_weight_kg.trim() !== ""
+        ? Number(cartFormModal.shein_total_weight_kg)
+        : null;
+
+    if (weightKg !== null && (!Number.isFinite(weightKg) || weightKg < 0)) {
+      setCartFormModal((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: "Total weight must be a valid number >= 0.",
+      }));
+      return;
+    }
+
+    const payloadExtra = {
+      shein_order_no: cartFormModal.shein_order_no.trim() || null,
+      shein_carrier: cartFormModal.shein_carrier.trim() || null,
+      shein_tracking_no: cartFormModal.shein_tracking_no.trim() || null,
+      shein_total_weight_kg: weightKg,
+      shein_delivered: cartFormModal.shein_delivered ? 1 : 0,
+    };
+
+    try {
+      if (cartFormModal.editingCart) {
+        const cartId = cartFormModal.editingCart.id;
+        await updateCart(
+          cartId,
+          cartNumber,
+          cartFormModal.editingCart.cart_price ?? 0,
+          payloadExtra
+        );
+        if (cartFormModal.profile_key) {
+          setSelectedProfileByCart((current) => ({
+            ...current,
+            [cartId]: cartFormModal.profile_key,
+          }));
         }
-        try {
-          await updateCart(cart.id, cart.cart_order_number, cart.cart_price, {
-            shein_email: cart.shein_email || null,
-            shein_order_no: normalizedOrderNo,
-          });
-          await loadCarts();
-        } catch (err) {
-          openInfo({
-            title: "Assign Error",
-            message: err?.message || "Failed to assign SHEIN order number to cart.",
-          });
+      } else {
+        const res = await addCart(order.id, cartNumber, 0);
+        const newId = res?.id;
+        if (newId) {
+          await updateCart(newId, cartNumber, 0, payloadExtra);
+          if (cartFormModal.profile_key) {
+            setSelectedProfileByCart((current) => ({
+              ...current,
+              [newId]: cartFormModal.profile_key,
+            }));
+          }
         }
-      },
-    });
+      }
+      await loadCarts();
+      handleCloseCartForm();
+    } catch (err) {
+      setCartFormModal((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: err?.message || "Failed to save cart.",
+      }));
+    }
   };
 
   const handleRefreshSheinForCart = async (cart) => {
@@ -279,7 +327,7 @@ const CartsEditor = ({
         </div>
 
         <div className="ceActionsTop">
-          <button className="ceBtn" onClick={handleAddCart}>
+          <button className="ceBtn" onClick={handleOpenAddCart}>
             Add Cart
           </button>
         </div>
@@ -385,12 +433,8 @@ const CartsEditor = ({
                       Customers
                     </button>
 
-                    <button className="ceBtnSoft" onClick={() => handleEditCart(cart)}>
-                      Edit
-                    </button>
-
-                    <button className="ceBtnSoft" onClick={() => handleAssignShein(cart)}>
-                      Assign SHEIN
+                    <button className="ceBtnSoft" onClick={() => handleOpenEditCart(cart)}>
+                      Edit Cart
                     </button>
 
                     <button className="ceBtn" onClick={() => handleRefreshSheinForCart(cart)} disabled={refreshingCartId === cart.id}>
@@ -415,6 +459,200 @@ const CartsEditor = ({
 
         {selectedCart && <CustomersEditor cart={selectedCart} onClose={() => setSelectedCart(null)} canEdit={canEdit} />}
 
+        {/* Unified Cart Form Modal (Single form displaying and editing all cart details) */}
+        {cartFormModal.isOpen && (
+          <div className="ceFormOverlay" role="dialog" aria-modal="true">
+            <div className="ceFormModal">
+              <div className="ceFormHead">
+                <div className="ceFormTitle">
+                  {cartFormModal.editingCart
+                    ? `Edit Cart #${cartFormModal.editingCart.cart_order_number}`
+                    : "Add New Cart"}
+                </div>
+                <button type="button" className="ceClose" onClick={handleCloseCartForm} aria-label="Close">
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCartFormSubmit}>
+                <div className="ceFormBody">
+                  {cartFormModal.error && (
+                    <div className="ceFormError">{cartFormModal.error}</div>
+                  )}
+
+                  <div className="ceFormRow">
+                    <div className="ceField">
+                      <label className="ceLabel" htmlFor="ceCartNumInput">
+                        Cart Order Number <span className="ceReq">*</span>
+                      </label>
+                      <input
+                        id="ceCartNumInput"
+                        type="text"
+                        className="ceInput"
+                        placeholder="e.g. 101"
+                        value={cartFormModal.cart_order_number}
+                        onChange={(e) =>
+                          setCartFormModal((prev) => ({
+                            ...prev,
+                            cart_order_number: e.target.value,
+                            error: "",
+                          }))
+                        }
+                        autoFocus
+                        required
+                      />
+                    </div>
+
+                    <div className="ceField">
+                      <label className="ceLabel" htmlFor="ceSheinOrderInput">
+                        SHEIN Order Number
+                      </label>
+                      <input
+                        id="ceSheinOrderInput"
+                        type="text"
+                        className="ceInput"
+                        placeholder="e.g. GSH12345678"
+                        value={cartFormModal.shein_order_no}
+                        onChange={(e) =>
+                          setCartFormModal((prev) => ({
+                            ...prev,
+                            shein_order_no: e.target.value,
+                            error: "",
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="ceField">
+                    <label className="ceLabel">Chrome Profile</label>
+                    <CustomDropdown
+                      className="ceInput"
+                      value={cartFormModal.profile_key}
+                      placeholder="Select Chrome profile"
+                      options={chromeProfiles.map((profile) => ({
+                        value: profile.profile_key,
+                        label: profileLabel(profile),
+                      }))}
+                      onChange={(e) =>
+                        setCartFormModal((prev) => ({
+                          ...prev,
+                          profile_key: e.target.value,
+                          error: "",
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="ceFormRow">
+                    <div className="ceField">
+                      <label className="ceLabel" htmlFor="ceTrackingInput">
+                        Tracking Number
+                      </label>
+                      <input
+                        id="ceTrackingInput"
+                        type="text"
+                        className="ceInput"
+                        placeholder="e.g. 6021126419893"
+                        value={cartFormModal.shein_tracking_no}
+                        onChange={(e) =>
+                          setCartFormModal((prev) => ({
+                            ...prev,
+                            shein_tracking_no: e.target.value,
+                            error: "",
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="ceField">
+                      <label className="ceLabel" htmlFor="ceCarrierInput">
+                        Carrier
+                      </label>
+                      <input
+                        id="ceCarrierInput"
+                        type="text"
+                        className="ceInput"
+                        placeholder="e.g. Naqel / Aramex"
+                        value={cartFormModal.shein_carrier}
+                        onChange={(e) =>
+                          setCartFormModal((prev) => ({
+                            ...prev,
+                            shein_carrier: e.target.value,
+                            error: "",
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="ceFormRow">
+                    <div className="ceField">
+                      <label className="ceLabel" htmlFor="ceWeightInput">
+                        Total Weight (kg)
+                      </label>
+                      <input
+                        id="ceWeightInput"
+                        type="number"
+                        min="0"
+                        step="any"
+                        className="ceInput"
+                        placeholder="e.g. 1.25"
+                        value={cartFormModal.shein_total_weight_kg}
+                        onChange={(e) =>
+                          setCartFormModal((prev) => ({
+                            ...prev,
+                            shein_total_weight_kg: e.target.value,
+                            error: "",
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="ceField" style={{ justifyContent: "flex-end" }}>
+                      <label className="ceCheckboxLabel">
+                        <input
+                          type="checkbox"
+                          checked={cartFormModal.shein_delivered}
+                          onChange={(e) =>
+                            setCartFormModal((prev) => ({
+                              ...prev,
+                              shein_delivered: e.target.checked,
+                            }))
+                          }
+                        />
+                        <span>Mark as Delivered</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ceFormFooter">
+                  <button
+                    type="button"
+                    className="ceBtnSoft"
+                    onClick={handleCloseCartForm}
+                    disabled={cartFormModal.isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="ceBtn"
+                    disabled={cartFormModal.isSubmitting}
+                  >
+                    {cartFormModal.isSubmitting
+                      ? "Saving..."
+                      : cartFormModal.editingCart
+                      ? "Save Cart Changes"
+                      : "Add Cart"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         <CustomModal {...modal} />
       </div>
     </div>
@@ -422,3 +660,4 @@ const CartsEditor = ({
 };
 
 export default CartsEditor;
+
