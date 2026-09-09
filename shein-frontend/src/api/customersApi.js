@@ -23,3 +23,29 @@ export const deleteCustomer = (id) =>
     method: "POST",
     body: JSON.stringify({ id }),
   });
+
+const DIRECTORY_BASE_URL = API_ORIGIN + "/customers";
+
+export const getCustomerDirectory = (q = "") =>
+  apiFetch(`${DIRECTORY_BASE_URL}?q=${encodeURIComponent(q)}`);
+
+export const createDirectoryCustomer = ({ customer_name, phone = "", notes = "" }) =>
+  apiFetch(DIRECTORY_BASE_URL, {
+    method: "POST",
+    body: JSON.stringify({ customer_name, phone, notes }),
+  });
+
+export const bulkCreateDirectoryCustomers = (customers) =>
+  apiFetch(`${DIRECTORY_BASE_URL}/bulk`, {
+    method: "POST",
+    body: JSON.stringify({ customers }),
+  });
+
+export const updateDirectoryCustomer = (id, { customer_name, phone = "", notes = "" }) =>
+  apiFetch(`${DIRECTORY_BASE_URL}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ customer_name, phone, notes }),
+  });
+
+export const deleteDirectoryCustomer = (id) =>
+  apiFetch(`${DIRECTORY_BASE_URL}/${id}`, { method: "DELETE" });

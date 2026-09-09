@@ -5,6 +5,7 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const authRoutes = require("./routes/auth");
+const customerRoutes = require("./routes/customers");
 const monthRoutes = require("./routes/months");
 const orderRoutes = require("./routes/orders");
 const orderDetailsRoutes = require("./routes/ordersDetails");
@@ -75,6 +76,7 @@ app.get(["/ready", "/healthz"], async (_req, res) => {
 app.get("/metrics", (_req, res) => res.json({ ok: true, metrics: metricsSnapshot() }));
 
 app.use("/auth", authRoutes);
+app.use("/customers", customerRoutes);
 app.use("/month", monthRoutes);
 app.use("/orders", orderRoutes);
 app.use("/ordersDetails", orderDetailsRoutes);

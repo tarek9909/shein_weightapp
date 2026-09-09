@@ -273,6 +273,24 @@ const CartsEditor = ({
     }
   };
 
+  const handleDeleteCart = async (cart) => {
+    openConfirm({
+      title: "Delete Cart",
+      message: `Delete cart "${cart.cart_order_number}"? This will also delete its customers.`,
+      onYes: async () => {
+        try {
+          await deleteCart(cart.id);
+          await loadCarts();
+        } catch (err) {
+          openInfo({
+            title: "Delete Cart Error",
+            message: err?.message || "Failed to delete cart.",
+          });
+        }
+      },
+    });
+  };
+
   const handleRefreshSheinForCart = async (cart) => {
     if (!cart.shein_order_no) {
       openInfo({
