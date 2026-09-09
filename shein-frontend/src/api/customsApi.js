@@ -12,11 +12,15 @@ export const addCustom = (month_id, customs_fee, extra = {}) =>
     body: JSON.stringify({ month_id, customs_fee, ...extra }),
   });
 
-export const updateCustom = (id, customs_fee, note = null) =>
-  apiFetch(`${BASE_URL}/updateCustom.php`, {
+export const updateCustom = (id, customs_fee, note = null, tracking_no = undefined, weight_kg = undefined) => {
+  const body = { id, customs_fee, note };
+  if (tracking_no !== undefined) body.tracking_no = tracking_no;
+  if (weight_kg !== undefined) body.weight_kg = weight_kg;
+  return apiFetch(`${BASE_URL}/updateCustom.php`, {
     method: "POST",
-    body: JSON.stringify({ id, customs_fee, note }),
+    body: JSON.stringify(body),
   });
+};
 
 export const deleteCustom = (id) =>
   apiFetch(`${BASE_URL}/deleteCustom.php`, {

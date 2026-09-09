@@ -1,8 +1,9 @@
 // src/pages/OrdersPage.jsx
 import { useEffect, useMemo, useState } from "react";
-import { getOrders } from "../api/ordersApi";
+import { getOrders, addOrder, updateOrder, deleteOrder } from "../api/ordersApi";
 import { getMonths } from "../api/monthApi";
 import { getHistory } from "../api/historyApi";
+import { getKgPrice } from "../api/settingsApi";
 import {
   listSheinUsers,
   refreshOrderSheinTrack,
@@ -24,6 +25,7 @@ const OrdersPage = () => {
   const [months, setMonths] = useState([]);
   const [monthId, setMonthId] = useState("");
   const [orders, setOrders] = useState([]);
+  const [kgPrice, setKgPrice] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshingTrackOrderId, setRefreshingTrackOrderId] = useState(null);
@@ -33,9 +35,24 @@ const OrdersPage = () => {
   const [sheinEmail, setSheinEmail] = useState("");
   const [orderCustomerCollectByOrderId, setOrderCustomerCollectByOrderId] = useState({});
 
-  // Modal state (same pattern used in other pages)
+  // Order Add / Edit Modal state
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [orderModalMode, setOrderModalMode] = useState("add"); // "add" | "edit"
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [orderForm, setOrderForm] = useState({
+    order_name: "",
+    order_details: "",
+    amount_to_collect: "",
+  });
+  const [formError, setFormError] = useState("");
+
+  // Info modal state
   const [modal, setModal] = useState({ isOpen: false });
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false });
+
   const closeModal = () => setModal({ isOpen: false });
+  const closeConfirm = () => setConfirmModal({ isOpen: false });
 
   const openInfo = ({ title, message }) => {
     setModal({
@@ -47,6 +64,24 @@ const OrdersPage = () => {
       onClose: closeModal,
       confirmText: "OK",
       showCancel: false,
+    });
+  };
+
+  const openConfirm = ({ title, message, onYes }) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      variant: "danger",
+      showCancel: true,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        closeConfirm();
+        await onYes();
+      },
+      onCancel: closeConfirm,
+      onClose: closeConfirm,
     });
   };
 
@@ -63,11 +98,10 @@ const OrdersPage = () => {
     if (!ensureAuth()) return;
     setLoading(true);
     try {
-      const data = await getMonths(); // apiFetch -> sends Authorization
+      const data = await getMonths();
       const arr = data || [];
       setMonths(arr);
 
-      // auto-select first month if none selected
       if (arr.length && !monthId) setMonthId(String(arr[0].id));
       if (!arr.length) setMonthId("");
     } catch (err) {
@@ -90,11 +124,13 @@ const OrdersPage = () => {
 
     setLoading(true);
     try {
-      const [ordersData, historyData] = await Promise.all([
+      const [ordersData, historyData, kgPriceData] = await Promise.all([
         getOrders(mId),
         getHistory(mId).catch(() => null),
+        getKgPrice(mId).catch(() => null),
       ]);
       setOrders(ordersData || []);
+      setKgPrice(Number(kgPriceData?.price || 0));
 
       const map = {};
       if (historyData && (historyData.ok === true || historyData.success === true) && Array.isArray(historyData.orders)) {
@@ -173,27 +209,96 @@ const OrdersPage = () => {
     () => orders.reduce((sum, o) => sum + Number(o.shein_total_weight_plus_2kg_sum || 0), 0),
     [orders]
   );
+  const totalEstimatedShipping = useMemo(
+    () => totalEstimatedWeight * Number(kgPrice || 0),
+    [totalEstimatedWeight, kgPrice]
+  );
+  const totalEstimatedProfit = useMemo(
+    () => totalToCollect - totalOrdersAmount - totalEstimatedShipping,
+    [totalToCollect, totalOrdersAmount, totalEstimatedShipping]
+  );
 
-  const orderCollectIssues = useMemo(() => {
-    const issues = [];
-    for (const o of orders || []) {
-      const oid = Number(o?.id || 0);
-      if (!oid) continue;
-      const orderCollect = Number(o?.amount_to_collect || 0);
-      const customersCollect = Number(orderCustomerCollectByOrderId[oid] || 0);
-      const diff = Number((orderCollect - customersCollect).toFixed(2));
-      if (Math.abs(diff) > 0.009) {
-        issues.push({
-          order_id: oid,
-          order_name: o?.order_name || "",
-          order_collect: orderCollect,
-          customers_collect: customersCollect,
-          diff,
-        });
-      }
+  const handleOpenAddOrder = () => {
+    if (!monthId) {
+      openInfo({ title: "Select Month", message: "Please select an active month cycle first." });
+      return;
     }
-    return issues;
-  }, [orders, orderCustomerCollectByOrderId]);
+    setOrderModalMode("add");
+    setEditingOrder(null);
+    setOrderForm({
+      order_name: `Order ${orders.length + 1}`,
+      order_details: "",
+      amount_to_collect: "",
+    });
+    setFormError("");
+    setIsOrderModalOpen(true);
+  };
+
+  const handleOpenEditOrder = (order) => {
+    setOrderModalMode("edit");
+    setEditingOrder(order);
+    setOrderForm({
+      order_name: order.order_name || "",
+      order_details: order.order_details || "",
+      amount_to_collect: order.amount_to_collect ?? "",
+    });
+    setFormError("");
+    setIsOrderModalOpen(true);
+  };
+
+  const handleSaveOrder = async (e) => {
+    if (e) e.preventDefault();
+    if (!orderForm.order_name.trim()) {
+      setFormError("Order Name is required.");
+      return;
+    }
+    const cost = Number(orderForm.order_details);
+    if (!Number.isFinite(cost) || cost < 0) {
+      setFormError("Order Details / Amount must be a valid positive number.");
+      return;
+    }
+    const collect = Number(orderForm.amount_to_collect || 0);
+    if (!Number.isFinite(collect) || collect < 0) {
+      setFormError("Amount To Collect must be a valid number >= 0.");
+      return;
+    }
+
+    try {
+      if (orderModalMode === "add") {
+        const res = await addOrder(monthId, orderForm.order_name.trim(), String(cost), collect);
+        if (res?.ok === false || res?.success === false) {
+          throw new Error(res?.error || "Failed to add order");
+        }
+      } else if (editingOrder) {
+        const res = await updateOrder(editingOrder.id, orderForm.order_name.trim(), String(cost), collect);
+        if (res?.ok === false || res?.success === false) {
+          throw new Error(res?.error || "Failed to update order");
+        }
+      }
+      setIsOrderModalOpen(false);
+      await loadOrders(monthId);
+    } catch (err) {
+      setFormError(err.message || "Failed to save order.");
+    }
+  };
+
+  const handleDeleteOrder = (order) => {
+    openConfirm({
+      title: "Delete Order",
+      message: `Are you sure you want to delete order "${order.order_name || order.id}"? All associated carts and customers will be removed.`,
+      onYes: async () => {
+        try {
+          const res = await deleteOrder(order.id);
+          if (res?.ok === false || res?.success === false) {
+            throw new Error(res?.error || "Failed to delete order");
+          }
+          await loadOrders(monthId);
+        } catch (err) {
+          openInfo({ title: "Delete Error", message: err?.message || "Failed to delete order." });
+        }
+      },
+    });
+  };
 
   const handleRefreshOrderTrack = async (order) => {
     setRefreshingTrackOrderId(order.id);
@@ -249,140 +354,223 @@ const OrdersPage = () => {
         <div className="ordHeaderLeft">
           <h1 className="ordTitle">Orders Management</h1>
           <div className="ordSub">
-            Select a month, then open an order to edit its carts.
+            Create and manage orders, edit carts, track shipments, and allocate customer packages.
           </div>
         </div>
 
         <div className="ordHeaderRight">
-          <div className="ordLabel">Month</div>
-          <div className="ordMonthWrap">
-            <MonthSelector
-              months={months}
-              selectedMonth={monthId}
-              onChange={(id) => setMonthId(id)}
-              disabled={loading || !months.length}
-            />
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <div className="ordLabel">Active Month Cycle</div>
+              <div className="ordMonthWrap">
+                <MonthSelector
+                  months={months}
+                  selectedMonth={monthId}
+                  onChange={(id) => setMonthId(id)}
+                  disabled={loading || !months.length}
+                />
+              </div>
+            </div>
+
+            <div style={{ alignSelf: "flex-end" }}>
+              <button
+                type="button"
+                className="ordBtn"
+                style={{ padding: "10px 16px", height: "42px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
+                onClick={handleOpenAddOrder}
+                disabled={!monthId}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span>+ Add Order</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Optional summary */}
+      {/* Summary KPI stats */}
       <div className="ordStats">
         <div className="ordStatCard">
-          <div className="ordStatTitle">Orders</div>
+          <div className="ordStatTitle">Orders Count</div>
           <div className="ordStatValue">{orders.length}</div>
         </div>
         <div className="ordStatCard">
-          <div className="ordStatTitle">Total Amount</div>
+          <div className="ordStatTitle">Goods Cost ($)</div>
           <div className="ordStatValue">${money(totalOrdersAmount)}</div>
         </div>
         <div className="ordStatCard">
-          <div className="ordStatTitle">To Collect</div>
+          <div className="ordStatTitle">To Collect ($)</div>
           <div className="ordStatValue">${money(totalToCollect)}</div>
         </div>
         <div className="ordStatCard">
-          <div className="ordStatTitle">Estimated Weight</div>
+          <div className="ordStatTitle">Total Estimated Weight</div>
           <div className="ordStatValue">{Number(totalEstimatedWeight).toFixed(3)} kg</div>
         </div>
-      </div>
-
-        {orderCollectIssues.length > 0 ? (
-        <div className="ordAlert">
-          <div className="ordAlertTitle">
-            Collect mismatch found in {orderCollectIssues.length} order{orderCollectIssues.length > 1 ? "s" : ""}
-          </div>
-          {orderCollectIssues.map((x) => (
-            <div key={x.order_id} className="ordAlertRow">
-              Order #{x.order_id} ({x.order_name || "-"}) | To Collect: ${money(x.order_collect)} | Customers: ${money(x.customers_collect)} | Diff: ${money(x.diff)}
-            </div>
-          ))}
+        <div className="ordStatCard">
+          <div className="ordStatTitle">Est. Shipping ($)</div>
+          <div className="ordStatValue">${money(totalEstimatedShipping)}</div>
         </div>
-      ) : null}
+        <div className="ordStatCard">
+          <div className="ordStatTitle">Est. Profit ($)</div>
+          <div
+            className="ordStatValue"
+            style={{
+              color: totalEstimatedProfit >= 0 ? "#059669" : "#dc2626",
+              fontWeight: 800,
+            }}
+          >
+            ${money(totalEstimatedProfit)}
+          </div>
+        </div>
+      </div>
 
       <div className="ordGrid">
         {loading ? (
           <div className="ordEmpty">
-            <div className="ordEmptyTitle">Loading...</div>
+            <div className="ordEmptyTitle">Loading orders...</div>
             <div className="ordEmptySub">Please wait.</div>
           </div>
         ) : orders.length === 0 ? (
           <div className="ordEmpty">
-            <div className="ordEmptyTitle">No orders</div>
+            <div className="ordEmptyTitle">No orders found</div>
             <div className="ordEmptySub">
-              {monthId ? "This month doesn’t have orders yet." : "Select a month to see orders."}
+              {monthId ? "This month cycle doesn’t have orders yet. Click below to add the first order." : "Select a month to see orders."}
             </div>
+            {monthId ? (
+              <button
+                className="ordBtn"
+                style={{ marginTop: "16px" }}
+                onClick={handleOpenAddOrder}
+              >
+                + Create First Order
+              </button>
+            ) : null}
           </div>
         ) : (
-          orders.map((order) => (
-            <div key={order.id} className="ordCard">
-              <div className="ordCardHead">
-                <div className="ordCardTitle">Order # {order.order_name || "-"}</div>
+          orders.map((order) => {
+            const customerSum = Number(order.customers_collect_sum || orderCustomerCollectByOrderId[order.id] || 0);
+            const toCollect = Number(order.amount_to_collect || 0);
+            const remainingToAllocate = toCollect - customerSum;
+            const orderWeight = Number(order.shein_total_weight_plus_2kg_sum || 0);
+            const orderShipping = orderWeight * Number(kgPrice || 0);
+            const orderCost = Number(order.order_details || 0);
+            const orderProfit = toCollect - orderCost - orderShipping;
 
-                <div className="ordBadges">
-                  <span className="ordBadgeSoft">
-                    Amount: ${money(order.order_details)}
-                  </span>
-                  <span className="ordBadgeSoft">
-                    To Collect: ${money(order.amount_to_collect)}
-                  </span>
-                  {(() => {
-                    const customersCollect = Number(orderCustomerCollectByOrderId[order.id] || 0);
-                    const diff = Number((Number(order.amount_to_collect || 0) - customersCollect).toFixed(2));
-                    if (Math.abs(diff) <= 0.009) return null;
-                    return (
-                      <span className="ordBadgeSoft ordBadgeAlert">
-                        Collect mismatch | Customers: ${money(customersCollect)} | Diff: ${money(diff)}
-                      </span>
-                    );
-                  })()}
-                  <span className="ordBadgeSoft">
-                    Undelivered: {Number(order.shein_undelivered_carts || 0)}
-                  </span>
-                  <span className="ordBadgeSoft">
-                    Weight+2: {Number(order.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
-                  </span>
-                  {Number(order.joint_shipment_carts || 0) > 0 ? (
+            return (
+              <div key={order.id} className="ordCard">
+                <div className="ordCardHead">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: 10 }}>
+                    <div className="ordCardTitle">Order # {order.order_name || order.id}</div>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        type="button"
+                        className="ordBtnSoft"
+                        style={{ padding: "4px 8px", fontSize: "12px" }}
+                        onClick={() => handleOpenEditOrder(order)}
+                        title="Edit order name and financial details"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="ordBtnDanger"
+                        style={{ padding: "4px 8px", fontSize: "12px" }}
+                        onClick={() => handleDeleteOrder(order)}
+                        title="Delete order"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="ordBadges">
                     <span className="ordBadgeSoft">
-                      Joint Shipment: {Number(order.joint_shipment_carts || 0)} carts
+                      Cost: ${money(order.order_details)}
                     </span>
-                  ) : null}
+                    <span className="ordBadgeSoft">
+                      To Collect: ${money(order.amount_to_collect)}
+                    </span>
+                    <span
+                      className="ordBadgeSoft"
+                      style={{
+                        color: orderProfit >= 0 ? "#059669" : "#dc2626",
+                        background: orderProfit >= 0 ? "rgba(5, 150, 105, 0.08)" : "rgba(220, 38, 38, 0.08)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Est. Profit: ${money(orderProfit)}
+                    </span>
+                    <span className="ordBadgeSoft">
+                      Customers: {Number(order.cart_customers_count || 0)} (${money(customerSum)})
+                    </span>
+                    <span className="ordBadgeSoft">
+                      Carts: {Number(order.carts_count || 0)}
+                    </span>
+                    <span className="ordBadgeSoft">
+                      Weight+2: {Number(order.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
+                    </span>
+                    {Math.abs(remainingToAllocate) > 0.01 ? (
+                      <span className="ordBadgeSoft" style={{ color: remainingToAllocate > 0 ? "#d97706" : "#2563eb", background: "rgba(217, 119, 6, 0.08)" }}>
+                        {remainingToAllocate > 0 ? `Unallocated: $${money(remainingToAllocate)}` : `Over-allocated: $${money(-remainingToAllocate)}`}
+                      </span>
+                    ) : null}
+                    {Number(order.shein_undelivered_carts || 0) > 0 ? (
+                      <span className="ordBadgeSoft" style={{ color: "#e11d48", background: "rgba(225, 29, 72, 0.08)" }}>
+                        Undelivered: {Number(order.shein_undelivered_carts || 0)}
+                      </span>
+                    ) : null}
+                    {Number(order.joint_shipment_carts || 0) > 0 ? (
+                      <span className="ordBadgeSoft">
+                        Joint: {Number(order.joint_shipment_carts || 0)} carts
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="ordCardBody">
+                  <div className="ordDetails">
+                    {String(order.order_details ?? "").trim() ? (
+                      `Goods cost: $${money(order.order_details)}`
+                    ) : (
+                      <span className="ordMuted">-</span>
+                    )}
+                  </div>
+
+                  <div className="ordButtonsRow">
+                    <button
+                      className="ordBtnSoft"
+                      onClick={() => handleRefreshOrderTrack(order)}
+                      disabled={refreshingTrackOrderId === order.id}
+                      title="Fetch live carrier tracking status from SHEIN"
+                    >
+                      {refreshingTrackOrderId === order.id ? "Refreshing Track..." : "Refresh Track"}
+                    </button>
+                    <button
+                      className="ordBtnSoft"
+                      onClick={() => handleRefreshOrderWeight(order)}
+                      disabled={refreshingWeightOrderId === order.id}
+                      title="Fetch live parcel weights from SHEIN"
+                    >
+                      {refreshingWeightOrderId === order.id ? "Getting Weight..." : "Get Weight"}
+                    </button>
+                    <button className="ordBtn" onClick={() => setSelectedOrder(order)}>
+                      <span>Edit Carts & Customers</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <div className="ordCardBody">
-                <div className="ordDetails">
-                  {String(order.order_details ?? "").trim() ? (
-                    order.order_details
-                  ) : (
-                    <span className="ordMuted">-</span>
-                  )}
-                </div>
-
-                <div className="ordButtonsRow">
-                  <button
-                    className="ordBtnSoft"
-                    onClick={() => handleRefreshOrderTrack(order)}
-                    disabled={refreshingTrackOrderId === order.id}
-                  >
-                    {refreshingTrackOrderId === order.id ? "Refreshing Track..." : "Refresh Order"}
-                  </button>
-                  <button
-                    className="ordBtnSoft"
-                    onClick={() => handleRefreshOrderWeight(order)}
-                    disabled={refreshingWeightOrderId === order.id}
-                  >
-                    {refreshingWeightOrderId === order.id ? "Getting Weight..." : "Get Weight"}
-                  </button>
-                  <button className="ordBtn" onClick={() => setSelectedOrder(order)}>
-                    Edit Carts
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
+      {/* Carts and Customers Editor Modal */}
       {selectedOrder && (
         <CartsEditor
           key={selectedOrder.id}
@@ -395,7 +583,102 @@ const OrdersPage = () => {
         />
       )}
 
+      {/* Unified Add / Edit Order Modal */}
+      {isOrderModalOpen && (
+        <div className="modalBackdrop" onClick={() => setIsOrderModalOpen(false)}>
+          <div className="modalCard" style={{ maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3 className="modalTitle">
+                {orderModalMode === "add" ? "Create New Order" : `Edit ${editingOrder?.order_name || "Order"}`}
+              </h3>
+              <button
+                type="button"
+                className="modalClose"
+                onClick={() => setIsOrderModalOpen(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOrder}>
+              <div className="modalBody" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {formError && (
+                  <div style={{ color: "#ef4444", fontSize: "13px", padding: "8px 12px", background: "rgba(239, 68, 68, 0.1)", borderRadius: "6px" }}>
+                    {formError}
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
+                    ORDER NAME / NUMBER *
+                  </label>
+                  <input
+                    type="text"
+                    className="modalInput"
+                    placeholder="e.g. Order 15 or Batch A"
+                    value={orderForm.order_name}
+                    onChange={(e) => setOrderForm({ ...orderForm, order_name: e.target.value })}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
+                    ORDER AMOUNT / GOODS COST ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="modalInput"
+                    placeholder="0.00"
+                    value={orderForm.order_details}
+                    onChange={(e) => setOrderForm({ ...orderForm, order_details: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
+                    EXPECTED REVENUE TO COLLECT ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="modalInput"
+                    placeholder="0.00"
+                    value={orderForm.amount_to_collect}
+                    onChange={(e) => setOrderForm({ ...orderForm, amount_to_collect: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modalFooter" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+                <button
+                  type="button"
+                  className="modalBtn modalBtnCancel"
+                  onClick={() => setIsOrderModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="modalBtn modalBtnConfirm"
+                >
+                  {orderModalMode === "add" ? "Create Order" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <CustomModal {...modal} />
+      <CustomModal {...confirmModal} />
     </div>
   );
 };

@@ -95,7 +95,7 @@
 /* Summary stats */
 .ordStats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -134,6 +134,14 @@
 
 .ordStatCard:nth-child(4)::before {
   background: #8b5cf6;
+}
+
+.ordStatCard:nth-child(5)::before {
+  background: #f59e0b;
+}
+
+.ordStatCard:nth-child(6)::before {
+  background: #059669;
 }
 
 .ordStatCard:hover {

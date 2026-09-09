@@ -13,7 +13,17 @@ const { normEmail, callSheinScraper, defaultProfileKey } = require("../lib/shein
 const { open } = require("../lib/secretBox");
 
 const router = express.Router();
-router.use(requireAuth, requireWriteAccess);
+const SHEIN_REFRESH_PATHS = new Set([
+  "refreshCartShein",
+  "refreshOrderSheinTrack",
+  "refreshOrderSheinWeight",
+]);
+router.use(requireAuth);
+router.use((req, res, next) => {
+  const action = String(req.path || "").replace(/^\//, "").replace(/\.php$/i, "");
+  if (req.method === "POST" && SHEIN_REFRESH_PATHS.has(action)) return next();
+  return requireWriteAccess(req, res, next);
+});
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 const uid = (req) => Number(req.user.user_id);
 const okError = (res, status, error, key = "success") => res.status(status).json({ [key]: false, error });
@@ -214,12 +224,221 @@ router.post(paths("applyDeliveryExcelImport"), asyncHandler(async (req, res) => 
   const monthId = int(req.body?.month_id); const importRows = Array.isArray(req.body?.rows) ? req.body.rows : []; if (monthId <= 0) return okError(res, 400, "month_id is required", "ok"); if (!importRows.length) return okError(res, 400, "rows are required", "ok"); if (!(await ensureMonth(pool, uid(req), monthId))) return okError(res, 403, "Invalid month for this user", "ok"); const selectedIds = uniquePositiveInts(importRows.map((r) => r?.selected_customer_id)); if (!selectedIds.length) return okError(res, 400, "No selected customers in rows", "ok"); const allowed = await rows(pool, `SELECT cc.id FROM cart_customers cc JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=cc.user_id JOIN orders o ON o.id=oc.order_id AND o.user_id=oc.user_id WHERE cc.user_id=? AND o.month_id=? AND cc.id IN (${placeholders(selectedIds)})`, [uid(req), monthId, ...selectedIds]); const allowedSet = new Set(allowed.map((r) => Number(r.id))); const db = await pool.getConnection(); try { await db.beginTransaction(); const applied = [], skipped = []; for (let i=0;i<importRows.length;i++) { const r = importRows[i] || {}; const cid = int(r.selected_customer_id); const status = trim(r.status).toLowerCase(); const dn = trim(r.delivery_number); const total = number(r.total_amount_usd); const charge = number(r.delivery_charge_usd); const rawNet = Object.prototype.hasOwnProperty.call(r, "net_amount_usd") ? number(r.net_amount_usd) : total - charge; if (!finite(r.total_amount_usd) || total < 0 || !finite(r.delivery_charge_usd) || charge < 0 || charge > total || !finite(rawNet) || rawNet < 0 || rawNet > total) throw new HttpError(422, `Excel row ${i + 1} contains invalid amounts`, { ok: false, error: `Excel row ${i + 1} contains invalid amounts` }); const net = rawNet; if (!["pending", "confirmed"].includes(status)) { skipped.push({ row_index: i, reason: "invalid status" }); continue; } if (cid <= 0 || !allowedSet.has(cid)) throw new HttpError(422, `Customer #${cid} is not valid for selected month`, { ok: false, error: `Customer #${cid} is not valid for selected month` }); if (!dn) { skipped.push({ row_index: i, reason: "empty delivery number" }); continue; } if (await first(db, "SELECT other.id FROM cart_customers other JOIN order_carts other_cart ON other_cart.id=other.cart_id AND other_cart.user_id=other.user_id JOIN orders other_order ON other_order.id=other_cart.order_id AND other_order.user_id=other.user_id WHERE other.user_id=? AND other.delivery_number=? AND other.id<>? AND other_order.month_id=(SELECT selected_order.month_id FROM cart_customers selected_customer JOIN order_carts selected_cart ON selected_cart.id=selected_customer.cart_id AND selected_cart.user_id=selected_customer.user_id JOIN orders selected_order ON selected_order.id=selected_cart.order_id AND selected_order.user_id=selected_customer.user_id WHERE selected_customer.id=? AND selected_customer.user_id=? LIMIT 1) LIMIT 1", [uid(req), dn, cid, cid, uid(req)])) { skipped.push({ row_index: i, reason: "delivery number already exists", delivery_number: dn }); continue; } await execute(db, "UPDATE cart_customers SET delivery_number=?,status='withdelivery',usd_to_collect=?,delivery_charge_usd=? WHERE id=? AND user_id=?", [dn, net, charge, cid, uid(req)]); applied.push({ customer_id: cid, delivery_number: dn, usd_to_collect: net, delivery_charge_usd: charge, source_status: status }); } await db.commit(); res.json({ ok: true, applied_count: applied.length, skipped_count: skipped.length, applied, skipped }); } catch (e) { try { await db.rollback(); } catch (_) {} throw e; } finally { db.release(); }
 }));
 
-// SHEIN refresh flows. These only call the existing local scraper API and never touch api/.
+// SHEIN refresh flows. Node owns persistence; Python owns the SHEIN scraping.
 async function accountFor(db, userId, email) { return first(db, "SELECT api_email,shein_email,shein_password_enc,gmail_email,gmail_app_password_enc,storage_state_enc,profile_key FROM shein_accounts WHERE user_id=? AND api_email=? LIMIT 1", [userId, normEmail(email)]); }
-function scraperPayload(userId, account, orderNo, requestedProfile) { const apiEmail = normEmail(account.api_email); return { order_no: orderNo, shein_email: String(account.shein_email), shein_password: String(open(account.shein_password_enc || "")), gmail_email: String(account.gmail_email), gmail_app_password: String(open(account.gmail_app_password_enc || "")), profile_key: defaultProfileKey(userId, apiEmail, requestedProfile || String(account.profile_key || "")), storage_state_json: account.storage_state_enc ? String(open(account.storage_state_enc)) : null }; }
-async function updateTrack(db, userId, cartId, oldTracking, track) { const splitTracks = Array.isArray(track.all_tracking_numbers) ? JSON.stringify(track.all_tracking_numbers) : null; const splitRefs = Array.isArray(track.all_package_refs) ? JSON.stringify(track.all_package_refs) : null; await execute(db, `UPDATE order_carts SET shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [track.carrier ?? null, track.tracking_no ?? null, track.status_text ?? null, track.last_details ?? null, track.last_timestamp ?? null, track.track_url ?? null, track.delivered ? 1 : 0, track.is_split ? 1 : 0, int(track.split_count), splitTracks, splitRefs, cartId, userId]); await refreshJointShipmentForTracking(db, userId, oldTracking); await refreshJointShipmentForTracking(db, userId, track.tracking_no); }
-router.post(paths("refreshCartShein"), asyncHandler(async (req, res) => { const cartId = int(req.body?.id); const requested = trim(req.body?.profile_key); if (cartId <= 0) return okError(res, 400, "Cart id is required", "ok"); const cart = await first(pool, "SELECT id,cart_order_number,cart_price,shein_email,shein_order_no,shein_tracking_no FROM order_carts WHERE id=? AND user_id=? LIMIT 1", [cartId, uid(req)]); if (!cart) return okError(res, 404, "Cart not found", "ok"); const account = await accountFor(pool, uid(req), cart.shein_email); if (!account) return okError(res, 404, "SHEIN account not found for selected email", "ok"); const email = normEmail(cart.shein_email), orderNo = trim(cart.shein_order_no); if (!email || !orderNo) return okError(res, 400, "Cart missing SHEIN email/order number", "ok"); const payload = scraperPayload(uid(req), account, orderNo, requested); const track = await callSheinScraper("track_one", payload); if (!track.ok) return res.status(502).json({ ok: false, error: `Track failed: ${track.error}` }); const weight = await callSheinScraper("weight_one", payload); if (!weight.ok) return res.status(502).json({ ok: false, error: `Weight failed: ${weight.error}` }); const w = weight.data; const trackData = track.data; const totalKg = w.total_weight_kg == null ? null : Number(w.total_weight_kg); await execute(pool, `UPDATE order_carts SET shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [trackData.carrier ?? null, trackData.tracking_no ?? null, trackData.status_text ?? null, trackData.last_details ?? null, trackData.last_timestamp ?? null, trackData.track_url ?? null, trackData.delivered ? 1 : 0, w.total_weight_g == null ? null : int(w.total_weight_g), totalKg, totalKg == null ? null : totalKg + 2, trackData.is_split || w.is_split ? 1 : 0, int(trackData.split_count ?? w.split_count), Array.isArray(trackData.all_tracking_numbers) ? JSON.stringify(trackData.all_tracking_numbers) : (Array.isArray(w.all_tracking_numbers) ? JSON.stringify(w.all_tracking_numbers) : null), Array.isArray(trackData.all_package_refs) ? JSON.stringify(trackData.all_package_refs) : (Array.isArray(w.all_package_refs) ? JSON.stringify(w.all_package_refs) : null), cartId, uid(req)]); await refreshJointShipmentForTracking(pool, uid(req), cart.shein_tracking_no); await refreshJointShipmentForTracking(pool, uid(req), trackData.tracking_no); res.json({ ok: true, track: trackData, weight: w, saved: true }); }));
+function scraperPayload(userId, account, orderNo, requestedProfile) {
+  const apiEmail = normEmail(account.api_email);
+  const textValue = (value) => value == null ? "" : String(value);
+  return {
+    order_no: textValue(orderNo),
+    shein_email: textValue(account.shein_email),
+    shein_password: textValue(open(account.shein_password_enc || "")),
+    gmail_email: textValue(account.gmail_email),
+    gmail_app_password: textValue(open(account.gmail_app_password_enc || "")),
+    profile_key: defaultProfileKey(userId, apiEmail, requestedProfile || textValue(account.profile_key)),
+    storage_state_json: account.storage_state_enc ? textValue(open(account.storage_state_enc)) : null,
+  };
+}
+function sheinSplitFields(...records) {
+  const trackingNumbers = [];
+  const packageRefs = [];
+  const addUnique = (target, value) => {
+    const normalized = trim(value);
+    if (normalized && !target.includes(normalized)) target.push(normalized);
+  };
+  let hasTrackingArray = false;
+  let hasPackageRefArray = false;
+  let splitCount = 0;
+  let isSplit = false;
+  for (const record of records) {
+    if (!record) continue;
+    isSplit = isSplit || Boolean(record.is_split);
+    splitCount = Math.max(splitCount, int(record.split_count));
+    if (Array.isArray(record.all_tracking_numbers)) {
+      hasTrackingArray = true;
+      record.all_tracking_numbers.forEach((value) => addUnique(trackingNumbers, value));
+    }
+    if (Array.isArray(record.all_package_refs)) {
+      hasPackageRefArray = true;
+      record.all_package_refs.forEach((value) => addUnique(packageRefs, value));
+    }
+  }
+  splitCount = Math.max(splitCount, trackingNumbers.length);
+  isSplit = isSplit || splitCount > 1 || trackingNumbers.length > 1;
+  return {
+    isSplit,
+    splitCount,
+    splitTracks: hasTrackingArray ? JSON.stringify(trackingNumbers) : null,
+    splitRefs: hasPackageRefArray ? JSON.stringify(packageRefs) : null,
+    trackingNumbers,
+    packageRefs,
+  };
+}
+
+async function updateTrack(db, userId, cartId, oldTracking, track) {
+  const split = sheinSplitFields(track);
+  await execute(db, `UPDATE order_carts SET shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+    track.carrier ?? null,
+    track.tracking_no ?? null,
+    track.status_text ?? null,
+    track.last_details ?? null,
+    track.last_timestamp ?? null,
+    track.track_url ?? null,
+    track.delivered ? 1 : 0,
+    split.isSplit ? 1 : 0,
+    split.splitCount,
+    split.splitTracks,
+    split.splitRefs,
+    cartId,
+    userId,
+  ]);
+  await refreshJointShipmentForTracking(db, userId, oldTracking);
+  await refreshJointShipmentForTracking(db, userId, track.tracking_no);
+}
+router.post(paths("refreshCartShein"), asyncHandler(async (req, res) => {
+  const cartId = int(req.body?.id);
+  const requested = trim(req.body?.profile_key);
+  if (cartId <= 0) return okError(res, 400, "Cart id is required", "ok");
+
+  const cart = await first(pool, "SELECT id,cart_order_number,cart_price,shein_email,shein_order_no,shein_tracking_no FROM order_carts WHERE id=? AND user_id=? LIMIT 1", [cartId, uid(req)]);
+  if (!cart) return okError(res, 404, "Cart not found", "ok");
+  const account = await accountFor(pool, uid(req), cart.shein_email);
+  if (!account) return okError(res, 404, "SHEIN account not found for selected email", "ok");
+
+  const email = normEmail(cart.shein_email);
+  const orderNo = trim(cart.shein_order_no);
+  if (!email || !orderNo) return okError(res, 400, "Cart missing SHEIN email/order number", "ok");
+
+  const payload = scraperPayload(uid(req), account, orderNo, requested);
+  const track = await callSheinScraper("track_one", payload);
+  if (!track.ok) return res.status(502).json({ ok: false, error: `Track failed: ${track.error}` });
+  const weight = await callSheinScraper("weight_one", payload);
+  if (!weight.ok) return res.status(502).json({ ok: false, error: `Weight failed: ${weight.error}` });
+
+  const trackData = track.data || {};
+  const weightData = weight.data || {};
+  const split = sheinSplitFields(trackData, weightData);
+  const totalKg = weightData.total_weight_kg == null ? null : Number(weightData.total_weight_kg);
+  await execute(pool, `UPDATE order_carts SET shein_carrier=?,shein_tracking_no=?,shein_status_text=?,shein_last_details=?,shein_last_timestamp=?,shein_track_url=?,shein_delivered=?,shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+    trackData.carrier ?? null,
+    trackData.tracking_no ?? null,
+    trackData.status_text ?? null,
+    trackData.last_details ?? null,
+    trackData.last_timestamp ?? null,
+    trackData.track_url ?? null,
+    trackData.delivered ? 1 : 0,
+    weightData.total_weight_g == null ? null : int(weightData.total_weight_g),
+    totalKg,
+    totalKg == null ? null : totalKg + 2,
+    split.isSplit ? 1 : 0,
+    split.splitCount,
+    split.splitTracks,
+    split.splitRefs,
+    cartId,
+    uid(req),
+  ]);
+  await refreshJointShipmentForTracking(pool, uid(req), cart.shein_tracking_no);
+  await refreshJointShipmentForTracking(pool, uid(req), trackData.tracking_no);
+  res.json({ ok: true, track: trackData, weight: weightData, saved: true });
+}));
 router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => { const orderId = int(req.body?.order_id ?? req.body?.id); if (orderId <= 0) return okError(res, 400, "Order id is required", "ok"); if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok"); const carts = await rows(pool, "SELECT id,shein_email,shein_order_no,shein_delivered,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? AND COALESCE(shein_delivered,0)=0 ORDER BY id DESC", [orderId, uid(req)]); const cache = new Map(); let updated=0, skipped=0; const errors=[]; for (const cart of carts) { const email=normEmail(cart.shein_email), orderNo=trim(cart.shein_order_no); if (!email || !orderNo) { skipped++; continue; } if (!cache.has(email)) cache.set(email, await accountFor(pool, uid(req), email)); const account=cache.get(email); if (!account) { errors.push(`Cart ${cart.id}: SHEIN account not found for ${email}`); continue; } const result=await callSheinScraper("track_one", scraperPayload(uid(req), account, orderNo)); if (!result.ok) { errors.push(`Cart ${cart.id}: ${result.error}`); continue; } await updateTrack(pool, uid(req), cart.id, cart.shein_tracking_no, result.data); updated++; } const agg=await first(pool,"SELECT COALESCE(SUM(COALESCE(shein_total_weight_kg,0)),0) AS total_weight_kg,COALESCE(SUM(COALESCE(shein_total_weight_plus_2kg,0)),0) AS total_weight_plus_2kg,SUM(CASE WHEN COALESCE(shein_delivered,0)=0 AND shein_order_no IS NOT NULL AND TRIM(shein_order_no)<>'' THEN 1 ELSE 0 END) AS undelivered_carts FROM order_carts WHERE order_id=? AND user_id=?",[orderId,uid(req)]); res.json({ ok:true, order_id:orderId, updated, skipped, errors, summary:{ total_weight_kg:Number(agg?.total_weight_kg||0), total_weight_plus_2kg:Number(agg?.total_weight_plus_2kg||0), undelivered_carts:Number(agg?.undelivered_carts||0) } }); }));
-router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => { const orderId=int(req.body?.order_id ?? req.body?.id); if(orderId<=0)return okError(res,400,"Order id is required","ok"); if(!(await ensureOrder(pool,uid(req),orderId)))return okError(res,404,"Order not found","ok"); const carts=await rows(pool,"SELECT id,shein_email,shein_order_no,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC",[orderId,uid(req)]); const groups=new Map(), cache=new Map(), touched=new Set(); let skipped=0; const errors=[]; for(const cart of carts){ if(trim(cart.shein_tracking_no))touched.add(trim(cart.shein_tracking_no)); const email=normEmail(cart.shein_email), orderNo=trim(cart.shein_order_no); if(!email||!orderNo){skipped++;continue;} if(!cache.has(email))cache.set(email,await accountFor(pool,uid(req),email)); const account=cache.get(email); if(!account){errors.push(`Cart ${cart.id}: SHEIN account not found for ${email}`);continue;} if(!groups.has(email))groups.set(email,{account,orders:new Map()}); const g=groups.get(email); if(!g.orders.has(orderNo))g.orders.set(orderNo,[]); g.orders.get(orderNo).push(cart.id); } let updated=0; for(const [email,g] of groups){ const orderNos=[...g.orders.keys()]; const result=await callSheinScraper("weight_many",{...scraperPayload(uid(req),g.account,null,""),order_nos:orderNos}); if(!result.ok){for(const ids of g.orders.values())for(const id of ids)errors.push(`Cart ${id}: ${result.error}`);continue;} const byOrder=new Map((Array.isArray(result.data.results)?result.data.results:[]).filter((r)=>r?.order_no).map((r)=>[trim(r.order_no),r])); for(const [orderNo,ids] of g.orders){const row=byOrder.get(orderNo);if(!row){ids.forEach((id)=>errors.push(`Cart ${id}: Missing weight result for order ${orderNo}`));continue;} for(const id of ids){const kg=row.total_weight_kg==null?null:Number(row.total_weight_kg); await execute(pool,`UPDATE order_carts SET shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`,[row.total_weight_g==null?null:int(row.total_weight_g),kg,kg==null?null:kg+2,row.is_split?1:0,int(row.split_count),Array.isArray(row.all_tracking_numbers)?JSON.stringify(row.all_tracking_numbers):null,Array.isArray(row.all_package_refs)?JSON.stringify(row.all_package_refs):null,id,uid(req)]);updated++;}}} for(const tracking of touched)await refreshJointShipmentForTracking(pool,uid(req),tracking); const agg=await first(pool,"SELECT COALESCE(SUM(COALESCE(shein_total_weight_kg,0)),0) AS total_weight_kg,COALESCE(SUM(COALESCE(shein_total_weight_plus_2kg,0)),0) AS total_weight_plus_2kg FROM order_carts WHERE order_id=? AND user_id=?",[orderId,uid(req)]); res.json({ok:true,order_id:orderId,updated,skipped,errors,summary:{total_weight_kg:Number(agg?.total_weight_kg||0),total_weight_plus_2kg:Number(agg?.total_weight_plus_2kg||0)}}); }));
+router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
+  const orderId = int(req.body?.order_id ?? req.body?.id);
+  if (orderId <= 0) return okError(res, 400, "Order id is required", "ok");
+  if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
+
+  const carts = await rows(pool, "SELECT id,shein_email,shein_order_no,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC", [orderId, uid(req)]);
+  const groups = new Map();
+  const cache = new Map();
+  const touched = new Set();
+  let skipped = 0;
+  let updated = 0;
+  const errors = [];
+
+  for (const cart of carts) {
+    const oldTracking = trim(cart.shein_tracking_no);
+    if (oldTracking) touched.add(oldTracking);
+    const email = normEmail(cart.shein_email);
+    const orderNo = trim(cart.shein_order_no);
+    if (!email || !orderNo) {
+      skipped++;
+      continue;
+    }
+    if (!cache.has(email)) cache.set(email, await accountFor(pool, uid(req), email));
+    const account = cache.get(email);
+    if (!account) {
+      errors.push(`Cart ${cart.id}: SHEIN account not found for ${email}`);
+      continue;
+    }
+    if (!groups.has(email)) groups.set(email, { account, orders: new Map() });
+    const group = groups.get(email);
+    if (!group.orders.has(orderNo)) group.orders.set(orderNo, []);
+    group.orders.get(orderNo).push(cart.id);
+  }
+
+  for (const group of groups.values()) {
+    const orderNos = [...group.orders.keys()];
+    const result = await callSheinScraper("weight_many", {
+      ...scraperPayload(uid(req), group.account, null, ""),
+      order_nos: orderNos,
+    });
+    if (!result.ok) {
+      for (const ids of group.orders.values()) {
+        for (const id of ids) errors.push(`Cart ${id}: ${result.error}`);
+      }
+      continue;
+    }
+
+    const byOrder = new Map(
+      (Array.isArray(result.data?.results) ? result.data.results : [])
+        .filter((row) => row && trim(row.order_no))
+        .map((row) => [trim(row.order_no), row])
+    );
+
+    for (const [orderNo, ids] of group.orders) {
+      const row = byOrder.get(orderNo);
+      if (!row) {
+        for (const id of ids) errors.push(`Cart ${id}: Missing weight result for order ${orderNo}`);
+        continue;
+      }
+      if (row.ok === false) {
+        const message = trim(row.error) || "Weight fetch failed";
+        for (const id of ids) errors.push(`Cart ${id}: ${message}`);
+        continue;
+      }
+
+      const weightKg = row.total_weight_kg == null ? null : Number(row.total_weight_kg);
+      const split = sheinSplitFields(row);
+      for (const id of ids) {
+        await execute(pool, `UPDATE order_carts SET shein_total_weight_g=?,shein_total_weight_kg=?,shein_total_weight_plus_2kg=?,shein_is_split_shipment=?,shein_split_count=?,shein_split_tracking_numbers_json=?,shein_split_package_refs_json=? WHERE id=? AND user_id=?`, [
+          row.total_weight_g == null ? null : int(row.total_weight_g),
+          weightKg,
+          weightKg == null ? null : weightKg + 2,
+          split.isSplit ? 1 : 0,
+          split.splitCount,
+          split.splitTracks,
+          split.splitRefs,
+          id,
+          uid(req),
+        ]);
+        updated++;
+      }
+    }
+  }
+
+  for (const tracking of touched) await refreshJointShipmentForTracking(pool, uid(req), tracking);
+  const agg = await first(pool, "SELECT COALESCE(SUM(COALESCE(shein_total_weight_kg,0)),0) AS total_weight_kg,COALESCE(SUM(COALESCE(shein_total_weight_plus_2kg,0)),0) AS total_weight_plus_2kg FROM order_carts WHERE order_id=? AND user_id=?", [orderId, uid(req)]);
+  res.json({
+    ok: true,
+    order_id: orderId,
+    updated,
+    skipped,
+    errors,
+    summary: {
+      total_weight_kg: Number(agg?.total_weight_kg || 0),
+      total_weight_plus_2kg: Number(agg?.total_weight_plus_2kg || 0),
+    },
+  });
+}));
 
 module.exports = router;

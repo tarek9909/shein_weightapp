@@ -89,6 +89,8 @@ export default function Dashboard() {
   const [paymentItemsByPaymentId, setPaymentItemsByPaymentId] = useState({});
   const [paymentItemsLoading, setPaymentItemsLoading] = useState({});
   const [newCustom, setNewCustom] = useState("");
+  const [newCustomWeight, setNewCustomWeight] = useState("");
+  const [newCustomTracking, setNewCustomTracking] = useState("");
   const [newCustomDescription, setNewCustomDescription] = useState("benzene");
   const [newBudgetValue, setNewBudgetValue] = useState("");
   const [newBudgetDesc, setNewBudgetDesc] = useState("");
@@ -496,31 +498,38 @@ export default function Dashboard() {
   const handleAddCustom = async () => {
     if (!newCustom || !selectedMonth) return;
     try {
-      if (newCustomDescription !== "benzene" && newCustomDescription !== "bags") {
-        throw new Error("Choose a valid customs description.");
+      const fee = Number(newCustom);
+      if (!Number.isFinite(fee) || fee < 0) throw new Error("Custom fee must be a valid number >= 0");
+      const weight = newCustomWeight ? Number(newCustomWeight) : null;
+      if (weight !== null && (!Number.isFinite(weight) || weight < 0)) {
+        throw new Error("Weight must be a valid number >= 0.");
       }
-      const res = await addCustom(selectedMonth, newCustom, {
+
+      const res = await addCustom(selectedMonth, fee, {
         note: null,
         description: newCustomDescription,
-        tracking_no: null,
+        tracking_no: newCustomTracking.trim() || null,
+        weight_kg: weight,
       });
       if (res?.ok === false || res?.success === false) {
         if (isAuthErrorPayload(res)) return handleAuthFail();
         throw new Error(res?.error || "Failed to add customs");
       }
-        const refreshed = await getCustoms(selectedMonth);
-        const norm = normalizeArrayResponse(refreshed);
-        setCustoms(norm.data || []);
-        setNewCustom("");
-        setNewCustomDescription("benzene");
-        const notifications = Array.isArray(res?.notifications) ? res.notifications.filter(Boolean) : [];
-        if (notifications.length) {
-          openError(notifications.join("\n"), "Customs Notice");
-        }
-      } catch (err) {
-        openError(err?.message || "Failed to add customs.");
+      const refreshed = await getCustoms(selectedMonth);
+      const norm = normalizeArrayResponse(refreshed);
+      setCustoms(norm.data || []);
+      setNewCustom("");
+      setNewCustomWeight("");
+      setNewCustomTracking("");
+      setNewCustomDescription("benzene");
+      const notifications = Array.isArray(res?.notifications) ? res.notifications.filter(Boolean) : [];
+      if (notifications.length) {
+        openError(notifications.join("\n"), "Customs Notice");
       }
-    };
+    } catch (err) {
+      openError(err?.message || "Failed to add customs.");
+    }
+  };
 
   const handleAddBudget = async () => {
     if (!newBudgetValue || !selectedMonth) return;
@@ -574,17 +583,23 @@ export default function Dashboard() {
     }
   };
 
-  const handleUpdateCustom = async (id, value, note = null) => {
+  const handleUpdateCustom = async (id, value, note = null, tracking = undefined, weight = undefined) => {
     try {
       const customId = Number(id || 0);
       if (customId <= 0) return;
-      const res = await updateCustom(customId, value, note);
+      const res = await updateCustom(customId, value, note, tracking, weight);
       if (res?.ok === false || res?.success === false) {
         if (isAuthErrorPayload(res)) return handleAuthFail();
         throw new Error(res?.error || "Failed to update customs");
       }
       setCustoms((prev) =>
-        prev.map((c) => (c.id === customId ? { ...c, customs_fee: value, note } : c))
+        prev.map((c) => (c.id === customId ? {
+          ...c,
+          customs_fee: value,
+          note,
+          ...(tracking !== undefined ? { tracking_no: tracking } : {}),
+          ...(weight !== undefined ? { weight_kg: weight } : {}),
+        } : c))
       );
     } catch (err) {
       openError(err?.message || "Failed to update customs.");
@@ -606,15 +621,21 @@ export default function Dashboard() {
     }
   };
 
+  const totalBudget = useMemo(
+    () => budgets.reduce((sum, b) => sum + Number(b.value || 0), 0),
+    [budgets]
+  );
+
   const totals = useMemo(() => {
     const totalOrders = orders.reduce((sum, o) => sum + Number(o.order_details || 0), 0);
     const totalCollect = orders.reduce((sum, o) => sum + Number(o.amount_to_collect || 0), 0);
     const totalActualWeightKg = customs.reduce((sum, c) => sum + Number(c.weight_kg || 0), 0);
     const customsWithWeight = customs.reduce((sum, c) => sum + (Number(c.weight_kg || 0) > 0 ? 1 : 0), 0);
     const totalEstimatedWeight = orders.reduce(
-      (sum, o) => sum + (Number(o.shein_total_weight_plus_2kg_sum || 0))*6.95,
+      (sum, o) => sum + Number(o.shein_total_weight_plus_2kg_sum || 0),
       0
     );
+    const totalEstimatedShipping = totalEstimatedWeight * Number(kgPrice || 0);
     const totalEstimatedProfit = orders.reduce(
       (sum, o) =>
         sum +
@@ -625,37 +646,36 @@ export default function Dashboard() {
         ),
       0
     );
-      const totalCustoms = serverSummary
-        ? Number(serverSummary.customs_total || 0)
-        : customs.reduce((sum, c) => sum + Number(c.customs_fee || 0), 0);
-      const totalPayments = serverSummary
-        ? Number(serverSummary.payments_total || 0)
-        : payments.reduce((sum, p) => sum + Number(p.payment_amount || 0), 0);
-      const totalLosses = serverSummary
-        ? Number(serverSummary.loss_total || 0)
-        : 0;
-      const totalEstimatedProfitAfterLosses = totalEstimatedProfit - totalLosses;
-      return {
-        totalOrders,
-        totalCollect,
-        totalEstimatedWeight,
-        totalActualWeightKg,
-        customsWithWeight,
-        totalEstimatedProfit,
-        totalEstimatedProfitAfterLosses,
-        totalCustoms,
-        totalPayments,
-        totalLosses,
-      };
-    }, [orders, customs, payments, kgPrice, serverSummary]);
+    const totalCustoms = serverSummary
+      ? Number(serverSummary.customs_total || 0)
+      : customs.reduce((sum, c) => sum + Number(c.customs_fee || 0), 0);
+    const totalPayments = serverSummary
+      ? Number(serverSummary.payments_total || 0)
+      : payments.reduce((sum, p) => sum + Number(p.payment_amount || 0), 0);
+    const totalLosses = serverSummary
+      ? Number(serverSummary.loss_total || 0)
+      : 0;
+    const totalEstimatedProfitAfterLosses = totalEstimatedProfit - totalLosses;
+    const realizedNetProfit = totalPayments - totalOrders - totalCustoms - totalLosses;
+    return {
+      totalOrders,
+      totalCollect,
+      totalEstimatedWeight,
+      totalEstimatedShipping,
+      totalActualWeightKg,
+      customsWithWeight,
+      totalEstimatedProfit,
+      totalEstimatedProfitAfterLosses,
+      realizedNetProfit,
+      totalCustoms,
+      totalPayments,
+      totalLosses,
+    };
+  }, [orders, customs, payments, kgPrice, serverSummary]);
 
-  const remaining = totals.totalOrders + totals.totalCustoms - totals.totalPayments;
-
-  const actualCash = useMemo(() => {
-    const initialBudget = budgets.find((b) => (b.description || "").toLowerCase() === "initial");
-    const initialValue = initialBudget ? Number(initialBudget.value || 0) : 0;
-    return initialValue + totals.totalPayments - totals.totalOrders - totals.totalCustoms;
-  }, [budgets, totals]);
+  const netOutflow = totals.totalOrders + totals.totalCustoms - totals.totalPayments;
+  const remainingBudget = totalBudget > 0 ? (totalBudget - netOutflow) : -netOutflow;
+  const actualCash = totalBudget + totals.totalPayments - totals.totalOrders - totals.totalCustoms;
 
   return (
     <div className={`dashPage dashTopSpacer${readOnly ? " dashReadOnly" : ""}`}>
@@ -769,7 +789,7 @@ export default function Dashboard() {
 
       <div className="dashSecondaryStats">
         <StatCard
-          title="Orders Total"
+          title="Orders Goods Cost"
           value={`$${money(totals.totalOrders)}`}
           variant="orders"
           subtitle={`${orders.length} order${orders.length !== 1 ? "s" : ""}`}
@@ -782,10 +802,10 @@ export default function Dashboard() {
           }
         />
         <StatCard
-          title="To Collect"
-          value={`$${money(serverSummary?.uncollected_customer_total ?? totals.totalCollect)}`}
+          title="Orders To Collect"
+          value={`$${money(totals.totalCollect)}`}
           variant="collect"
-          subtitle={`${serverSummary?.uncollected_customer_count ?? 0} received customers pending collection`}
+          subtitle={`Expected revenue across ${orders.length} order(s)`}
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23" />
@@ -797,7 +817,7 @@ export default function Dashboard() {
           title="Est. vs Actual Weight"
           value={`${Number(totals.totalEstimatedWeight || 0).toFixed(2)} / ${Number(totals.totalActualWeightKg || 0).toFixed(2)} kg`}
           variant="weight"
-          subtitle="Estimated vs Customs Weight"
+          subtitle={`Shipping rate: $${money(kgPrice)}/kg ($${money(totals.totalEstimatedShipping)})`}
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -807,7 +827,7 @@ export default function Dashboard() {
           }
         />
         <StatCard
-          title="Customs Total"
+          title="Customs & Freight"
           value={`$${money(totals.totalCustoms)}`}
           variant="customs"
           subtitle={`${customs.length} recorded entries`}
@@ -821,10 +841,10 @@ export default function Dashboard() {
           }
         />
         <StatCard
-          title="Payments Total"
+          title="Payments Collected"
           value={`$${money(serverSummary?.payments_total ?? totals.totalPayments)}`}
           variant="payments"
-          subtitle={`${serverSummary?.payment_count ?? payments.length} payment records (no item double-counting)`}
+          subtitle={`${serverSummary?.payment_count ?? payments.length} payment records`}
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -834,9 +854,9 @@ export default function Dashboard() {
         />
         <StatCard
           title="Remaining Budget"
-          value={`$${money(remaining)}`}
-          variant="remaining"
-          subtitle="Net monthly liquidity"
+          value={`$${money(remainingBudget)}`}
+          variant={remainingBudget >= 0 ? "profit" : "remaining"}
+          subtitle={totalBudget > 0 ? `From $${money(totalBudget)} total budget` : "Net cash position (no budget set)"}
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -847,29 +867,35 @@ export default function Dashboard() {
       </div>
 
       <div className="dashSecondaryStats">
-        <StatCard
-          title="Received Customers"
-          value={serverSummary?.received_customer_count ?? "-"}
-          variant="collect"
-          subtitle={`$${money(serverSummary?.received_customer_total)} unlocked for delivery`}
-        />
-        <StatCard
-          title="Assigned"
-          value={serverSummary?.assigned_customer_count ?? "-"}
-          variant="orders"
-          subtitle={`$${money(serverSummary?.assigned_customer_total)} assigned`}
-        />
-        <StatCard
-          title="Uncollected"
-          value={`$${money(serverSummary?.uncollected_customer_total)}`}
-          variant="remaining"
-          subtitle="Received/assigned customer amounts still pending"
-        />
+        <div onClick={() => nav("/delivery")} style={{ cursor: "pointer" }} title="Open Delivery Workspace">
+          <StatCard
+            title="Ready for Delivery"
+            value={serverSummary?.ready_customer_count ?? serverSummary?.received_customer_count ?? "-"}
+            variant="collect"
+            subtitle={`$${money(serverSummary?.uncollected_customer_total)} unlocked → Open Delivery`}
+          />
+        </div>
+        <div onClick={() => nav("/delivery")} style={{ cursor: "pointer" }} title="Open Delivery Workspace">
+          <StatCard
+            title="Assigned to Courier"
+            value={serverSummary?.assigned_customer_count ?? "-"}
+            variant="orders"
+            subtitle={`$${money(serverSummary?.assigned_customer_total)} in delivery →`}
+          />
+        </div>
+        <div onClick={() => nav("/cargo")} style={{ cursor: "pointer" }} title="Open Cargo Receipts">
+          <StatCard
+            title="Cargo Shipments"
+            value={`${serverSummary?.carts_with_receipts ?? 0} / ${serverSummary?.total_carts_count ?? 0}`}
+            variant="weight"
+            subtitle="Carts with received tracking → Open Cargo"
+          />
+        </div>
         <StatCard
           title="Payment Reconciliation"
           value={`$${money(serverSummary?.reconciliation?.payment_collection_difference)}`}
           variant="payments"
-          subtitle="Payments total minus customer collection total"
+          subtitle="Payments total minus customer collections"
         />
       </div>
 
@@ -957,10 +983,16 @@ export default function Dashboard() {
                         </button>
                       </div>
                       <div className="dashAccMetaRow">
-                        <span className="dashAccPill">Amount: ${money(o.order_details)}</span>
+                        <span className="dashAccPill">Cost: ${money(o.order_details)}</span>
                         <span className="dashAccPill">Collect: ${money(o.amount_to_collect)}</span>
                         <span className="dashAccPill">
                           Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
+                        </span>
+                        <span className="dashAccPill">
+                          Carts: {Number(o.carts_count || 0)}
+                        </span>
+                        <span className="dashAccPill">
+                          Customers: {Number(o.cart_customers_count || o.customer_count || 0)}
                         </span>
                       </div>
                     </div>
@@ -1011,9 +1043,29 @@ export default function Dashboard() {
                         Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
                       </div>
                       <div className="dashInlineMetric">
-                        Weight x KG Price: $
+                        Shipping: $
                         {money(
                           Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)
+                        )}
+                      </div>
+                      <div
+                        className="dashInlineMetric"
+                        style={{
+                          color:
+                            Number(o.amount_to_collect || 0) -
+                              Number(o.order_details || 0) -
+                              (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)) >=
+                            0
+                              ? "#059669"
+                              : "#dc2626",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Est. Profit: $
+                        {money(
+                          Number(o.amount_to_collect || 0) -
+                            Number(o.order_details || 0) -
+                            (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0))
                         )}
                       </div>
                     </div>
@@ -1082,24 +1134,49 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="dashFormRow">
+            <div className="dashFormRow" style={{ flexWrap: "wrap", gap: "8px" }}>
               <input
                 className="dashInput"
+                type="number"
+                step="0.01"
+                min="0"
+                style={{ minWidth: "110px", flex: 1 }}
                 value={newCustom}
                 onChange={(e) => setNewCustom(e.target.value)}
-                placeholder="New Custom"
+                placeholder="Custom Fee ($)"
+              />
+              <input
+                className="dashInput"
+                type="number"
+                step="0.001"
+                min="0"
+                style={{ minWidth: "100px", flex: 1 }}
+                value={newCustomWeight}
+                onChange={(e) => setNewCustomWeight(e.target.value)}
+                placeholder="Weight (kg)"
+              />
+              <input
+                className="dashInput"
+                style={{ minWidth: "130px", flex: 1.2 }}
+                value={newCustomTracking}
+                onChange={(e) => setNewCustomTracking(e.target.value)}
+                placeholder="Tracking # (optional)"
               />
               <CustomDropdown
                 className="dashInput"
+                style={{ minWidth: "100px", flex: 1 }}
                 value={newCustomDescription}
                 onChange={(e) => setNewCustomDescription(e.target.value)}
                 options={[
                   { value: "benzene", label: "benzene" },
                   { value: "bags", label: "bags" },
+                  { value: "freight", label: "freight" },
+                  { value: "customs", label: "customs" },
+                  { value: "other", label: "other" },
                 ]}
               />
               <button className="dashBtn" onClick={handleAddCustom}>
-                Add
+                + Add
               </button>
             </div>
             <List>
@@ -1108,12 +1185,16 @@ export default function Dashboard() {
                   key={c.id}
                   header={
                     <div className="dashAccHeaderContent">
-                      <div className="dashAccTitle">Custom Fee: ${money(c.customs_fee)}</div>
+                      <div className="dashAccTitle">
+                        Custom Fee: ${money(c.customs_fee)}
+                        {Number(c.weight_kg || 0) > 0 ? ` | ${Number(c.weight_kg).toFixed(3)} kg` : ""}
+                      </div>
                       <div className="dashAccMetaRow">
-                        <span className="dashAccPill">{c.note || "No note"}</span>
+                        <span className="dashAccPill">Desc: {c.description || "benzene"}</span>
+                        {c.tracking_no && <span className="dashAccPill">Track: {c.tracking_no}</span>}
+                        {c.note && <span className="dashAccPill">{c.note}</span>}
                         <span className="dashAccPill">
                           {[
-                            c.tracking_no ? `Track: ${c.tracking_no}` : null,
                             c.cart_ref || null,
                             c.order_ref || null,
                           ]
@@ -1124,9 +1205,11 @@ export default function Dashboard() {
                     </div>
                   }
                 >
-                  <div className="dashAccFormGrid dashCustomGrid">
+                  <div className="dashAccFormGrid dashCustomGrid" style={{ gridTemplateColumns: "1fr 1fr 1.5fr auto", gap: "8px" }}>
                     <input
                       className="dashInput"
+                      type="number"
+                      step="0.01"
                       value={c.customs_fee}
                       onChange={(e) =>
                         setCustoms((prev) =>
@@ -1135,7 +1218,23 @@ export default function Dashboard() {
                           )
                         )
                       }
-                      onBlur={(e) => handleUpdateCustom(c.id, e.target.value, c.note || null)}
+                      onBlur={(e) => handleUpdateCustom(c.id, e.target.value, c.note || null, c.tracking_no || undefined, c.weight_kg || undefined)}
+                      placeholder="Fee ($)"
+                    />
+                    <input
+                      className="dashInput"
+                      type="number"
+                      step="0.001"
+                      value={c.weight_kg ?? ""}
+                      onChange={(e) =>
+                        setCustoms((prev) =>
+                          prev.map((cu) =>
+                            cu.id === c.id ? { ...cu, weight_kg: e.target.value } : cu
+                          )
+                        )
+                      }
+                      onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, c.note || null, c.tracking_no || undefined, e.target.value)}
+                      placeholder="Weight (kg)"
                     />
                     <input
                       className="dashInput"
@@ -1147,8 +1246,8 @@ export default function Dashboard() {
                           )
                         )
                       }
-                      onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, e.target.value)}
-                      placeholder="Reference / message (e.g. 6021126419893 cart 5 order 1)"
+                      onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, e.target.value, c.tracking_no || undefined, c.weight_kg || undefined)}
+                      placeholder="Reference / note"
                     />
                     <button
                       className="dashBtnDanger"
@@ -1533,6 +1632,9 @@ export default function Dashboard() {
               <button className="dashBtn" onClick={handleSaveKgPrice}>
                 Save KG Price
               </button>
+            </div>
+            <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--muted, #64748b)" }}>
+              Estimated Shipping Cost: {Number(totals.totalEstimatedWeight || 0).toFixed(2)} kg × ${money(kgPrice)} = <strong style={{ color: "var(--text, #0f172a)" }}>${money(totals.totalEstimatedShipping)}</strong>
             </div>
           </SectionCard>
         </div>

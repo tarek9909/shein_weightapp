@@ -18,7 +18,7 @@ async function callSheinScraper(action, payload) {
   const routes = { track_one: "/api/direct/track_one", weight_one: "/api/direct/weight_one", weight_many: "/api/direct/weight_many" };
   if (!routes[action]) return { ok: false, error: `Unsupported scraper action: ${action}`, status: 400 };
   const base = localApiBase();
-  const token = String(process.env.SHEIN_LOCAL_API_TOKEN || "").trim();
+  const token = String(process.env.SHEIN_LOCAL_API_TOKEN || process.env.INTERNAL_API_TOKEN || "").trim();
   if (token.length < 32) return { ok: false, error: "SHEIN_LOCAL_API_TOKEN is not configured", status: 503 };
   const started = Date.now();
   try {

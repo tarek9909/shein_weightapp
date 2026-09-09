@@ -31,7 +31,49 @@ router.post(paths("addPayment"), asyncHandler(async (req, res) => {
 }));
 
 router.post(paths("updatePayment"), asyncHandler(async (req, res) => { const id=int(req.body?.id); const amount=number(req.body?.payment_amount); if(id<=0 || !finite(req.body?.payment_amount) || amount < 0)return res.status(400).json({success:false,error:"id and a valid non-negative payment_amount are required"}); const result=await execute(pool,"UPDATE payments SET payment_amount=? WHERE id=? AND user_id=? AND COALESCE(payment_type,'manual')='manual'",[amount,id,uid(req)]); res.json({success:true,affected:result.affectedRows}); }));
-router.post(paths("deletePayment"), asyncHandler(async (req, res) => { const id=int(req.body?.id); if(id<=0)return res.status(400).json({success:false,error:"id is required"}); const result=await execute(pool,"DELETE FROM payments WHERE id=? AND user_id=?",[id,uid(req)]); res.json({success:true,affected:result.affectedRows}); }));
+router.post(paths("deletePayment"), asyncHandler(async (req, res) => {
+  const id = int(req.body?.id);
+  if (id <= 0) return res.status(400).json({ success: false, error: "id is required" });
+  const payment = await first(pool, "SELECT id, month_id, payment_type, customer_ids_json FROM payments WHERE id=? AND user_id=? LIMIT 1", [id, uid(req)]);
+  if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
+
+  const db = await pool.getConnection();
+  try {
+    await db.beginTransaction();
+    const items = await rows(db, "SELECT customer_id FROM payment_customer_items WHERE payment_id=? AND user_id=?", [id, uid(req)]);
+    let customerIds = items.map((it) => Number(it.customer_id)).filter((cid) => cid > 0);
+    if (!customerIds.length && payment.customer_ids_json) {
+      try {
+        const parsed = JSON.parse(payment.customer_ids_json);
+        if (Array.isArray(parsed)) customerIds = parsed.map((n) => Number(n)).filter((cid) => cid > 0);
+      } catch (_) {}
+    }
+
+    if (customerIds.length) {
+      const qs = placeholders(customerIds);
+      await execute(db, `UPDATE cart_customers
+        SET collection_status='pending',
+            payment_status='unpaid',
+            delivery_assignment_status=CASE WHEN delivery_method IS NOT NULL THEN 'assigned' ELSE 'unassigned' END,
+            status='withdelivery',
+            delivery_status='added',
+            collection_payment_id=NULL,
+            collected_at=NULL
+        WHERE user_id=? AND id IN (${qs})`, [uid(req), ...customerIds]);
+    }
+
+    await execute(db, "DELETE FROM payment_customer_items WHERE payment_id=? AND user_id=?", [id, uid(req)]);
+    const result = await execute(db, "DELETE FROM payments WHERE id=? AND user_id=?", [id, uid(req)]);
+
+    await db.commit();
+    res.json({ success: true, affected: result.affectedRows, reverted_customers: customerIds.length });
+  } catch (e) {
+    try { await db.rollback(); } catch (_) {}
+    throw e;
+  } finally {
+    db.release();
+  }
+}));
 
 router.get(paths("getPaymentCustomers"), asyncHandler(async (req, res) => { const monthId=int(req.query.month_id); const query=trim(req.query.q); if(monthId<=0)return res.status(400).json({success:false,error:"month_id is required"}); if(!(await ensureMonth(monthId,uid(req))))return res.status(403).json({success:false,error:"Invalid month for this user"}); const like=`%${query}%`; const result=await rows(pool,`SELECT cc.id AS customer_id,cc.customer_name,cc.usd_to_collect,cc.status,cc.delivery_status,cc.delivery_number,oc.cart_order_number,o.order_name,o.id AS order_id FROM cart_customers cc INNER JOIN order_carts oc ON cc.cart_id=oc.id AND oc.user_id=cc.user_id INNER JOIN orders o ON oc.order_id=o.id AND o.user_id=oc.user_id WHERE cc.user_id=? AND o.month_id=? AND COALESCE(cc.status,'') NOT IN ('paid','done') AND COALESCE(cc.delivery_status,'') NOT IN ('paid','done') AND NOT EXISTS (SELECT 1 FROM payment_customer_items pci WHERE pci.user_id=cc.user_id AND pci.customer_id=cc.id) AND (?='' OR cc.customer_name LIKE ? OR oc.cart_order_number LIKE ? OR COALESCE(cc.delivery_number,'') LIKE ? OR COALESCE(o.order_name,'') LIKE ? OR CAST(cc.id AS CHAR) LIKE ?) ORDER BY cc.id DESC LIMIT 300`,[uid(req),monthId,query,like,like,like,like,like]); res.json({success:true,customers:result}); }));
 router.get(paths("getPaymentItems"), asyncHandler(async (req, res) => { const paymentId=int(req.query.payment_id); if(paymentId<=0)return res.status(400).json({success:false,error:"payment_id is required"}); if(!(await first(pool,"SELECT id FROM payments WHERE id=? AND user_id=? LIMIT 1",[paymentId,uid(req)])))return res.status(404).json({success:false,error:"Payment not found"}); const result=await rows(pool,`SELECT pci.id,pci.payment_id,pci.customer_id,pci.customer_name_snapshot,pci.amount,COALESCE(pci.base_amount,pci.amount) AS base_amount,COALESCE(pci.delivery_adjustment,pci.delivery_charge,0) AS delivery_adjustment,COALESCE(pci.final_amount,pci.amount-COALESCE(pci.delivery_charge,0)) AS final_amount,COALESCE(pci.final_amount,pci.amount-COALESCE(pci.delivery_charge,0)) AS net_amount,pci.delivery_charge,pci.delivery_method,pci.delivery_number,pci.order_name_snapshot,pci.cart_order_number_snapshot,cc.status,cc.delivery_status,oc.cart_order_number,oc.id AS cart_id,o.order_name,o.id AS order_id FROM payment_customer_items pci LEFT JOIN cart_customers cc ON cc.id=pci.customer_id AND cc.user_id=pci.user_id LEFT JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=pci.user_id LEFT JOIN orders o ON o.id=oc.order_id AND o.user_id=pci.user_id WHERE pci.payment_id=? AND pci.user_id=? ORDER BY pci.id DESC`,[paymentId,uid(req)]); res.json({success:true,items:result}); }));

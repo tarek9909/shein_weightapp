@@ -36,8 +36,16 @@ export default function Reports() {
   }, [reports, searchTerm]);
 
   const totals = useMemo(() => {
+    const totalOrdersCost = reports.reduce(
+      (sum, r) => sum + Number(r.orders_cost || 0),
+      0
+    );
     const totalOrdersToCollect = reports.reduce(
       (sum, r) => sum + Number(r.orders_to_collect || 0),
+      0
+    );
+    const totalBudget = reports.reduce(
+      (sum, r) => sum + Number(r.budget_total || 0),
       0
     );
     const totalPayments = reports.reduce(
@@ -56,19 +64,80 @@ export default function Reports() {
       (sum, r) => sum + Number(r.order_count || 0),
       0
     );
-    const netBalance = totalPayments - totalCustoms - totalLosses;
+    const totalEstimatedShipping = reports.reduce(
+      (sum, r) =>
+        sum +
+        Number(
+          r.estimated_shipping ??
+            Number(r.estimated_weight || 0) * Number(r.kg_price || 0)
+        ),
+      0
+    );
+    const totalEstimatedProfit = reports.reduce(
+      (sum, r) =>
+        sum +
+        Number(
+          r.estimated_profit ??
+            (Number(r.orders_to_collect || 0) -
+              Number(r.orders_cost || 0) -
+              Number(
+                r.estimated_shipping ??
+                  Number(r.estimated_weight || 0) * Number(r.kg_price || 0)
+              ))
+        ),
+      0
+    );
+    const totalEstimatedProfitAfterLosses = reports.reduce(
+      (sum, r) =>
+        sum +
+        Number(
+          r.estimated_profit_after_losses ??
+            Number(r.estimated_profit || 0) - Number(r.losses_total || 0)
+        ),
+      0
+    );
+    const totalNetProfit = reports.reduce(
+      (sum, r) =>
+        sum +
+        Number(
+          r.net_profit ??
+            (Number(r.payments_total || 0) -
+              Number(r.orders_cost || 0) -
+              Number(r.customs_total || 0) -
+              Number(r.losses_total || 0))
+        ),
+      0
+    );
+    const totalProjectedProfit = reports.reduce(
+      (sum, r) =>
+        sum +
+        Number(
+          r.projected_profit ??
+            (Number(r.orders_to_collect || 0) -
+              Number(r.orders_cost || 0) -
+              Number(r.customs_total || 0) -
+              Number(r.losses_total || 0))
+        ),
+      0
+    );
     const collectionPercentage =
       totalOrdersToCollect > 0
         ? Math.min(100, Math.round((totalPayments / totalOrdersToCollect) * 100))
         : 0;
 
     return {
+      totalOrdersCost,
       totalOrdersToCollect,
+      totalBudget,
       totalPayments,
       totalCustoms,
       totalLosses,
       totalOrdersCount,
-      netBalance,
+      totalEstimatedShipping,
+      totalEstimatedProfit,
+      totalEstimatedProfitAfterLosses,
+      totalNetProfit,
+      totalProjectedProfit,
       collectionPercentage,
     };
   }, [reports]);
@@ -79,23 +148,55 @@ export default function Reports() {
       "Month ID",
       "Month Name",
       "Orders Count",
-      "Orders Amount ($)",
+      "Goods Cost ($)",
+      "Target Revenue ($)",
+      "Budget Allocated ($)",
       "Collected Amount ($)",
       "Customs ($)",
-      "Losses ($)",
-      "Net Balance ($)",
+      "Confirmed Losses ($)",
+      "Estimated Profit ($)",
+      "Estimated Net Profit After Losses ($)",
+      "Realized Net Profit ($)",
+      "Projected Net Profit ($)",
     ];
     const rows = filteredReports.map((r) => {
-      const net = r.payments_total - r.customs_total - r.losses_total;
+      const net = Number(
+        r.net_profit ??
+          (Number(r.payments_total || 0) -
+            Number(r.orders_cost || 0) -
+            Number(r.customs_total || 0) -
+            Number(r.losses_total || 0))
+      );
+      const projected = Number(
+        r.projected_profit ??
+          (Number(r.orders_to_collect || 0) -
+            Number(r.orders_cost || 0) -
+            Number(r.customs_total || 0) -
+            Number(r.losses_total || 0))
+      );
+      const estProfit = Number(
+        r.estimated_profit ??
+          (Number(r.orders_to_collect || 0) -
+            Number(r.orders_cost || 0) -
+            Number(r.estimated_shipping || 0))
+      );
+      const estProfitAfterLosses = Number(
+        r.estimated_profit_after_losses ?? (estProfit - Number(r.losses_total || 0))
+      );
       return [
         r.id,
-        `"${r.name.replace(/"/g, '""')}"`,
+        `"${(r.name || "").replace(/"/g, '""')}"`,
         r.order_count || 0,
-        r.orders_to_collect.toFixed(2),
-        r.payments_total.toFixed(2),
-        r.customs_total.toFixed(2),
-        r.losses_total.toFixed(2),
+        Number(r.orders_cost || 0).toFixed(2),
+        Number(r.orders_to_collect || 0).toFixed(2),
+        Number(r.budget_total || 0).toFixed(2),
+        Number(r.payments_total || 0).toFixed(2),
+        Number(r.customs_total || 0).toFixed(2),
+        Number(r.losses_total || 0).toFixed(2),
+        estProfit.toFixed(2),
+        estProfitAfterLosses.toFixed(2),
         net.toFixed(2),
+        projected.toFixed(2),
       ];
     });
 
@@ -207,7 +308,103 @@ export default function Reports() {
       <div className="rptKpiGrid">
         <div className="rptKpiCard rptKpiCard--primary">
           <div className="rptKpiHead">
-            <span className="rptKpiLabel">Total Orders Volume</span>
+            <span className="rptKpiLabel">Estimated Net Profit</span>
+            <div className="rptKpiIcon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+              >
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+            </div>
+          </div>
+          <div className="rptKpiValue">${money(totals.totalEstimatedProfitAfterLosses)}</div>
+          <div className="rptKpiSub">
+            Gross Est. Profit: ${money(totals.totalEstimatedProfit)} (Weight-rate based)
+          </div>
+        </div>
+
+        <div className="rptKpiCard rptKpiCard--danger">
+          <div className="rptKpiHead">
+            <span className="rptKpiLabel">Confirmed Losses</span>
+            <div className="rptKpiIcon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+              >
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+          </div>
+          <div className="rptKpiValue">${money(totals.totalLosses)}</div>
+          <div className="rptKpiSub">Delivery losses & write-offs</div>
+        </div>
+
+        <div
+          className={`rptKpiCard ${
+            totals.totalNetProfit >= 0 ? "rptKpiCard--success" : "rptKpiCard--danger"
+          }`}
+        >
+          <div className="rptKpiHead">
+            <span className="rptKpiLabel">Realized Net Profit</span>
+            <div className="rptKpiIcon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+              >
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+          </div>
+          <div
+            className={`rptKpiValue ${
+              totals.totalNetProfit >= 0 ? "rptAmount--netPositive" : "rptAmount--netNegative"
+            }`}
+          >
+            ${money(totals.totalNetProfit)}
+          </div>
+          <div className="rptKpiSub">Collected - (Goods + Customs + Losses)</div>
+        </div>
+
+        <div className="rptKpiCard rptKpiCard--success">
+          <div className="rptKpiHead">
+            <span className="rptKpiLabel">Total Collected</span>
+            <div className="rptKpiIcon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <div className="rptKpiValue">${money(totals.totalPayments)}</div>
+          <div className="rptKpiSub">{totals.collectionPercentage}% of target collected</div>
+        </div>
+
+        <div className="rptKpiCard rptKpiCard--primary">
+          <div className="rptKpiHead">
+            <span className="rptKpiLabel">Target Revenue</span>
             <div className="rptKpiIcon">
               <svg
                 width="18"
@@ -225,34 +422,13 @@ export default function Reports() {
           </div>
           <div className="rptKpiValue">${money(totals.totalOrdersToCollect)}</div>
           <div className="rptKpiSub">
-            Across {totals.totalOrdersCount} total order{totals.totalOrdersCount !== 1 ? "s" : ""}
+            Goods cost: ${money(totals.totalOrdersCost)} | {totals.totalOrdersCount} orders
           </div>
-        </div>
-
-        <div className="rptKpiCard rptKpiCard--success">
-          <div className="rptKpiHead">
-            <span className="rptKpiLabel">Total Collected</span>
-            <div className="rptKpiIcon">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-              >
-                <line x1="12" y1="1" x2="12" y2="23" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-          </div>
-          <div className="rptKpiValue">${money(totals.totalPayments)}</div>
-          <div className="rptKpiSub">{totals.collectionPercentage}% of target collected</div>
         </div>
 
         <div className="rptKpiCard rptKpiCard--warning">
           <div className="rptKpiHead">
-            <span className="rptKpiLabel">Total Customs & Losses</span>
+            <span className="rptKpiLabel">Customs & Freight</span>
             <div className="rptKpiIcon">
               <svg
                 width="18"
@@ -269,37 +445,8 @@ export default function Reports() {
               </svg>
             </div>
           </div>
-          <div className="rptKpiValue">${money(totals.totalCustoms + totals.totalLosses)}</div>
-          <div className="rptKpiSub">
-            Customs: ${money(totals.totalCustoms)} | Losses: ${money(totals.totalLosses)}
-          </div>
-        </div>
-
-        <div className="rptKpiCard rptKpiCard--primary">
-          <div className="rptKpiHead">
-            <span className="rptKpiLabel">Net Balance Margin</span>
-            <div className="rptKpiIcon">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-            </div>
-          </div>
-          <div
-            className={`rptKpiValue ${
-              totals.netBalance >= 0 ? "rptAmount--netPositive" : "rptAmount--netNegative"
-            }`}
-          >
-            ${money(totals.netBalance)}
-          </div>
-          <div className="rptKpiSub">Collected minus customs and losses</div>
+          <div className="rptKpiValue">${money(totals.totalCustoms)}</div>
+          <div className="rptKpiSub">Clearance fees & shipping entries</div>
         </div>
       </div>
 
@@ -358,21 +505,36 @@ export default function Reports() {
                 <tr>
                   <th>Month Cycle</th>
                   <th>Orders Count</th>
-                  <th>Orders Target ($)</th>
+                  <th>Goods Cost ($)</th>
+                  <th>Target Revenue ($)</th>
                   <th>Collected Revenue ($)</th>
                   <th>Collection Rate</th>
                   <th>Customs Fees ($)</th>
-                  <th>Losses ($)</th>
-                  <th>Net Balance ($)</th>
+                  <th>Confirmed Losses ($)</th>
+                  <th>Estimated Profit ($)</th>
+                  <th>Realized Net Profit ($)</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReports.map((r) => {
-                  const net = r.payments_total - r.customs_total - r.losses_total;
+                  const net = Number(
+                    r.net_profit ??
+                      (Number(r.payments_total || 0) -
+                        Number(r.orders_cost || 0) -
+                        Number(r.customs_total || 0) -
+                        Number(r.losses_total || 0))
+                  );
+                  const target = Number(r.orders_to_collect || 0);
+                  const collected = Number(r.payments_total || 0);
                   const rate =
-                    r.orders_to_collect > 0
-                      ? Math.min(100, Math.round((r.payments_total / r.orders_to_collect) * 100))
+                    target > 0
+                      ? Math.min(100, Math.round((collected / target) * 100))
                       : 0;
+                  const estProfit = Number(
+                    r.estimated_profit_after_losses ??
+                      r.estimated_profit ??
+                      (target - Number(r.orders_cost || 0) - Number(r.estimated_shipping || 0) - Number(r.losses_total || 0))
+                  );
 
                   return (
                     <tr key={r.id}>
@@ -383,6 +545,9 @@ export default function Reports() {
                         </div>
                       </td>
                       <td>{r.order_count || 0} orders</td>
+                      <td className="rptAmount rptAmount--cost">
+                        ${money(r.orders_cost)}
+                      </td>
                       <td className="rptAmount rptAmount--collect">
                         ${money(r.orders_to_collect)}
                       </td>
@@ -411,6 +576,13 @@ export default function Reports() {
                       </td>
                       <td className="rptAmount rptAmount--losses">
                         ${money(r.losses_total)}
+                      </td>
+                      <td
+                        className={`rptAmount ${
+                          estProfit >= 0 ? "rptAmount--netPositive" : "rptAmount--netNegative"
+                        }`}
+                      >
+                        ${money(estProfit)}
                       </td>
                       <td
                         className={`rptAmount ${

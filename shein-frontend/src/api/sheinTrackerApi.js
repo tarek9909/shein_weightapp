@@ -24,9 +24,9 @@ export const deleteSheinUserByOwner = (email) =>
 // Legacy exports kept for compatibility
 export const deleteSheinUser = deleteSheinUserByOwner;
 
-// Cart-level refresh through the PHP backend's local scraper bridge.
+// Refresh calls go through the Node backend, which securely bridges to Python.
 export const refreshCartShein = (cartId, profileKey = "") =>
-  apiFetch(`${BASE_URL}/ordersDetails/refreshCartShein.php`, {
+  apiFetch(`${BASE_URL}/ordersDetails/refreshCartShein`, {
     method: "POST",
     body: JSON.stringify({
       id: cartId,
@@ -35,13 +35,13 @@ export const refreshCartShein = (cartId, profileKey = "") =>
   });
 
 export const refreshOrderSheinTrack = (orderId) =>
-  apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinTrack.php`, {
+  apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinTrack`, {
     method: "POST",
     body: JSON.stringify({ order_id: orderId }),
   });
 
 export const refreshOrderSheinWeight = (orderId) =>
-  apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinWeight.php`, {
+  apiFetch(`${BASE_URL}/ordersDetails/refreshOrderSheinWeight`, {
     method: "POST",
     body: JSON.stringify({ order_id: orderId }),
   });

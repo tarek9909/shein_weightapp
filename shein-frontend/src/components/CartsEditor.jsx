@@ -40,10 +40,6 @@ const CartsEditor = ({
     }
   };
 
-  const sheinUserEmails = useMemo(
-    () => Array.from(new Set((sheinUsers || []).map((u) => (u?.email || "").trim()).filter(Boolean))),
-    [sheinUsers]
-  );
 
   const profileByEmail = useMemo(() => {
     const map = new Map();
@@ -108,31 +104,6 @@ const CartsEditor = ({
       onConfirm: async () => {
         closeModal();
         await onYes();
-      },
-      onCancel: closeModal,
-      onClose: closeModal,
-    });
-  };
-
-  const openPrompt = ({ title, placeholder, defaultValue = "", type = "text", onSubmit }) => {
-    setModal({
-      isOpen: true,
-      title,
-      inputProps: { placeholder, defaultValue, type },
-      showCancel: true,
-      confirmText: "Save",
-      cancelText: "Cancel",
-      onConfirm: async (value) => {
-        const v = String(value ?? "").trim();
-        if (!v) {
-          setModal((m) => ({
-            ...m,
-            message: "This field is required.",
-          }));
-          return;
-        }
-        closeModal();
-        await onSubmit(v);
       },
       onCancel: closeModal,
       onClose: closeModal,

@@ -12,15 +12,34 @@ router.get(paths("getOrders", true), asyncHandler(async (req, res) => {
   if (monthId <= 0) return res.status(400).json({ success: false, error: "month_id is required" });
   if (!(await first(pool, "SELECT id FROM month WHERE id=? AND user_id=? LIMIT 1", [monthId, userId(req)]))) return res.status(403).json({ success: false, error: "Invalid month for this user" });
   res.json(await rows(pool, `SELECT o.id, o.month_id, o.order_name, o.order_details, o.amount_to_collect,
-    COALESCE(SUM(COALESCE(oc.shein_total_weight_kg,0)),0) AS shein_total_weight_kg_sum,
-    COALESCE(SUM(COALESCE(oc.shein_total_weight_plus_2kg,0)),0) AS shein_total_weight_plus_2kg_sum,
-    SUM(CASE WHEN COALESCE(oc.is_joint_shipment,0)=1 THEN 1 ELSE 0 END) AS joint_shipment_carts,
-    SUM(CASE WHEN COALESCE(oc.shein_delivered,0)=0 AND oc.shein_order_no IS NOT NULL AND TRIM(oc.shein_order_no)<>'' THEN 1 ELSE 0 END) AS shein_undelivered_carts,
-    COUNT(DISTINCT ocu.customer_id) AS customer_count
-    FROM orders o LEFT JOIN order_carts oc ON oc.order_id=o.id AND oc.user_id=o.user_id
-    LEFT JOIN order_customers ocu ON ocu.order_id=o.id AND ocu.user_id=o.user_id
+    COALESCE((SELECT COUNT(*) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS carts_count,
+    COALESCE((SELECT SUM(oc.cart_price) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS carts_price_sum,
+    COALESCE((SELECT SUM(oc.shein_total_weight_kg) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS shein_total_weight_kg_sum,
+    COALESCE((SELECT SUM(oc.shein_total_weight_plus_2kg) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS shein_total_weight_plus_2kg_sum,
+    COALESCE((SELECT SUM(CASE WHEN oc.is_joint_shipment=1 THEN 1 ELSE 0 END) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS joint_shipment_carts,
+    COALESCE((SELECT SUM(CASE WHEN COALESCE(oc.shein_delivered,0)=0 AND oc.shein_order_no IS NOT NULL AND TRIM(oc.shein_order_no)<>'' THEN 1 ELSE 0 END) FROM order_carts oc WHERE oc.order_id=o.id AND oc.user_id=o.user_id), 0) AS shein_undelivered_carts,
+    COALESCE((SELECT COUNT(DISTINCT ocu.customer_id) FROM order_customers ocu WHERE ocu.order_id=o.id AND ocu.user_id=o.user_id), 0) AS customer_count,
+    COALESCE((
+      SELECT COUNT(cc.id)
+      FROM cart_customers cc
+      JOIN order_carts oc2 ON cc.cart_id=oc2.id AND oc2.user_id=cc.user_id
+      WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
+    ), 0) AS cart_customers_count,
+    COALESCE((
+      SELECT SUM(cc.usd_to_collect)
+      FROM cart_customers cc
+      JOIN order_carts oc2 ON cc.cart_id=oc2.id AND oc2.user_id=cc.user_id
+      WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
+    ), 0) AS customers_collect_sum,
+    COALESCE((
+      SELECT SUM(CASE WHEN cc.collection_status='collected' OR cc.payment_status='paid' THEN cc.usd_to_collect ELSE 0 END)
+      FROM cart_customers cc
+      JOIN order_carts oc2 ON cc.cart_id=oc2.id AND oc2.user_id=cc.user_id
+      WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
+    ), 0) AS customers_collected_sum
+    FROM orders o
     WHERE o.month_id=? AND o.user_id=?
-    GROUP BY o.id,o.month_id,o.order_name,o.order_details,o.amount_to_collect ORDER BY o.id DESC`, [monthId, userId(req)]));
+    ORDER BY o.id DESC`, [monthId, userId(req)]));
 }));
 
 router.get("/:id/customers", asyncHandler(async (req, res) => {
