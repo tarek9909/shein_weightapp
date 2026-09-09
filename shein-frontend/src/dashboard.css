@@ -288,9 +288,21 @@
 /* -------------------- Tier 1: Hero Financial Health Hub -------------------- */
 .dashHeroKpis {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .dashHeroKpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashHeroKpis {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dashStat {
@@ -997,4 +1009,175 @@
 .dashReadOnly .dashBtnDanger {
   pointer-events: none;
   opacity: 0.55;
+}
+
+/* -------------------- Profit & Loss Performance Matrix Card -------------------- */
+.dashPnLCard {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-md);
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--dash-shadow-sm);
+  transition: all 0.18s ease;
+}
+
+.dashPnLCard:hover {
+  border-color: var(--dash-border-hover);
+  box-shadow: var(--dash-shadow-md);
+}
+
+.dashPnLCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--dash-border);
+  margin-bottom: 18px;
+}
+
+.dashPnLCardHeadLeft {
+  min-width: 0;
+}
+
+.dashPnLBadge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.dashPnLCardTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--dash-text-main);
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.dashPnLCardSub {
+  font-size: 12.5px;
+  color: var(--dash-text-muted);
+  margin-top: 4px;
+}
+
+.dashPnLCardHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashPnLGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 960px) {
+  .dashPnLGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashPnLCol {
+  background: var(--dash-surface-subtle);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dashPnLColHighlight {
+  background: #f8faff;
+  border-color: #c7d2fe;
+}
+
+.dashPnLColHeader {
+  margin-bottom: 14px;
+}
+
+.dashPnLPill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.dashPnLPillGreen {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.dashPnLPillRed {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.dashPnLPillBlue {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.dashPnLMetricTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dash-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dashPnLMetricNumber {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--dash-text-main);
+  margin-top: 4px;
+}
+
+.dashPnLDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dash-border);
+}
+
+.dashPnLItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--dash-text-muted);
+}
+
+.dashPnLItem b {
+  color: var(--dash-text-main);
+}
+
+.dashTextGood {
+  color: #059669 !important;
+}
+
+.dashTextDanger {
+  color: #dc2626 !important;
+}
+
+.dashTextMuted {
+  color: var(--dash-text-muted) !important;
 }

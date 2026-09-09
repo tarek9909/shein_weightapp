@@ -657,6 +657,9 @@ export default function Dashboard() {
       : 0;
     const totalEstimatedProfitAfterLosses = totalEstimatedProfit - totalLosses;
     const realizedNetProfit = totalPayments - totalOrders - totalCustoms - totalLosses;
+    const projectedProfit = totalCollect - totalOrders - totalCustoms - totalLosses;
+    const profitMargin = totalCollect > 0 ? ((totalEstimatedProfitAfterLosses / totalCollect) * 100).toFixed(1) : "0.0";
+    const collectionRate = totalCollect > 0 ? Math.min(100, Math.round((totalPayments / totalCollect) * 100)) : 0;
     return {
       totalOrders,
       totalCollect,
@@ -667,6 +670,9 @@ export default function Dashboard() {
       totalEstimatedProfit,
       totalEstimatedProfitAfterLosses,
       realizedNetProfit,
+      projectedProfit,
+      profitMargin,
+      collectionRate,
       totalCustoms,
       totalPayments,
       totalLosses,
@@ -734,14 +740,41 @@ export default function Dashboard() {
       <div className="dashHeroKpis">
         <StatCard
           hero
-          title="Estimated Net Profit"
-          value={`$${money(totals.totalEstimatedProfitAfterLosses)}`}
-          variant="profit"
-          subtitle="Net return after deductions & losses"
+          title="Realized Net Profit"
+          value={`${totals.realizedNetProfit >= 0 ? "+" : ""}$${money(totals.realizedNetProfit)}`}
+          variant={totals.realizedNetProfit >= 0 ? "profit" : "loss"}
+          subtitle="Net cash profit (Payments - Cost - Customs - Losses)"
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               <polyline points="17 6 23 6 23 12" />
+            </svg>
+          }
+        />
+        <StatCard
+          hero
+          title="Estimated Net Profit"
+          value={`$${money(totals.totalEstimatedProfitAfterLosses)}`}
+          variant="profit"
+          subtitle="Net return after freight & deductions"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          }
+        />
+        <StatCard
+          hero
+          title="Confirmed Losses"
+          value={`$${money(totals.totalLosses)}`}
+          variant="loss"
+          subtitle="Customer & cargo losses → View in Losses"
+          onClick={() => nav("/losses")}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           }
         />
@@ -759,20 +792,108 @@ export default function Dashboard() {
             </svg>
           }
         />
-        <StatCard
-          hero
-          title="Confirmed Losses"
-          value={`$${money(totals.totalLosses)}`}
-          variant="loss"
-          subtitle="Deductions & damaged goods"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          }
-        />
+      </div>
+
+      {/* Dedicated Profit & Loss Performance Matrix */}
+      <div className="dashPnLCard">
+        <div className="dashPnLCardHead">
+          <div className="dashPnLCardHeadLeft">
+            <div className="dashPnLBadge">P&L STATEMENT</div>
+            <h3 className="dashPnLCardTitle">Profit & Loss Financial Performance</h3>
+            <p className="dashPnLCardSub">Full reconciliation of collected payments, goods purchases, customs logistics, and customer losses.</p>
+          </div>
+          <div className="dashPnLCardHeadRight">
+            <button type="button" className="dashBtnSoft" onClick={() => nav("/losses")} title="Open Losses Workspace">
+              📉 Losses Workspace (${money(totals.totalLosses)}) →
+            </button>
+            <button type="button" className="dashBtnSoft" onClick={() => nav("/reports")} title="Open Comprehensive Reports">
+              📊 Full Reports →
+            </button>
+          </div>
+        </div>
+
+        <div className="dashPnLGrid">
+          {/* Revenue Stream */}
+          <div className="dashPnLCol">
+            <div className="dashPnLColHeader">
+              <span className="dashPnLPill dashPnLPillGreen">Revenue & Collections</span>
+              <div className="dashPnLMetricTitle">Total Orders To Collect</div>
+              <div className="dashPnLMetricNumber">${money(totals.totalCollect)}</div>
+            </div>
+            <div className="dashPnLDetails">
+              <div className="dashPnLItem">
+                <span>Payments Actually Collected</span>
+                <b className="dashTextGood">+${money(totals.totalPayments)}</b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Outstanding Uncollected</span>
+                <b className="dashTextMuted">${money(Math.max(0, totals.totalCollect - totals.totalPayments))}</b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Collection Progress</span>
+                <b>{totals.collectionRate}%</b>
+              </div>
+            </div>
+          </div>
+
+          {/* Outflow & Losses Stream */}
+          <div className="dashPnLCol">
+            <div className="dashPnLColHeader">
+              <span className="dashPnLPill dashPnLPillRed">Deductions & Losses</span>
+              <div className="dashPnLMetricTitle">Total Costs & Losses</div>
+              <div className="dashPnLMetricNumber">-${money(totals.totalOrders + totals.totalCustoms + totals.totalLosses)}</div>
+            </div>
+            <div className="dashPnLDetails">
+              <div className="dashPnLItem">
+                <span>Orders Goods Cost</span>
+                <b className="dashTextDanger">-${money(totals.totalOrders)}</b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Customs & Freight Fee</span>
+                <b className="dashTextDanger">-${money(totals.totalCustoms)}</b>
+              </div>
+              <div className="dashPnLItem" onClick={() => nav("/losses")} style={{ cursor: "pointer" }} title="Open Losses Workspace">
+                <span style={{ textDecoration: "underline", color: "#dc2626" }}>Confirmed Losses ↗</span>
+                <b className="dashTextDanger">-${money(totals.totalLosses)}</b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Est. Freight Shipping</span>
+                <span className="dashTextMuted">${money(totals.totalEstimatedShipping)} ({Number(totals.totalEstimatedWeight || 0).toFixed(2)}kg)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Net Profit Bottom Line */}
+          <div className="dashPnLCol dashPnLColHighlight">
+            <div className="dashPnLColHeader">
+              <span className="dashPnLPill dashPnLPillBlue">Net Bottom Line</span>
+              <div className="dashPnLMetricTitle">Realized Net Profit (Collected)</div>
+              <div className={`dashPnLMetricNumber ${totals.realizedNetProfit >= 0 ? "dashTextGood" : "dashTextDanger"}`}>
+                {totals.realizedNetProfit >= 0 ? "+" : ""}${money(totals.realizedNetProfit)}
+              </div>
+            </div>
+            <div className="dashPnLDetails">
+              <div className="dashPnLItem">
+                <span>Profit Calculation Formula</span>
+                <small style={{ fontSize: "11px", color: "#64748b" }}>Payments - Orders - Customs - Losses</small>
+              </div>
+              <div className="dashPnLItem">
+                <span>Estimated Final Net Profit</span>
+                <b className={totals.totalEstimatedProfitAfterLosses >= 0 ? "dashTextGood" : "dashTextDanger"}>
+                  ${money(totals.totalEstimatedProfitAfterLosses)}
+                </b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Gross Profit (Before Losses)</span>
+                <b>${money(totals.totalEstimatedProfit)}</b>
+              </div>
+              <div className="dashPnLItem">
+                <span>Estimated Net Margin</span>
+                <b>{totals.profitMargin}%</b>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tier 2: Secondary Operational & Balance Metrics */}
@@ -1648,9 +1769,13 @@ export default function Dashboard() {
 
 /* ---------- small UI components ---------- */
 
-function StatCard({ title, value, variant = "neutral", subtitle, icon, hero = false }) {
+function StatCard({ title, value, variant = "neutral", subtitle, icon, hero = false, onClick, style }) {
   return (
-    <div className={`dashStat dashStat--${variant} ${hero ? "dashStat--hero" : ""}`}>
+    <div
+      className={`dashStat dashStat--${variant} ${hero ? "dashStat--hero" : ""}`}
+      onClick={onClick}
+      style={{ ...(onClick ? { cursor: "pointer" } : {}), ...style }}
+    >
       <div className="dashStatHead">
         <span className="dashStatTitle">{title}</span>
         {icon && <span className="dashStatIconWrap">{icon}</span>}
