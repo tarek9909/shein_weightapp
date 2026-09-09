@@ -981,3 +981,20 @@
     grid-template-columns: 1fr;
   }
 }
+.dashReadOnlyNotice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #f0c36a;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #765313;
+  font-size: 13px;
+}
+
+.dashReadOnly .dashInput,
+.dashReadOnly .dashBtn,
+.dashReadOnly .dashBtnSoft,
+.dashReadOnly .dashBtnDanger {
+  pointer-events: none;
+  opacity: 0.55;
+}

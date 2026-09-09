@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { clearAuthSession, getUser } from "../utils/auth";
 import "../HamburgerMenu.css";
 
 const NAV_ITEMS = [
@@ -72,6 +73,11 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: "/reports",
+    label: "Reports",
+    icon: <span aria-hidden="true">▤</span>,
+  },
+  {
     path: "/shein-accounts",
     label: "Accounts",
     icon: (
@@ -83,7 +89,25 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    path: "/user-accounts",
+    label: "User Accounts",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6" />
+        <path d="M22 11h-6" />
+      </svg>
+    ),
+  },
 ];
+
+function canAccessNavItem(item, role) {
+  if (item.path === "/user-accounts") return role === "admin";
+  if (role === "dashboard") return item.path === "/";
+  return true;
+}
 
 export default function HamburgerMenu() {
   const [open, setOpen] = useState(false);
@@ -92,15 +116,23 @@ export default function HamburgerMenu() {
 
   const toggleMenu = () => setOpen((v) => !v);
 
-  const user = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user"));
-    } catch {
-      return null;
-    }
+  const [currentUser, setCurrentUser] = useState(getUser());
+
+  useEffect(() => {
+    const handleAuthChanged = (e) => {
+      setCurrentUser(e?.detail?.user || getUser());
+    };
+    window.addEventListener("shein:auth-changed", handleAuthChanged);
+    return () => window.removeEventListener("shein:auth-changed", handleAuthChanged);
   }, []);
 
-  const username = user?.username || user?.name || user?.email || "Admin";
+  const username = currentUser?.username || currentUser?.name || currentUser?.email || "Admin";
+  const role = currentUser?.role || "admin";
+  const visibleNavItems = useMemo(
+    () => NAV_ITEMS.filter((item) => canAccessNavItem(item, role)),
+    [role]
+  );
+  const roleLabel = role === "admin" ? "System Administrator" : role === "operations" ? "Operations User" : "Dashboard User";
 
   const initials = useMemo(() => {
     if (!username) return "OP";
@@ -112,8 +144,7 @@ export default function HamburgerMenu() {
   }, [username]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthSession();
     setOpen(false);
     navigate("/login", { replace: true });
   };
@@ -146,7 +177,7 @@ export default function HamburgerMenu() {
           {/* Centered Navigation Links (Dashboard to Accounts) */}
           <nav className="topNavCenter">
             <div className="topNavLinksDesktop">
-              {NAV_ITEMS.map((item) => {
+              {visibleNavItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
@@ -244,13 +275,13 @@ export default function HamburgerMenu() {
             <span className="topNavUserAvatar large">{initials}</span>
             <div className="menu-user-info">
               <span className="menu-user-name">{username}</span>
-              <span className="menu-user-role">Operations Administrator</span>
+              <span className="menu-user-role">{roleLabel}</span>
             </div>
           </div>
 
           <nav className="menu-links">
             <div className="menu-section-label">Navigation</div>
-            {NAV_ITEMS.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link

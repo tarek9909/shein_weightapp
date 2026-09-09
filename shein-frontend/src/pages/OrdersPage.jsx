@@ -11,6 +11,7 @@ import {
 import MonthSelector from "../components/MonthSelector";
 import CartsEditor from "../components/CartsEditor";
 import { CustomModal } from "../components/CustomModal";
+import { isAuthenticated, triggerSessionExpired } from "../utils/auth";
 import "../orders.css";
 
 const money = (n) =>
@@ -49,14 +50,10 @@ const OrdersPage = () => {
     });
   };
 
-  // Optional auth guard (works with your backend require_auth)
+  // Auth guard
   const ensureAuth = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      openInfo({
-        title: "Login required",
-        message: "Please sign in to view your orders.",
-      });
+    if (!isAuthenticated()) {
+      triggerSessionExpired("/orders");
       return false;
     }
     return true;

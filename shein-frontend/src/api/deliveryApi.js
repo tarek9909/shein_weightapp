@@ -64,3 +64,40 @@ export const closeCustomerDebt = (id, paid_amount, note = "") =>
     method: "POST",
     body: JSON.stringify({ id, paid_amount, note }),
   });
+
+export const getCustomersForDeliveryByMonth = (monthId) =>
+  apiFetch(`${BASE_URL}/getCustomersForDeliveryByMonth.php?month_id=${encodeURIComponent(monthId)}`);
+
+export const updateCustomerDelivery = (id, delivery_number, status) =>
+  apiFetch(`${BASE_URL}/updateCustomerDelivery.php`, { method: "POST", body: JSON.stringify({ id, delivery_number, status }) });
+
+export const checkDeliveryNumberByMonth = (monthId, deliveryNumber) =>
+  apiFetch(`${BASE_URL}/checkDeliveryNumberByMonth.php?month_id=${encodeURIComponent(monthId)}&delivery_number=${encodeURIComponent(deliveryNumber)}`);
+
+export const updateCustomerUsdToCollect = (id, usd_to_collect) =>
+  apiFetch(`${BASE_URL}/updateCustomerUsdToCollect.php`, { method: "POST", body: JSON.stringify({ id, usd_to_collect }) });
+
+export const previewDeliveryExcelImport = (monthId, file) => {
+  const data = new FormData();
+  data.append("month_id", monthId);
+  data.append("file", file);
+  return apiFetch(`${BASE_URL}/previewDeliveryExcelImport.php`, { method: "POST", body: data });
+};
+
+export const applyDeliveryExcelImport = (monthId, rows) =>
+  apiFetch(`${BASE_URL}/applyDeliveryExcelImport.php`, { method: "POST", body: JSON.stringify({ month_id: monthId, rows }) });
+
+export const getDeliveryLosses = (monthId, status = "pending") =>
+  apiFetch(`${BASE_URL}/getDeliveryLosses.php?month_id=${encodeURIComponent(monthId)}&status=${encodeURIComponent(status)}`);
+
+export const addDeliveryLosses = (monthId, rows) =>
+  apiFetch(`${BASE_URL}/addDeliveryLosses.php`, { method: "POST", body: JSON.stringify({ month_id: monthId, rows }) });
+
+export const updateDeliveryLoss = (id, payload) =>
+  apiFetch(`${BASE_URL}/updateDeliveryLoss.php`, { method: "POST", body: JSON.stringify({ id, ...payload }) });
+
+export const deleteDeliveryLoss = (id) =>
+  apiFetch(`${BASE_URL}/deleteDeliveryLoss.php`, { method: "POST", body: JSON.stringify({ id }) });
+
+export const confirmDeliveryLosses = (monthId, ids) =>
+  apiFetch(`${BASE_URL}/confirmDeliveryLosses.php`, { method: "POST", body: JSON.stringify({ month_id: monthId, ids }) });

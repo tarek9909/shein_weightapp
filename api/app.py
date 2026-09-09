@@ -2,9 +2,11 @@
 ####
 import os
 import traceback
+from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from db import SessionLocal, engine, Base
@@ -12,11 +14,14 @@ from models import User, Order
 from crypto import encrypt_str, decrypt_str
 from shein_scraper import fetch_tracking_for_order, fetch_weight_for_order
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 APP_SECRET = os.getenv("APP_SECRET")
-if not APP_SECRET:
-    raise RuntimeError("APP_SECRET missing in .env")
+if not APP_SECRET or len(APP_SECRET.strip()) < 32:
+    raise RuntimeError("APP_SECRET must be configured with at least 32 characters")
+INTERNAL_API_TOKEN = os.getenv("SHEIN_LOCAL_API_TOKEN") or os.getenv("INTERNAL_API_TOKEN")
+if not INTERNAL_API_TOKEN or len(INTERNAL_API_TOKEN.strip()) < 32:
+    raise RuntimeError("SHEIN_LOCAL_API_TOKEN must be configured with at least 32 characters")
 
 # Run Playwright with a visible browser by default for local debugging.
 # Set PLAYWRIGHT_HEADLESS=1 to force headless mode.
@@ -28,10 +33,17 @@ print(
 
 app = FastAPI(title="SHEIN Tracker API")
 
+
+@app.middleware("http")
+async def protect_api_routes(request, call_next):
+    if request.url.path.startswith("/api/") and request.headers.get("x-internal-token") != INTERNAL_API_TOKEN:
+        return JSONResponse(status_code=401, content={"ok": False, "error": "Invalid internal API token"})
+    return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if origin.strip()],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -46,6 +58,16 @@ try:
 except Exception as e:
     DB_AVAILABLE = False
     print(f"[WARN] DB unavailable at startup: {type(e).__name__}: {e}")
+
+
+def require_db():
+    if not DB_AVAILABLE:
+        raise HTTPException(503, "Persistence database is unavailable")
+
+
+def require_internal_token(x_internal_token: str | None = Header(default=None)):
+    if not x_internal_token or x_internal_token != INTERNAL_API_TOKEN:
+        raise HTTPException(401, "Invalid internal API token")
 
 
 # =========================
@@ -159,7 +181,7 @@ def _require_order_belongs_to_user(db, user_id: int, order_no: str) -> Order:
 # =========================
 # Auth + orders
 # =========================
-@app.post("/api/register")
+@app.post("/api/register", dependencies=[Depends(require_db)])
 def register_user(req: RegisterReq):
     db = SessionLocal()
     try:
@@ -204,7 +226,7 @@ def register_user(req: RegisterReq):
         db.close()
 
 
-@app.post("/api/orders")
+@app.post("/api/orders", dependencies=[Depends(require_db)])
 def add_order(req: AddOrderReq):
     db = SessionLocal()
     try:
@@ -227,7 +249,7 @@ def add_order(req: AddOrderReq):
         db.close()
 
 
-@app.get("/api/orders")
+@app.get("/api/orders", dependencies=[Depends(require_db)])
 def list_orders(email: str, owner_user_id: int | None = None):
     db = SessionLocal()
     try:
@@ -258,7 +280,7 @@ def list_orders(email: str, owner_user_id: int | None = None):
         db.close()
 
 
-@app.get("/api/users")
+@app.get("/api/users", dependencies=[Depends(require_db)])
 def list_users(email: str | None = None, owner_user_id: int | None = None):
     db = SessionLocal()
     try:
@@ -276,7 +298,7 @@ def list_users(email: str | None = None, owner_user_id: int | None = None):
         db.close()
 
 
-@app.delete("/api/users")
+@app.delete("/api/users", dependencies=[Depends(require_db)])
 def delete_user(email: str, owner_user_id: int | None = None):
     db = SessionLocal()
     try:
@@ -293,7 +315,7 @@ def delete_user(email: str, owner_user_id: int | None = None):
         db.close()
 
 
-@app.get("/api/users/detail")
+@app.get("/api/users/detail", dependencies=[Depends(require_db)])
 def user_detail(email: str, owner_user_id: int | None = None):
     db = SessionLocal()
     try:
@@ -323,7 +345,7 @@ def user_detail(email: str, owner_user_id: int | None = None):
 # TRACKING SCRAPE API (SEPARATE)
 # ============================================================
 
-@app.post("/api/track/one")
+@app.post("/api/track/one", dependencies=[Depends(require_db)])
 async def scrape_track_one(req: TrackOneReq):
     """
     Scrape tracking for ONE order and return it (doesn't modify DB).
@@ -376,7 +398,7 @@ async def scrape_track_one(req: TrackOneReq):
         db.close()
 
 
-@app.post("/api/track/refresh")
+@app.post("/api/track/refresh", dependencies=[Depends(require_db)])
 async def refresh_not_delivered(req: EmailReq):
     """
     Refresh tracking for ALL not delivered orders, and SAVE results into DB.
@@ -454,7 +476,7 @@ async def refresh_not_delivered(req: EmailReq):
 # WEIGHT SCRAPE API (SEPARATE)
 # ============================================================
 
-@app.post("/api/weight/one")
+@app.post("/api/weight/one", dependencies=[Depends(require_db)])
 async def scrape_weight_one(req: WeightOneReq):
     """
     Scrape WEIGHT for ONE order and return it (doesn't modify DB).
@@ -503,7 +525,7 @@ async def scrape_weight_one(req: WeightOneReq):
         db.close()
 
 
-@app.post("/api/weight/batch")
+@app.post("/api/weight/batch", dependencies=[Depends(require_db)])
 async def scrape_weight_batch(req: WeightBatchReq):
     """
     Scrape weights for MANY orders (returns list).
@@ -566,7 +588,7 @@ async def scrape_weight_batch(req: WeightBatchReq):
 # DIRECT (STATELESS) SCRAPE API (NO DB LOOKUPS)
 # ============================================================
 
-@app.post("/api/direct/track_one")
+@app.post("/api/direct/track_one", dependencies=[Depends(require_internal_token)])
 async def direct_track_one(req: DirectScrapeReq):
     try:
         result = await fetch_tracking_for_order(
@@ -603,7 +625,7 @@ async def direct_track_one(req: DirectScrapeReq):
         raise HTTPException(500, f"{type(e).__name__}: {e}")
 
 
-@app.post("/api/direct/weight_one")
+@app.post("/api/direct/weight_one", dependencies=[Depends(require_internal_token)])
 async def direct_weight_one(req: DirectScrapeReq):
     try:
         result = await fetch_weight_for_order(
@@ -636,7 +658,7 @@ async def direct_weight_one(req: DirectScrapeReq):
         raise HTTPException(500, f"{type(e).__name__}: {e}")
 
 
-@app.post("/api/direct/weight_many")
+@app.post("/api/direct/weight_many", dependencies=[Depends(require_internal_token)])
 async def direct_weight_many(req: DirectScrapeBatchReq):
     try:
         order_nos = []

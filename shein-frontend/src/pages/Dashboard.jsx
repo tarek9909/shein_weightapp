@@ -23,6 +23,7 @@ import { getBudgets, addBudget, updateBudget, deleteBudget } from "../api/budget
 import { getKgPrice, saveKgPrice } from "../api/settingsApi";
 
 import { CustomModal } from "../components/CustomModal";
+import { isAuthenticated, clearAuthSession, getUser } from "../utils/auth";
 import CustomDropdown from "../components/CustomDropdown";
 import "../dashboard.css";
 
@@ -64,6 +65,7 @@ function normalizeArrayResponse(res) {
 
 export default function Dashboard() {
   const nav = useNavigate();
+  const readOnly = getUser()?.role === "dashboard";
 
   const [months, setMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -142,18 +144,17 @@ export default function Dashboard() {
   };
 
   const ensureAuth = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      nav("/login");
+    if (!isAuthenticated()) {
+      clearAuthSession();
+      nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
       return false;
     }
     return true;
   };
 
   const handleAuthFail = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    nav("/login");
+    clearAuthSession();
+    nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
   };
 
   // load months
@@ -657,7 +658,8 @@ export default function Dashboard() {
   }, [budgets, totals]);
 
   return (
-    <div className="dashPage dashTopSpacer">
+    <div className={`dashPage dashTopSpacer${readOnly ? " dashReadOnly" : ""}`}>
+      {readOnly && <div className="dashReadOnlyNotice">Dashboard access is read-only. Contact an administrator for operational changes.</div>}
       <div className="dashHeader">
         <div className="dashHeaderLeft">
           <div className="dashTitleRow">

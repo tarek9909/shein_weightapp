@@ -1,10 +1,10 @@
 const express = require("express");
 const { pool } = require("../config/db");
-const { requireAuth } = require("../middleware/auth");
-const { asyncHandler, paths, int, number, trim, execute, rows, first } = require("../lib/helpers");
+const { requireAuth, requireWriteAccess } = require("../middleware/auth");
+const { asyncHandler, paths, int, number, finite, trim, execute, rows, first } = require("../lib/helpers");
 
 const router = express.Router();
-router.use(requireAuth);
+router.use(requireAuth, requireWriteAccess);
 const userId = (req) => Number(req.user.user_id);
 
 router.get(paths("getOrders", true), asyncHandler(async (req, res) => {
@@ -26,7 +26,7 @@ router.post(paths("addOrder"), asyncHandler(async (req, res) => {
   const details = req.body?.order_details == null ? "" : String(req.body.order_details);
   const amount = number(req.body?.amount_to_collect, 0);
   if (monthId <= 0 || details === "") return res.status(400).json({ success: false, error: "month_id and order_details are required" });
-  if (amount < 0) return res.status(400).json({ success: false, error: "amount_to_collect must be >= 0" });
+  if (!finite(amount) || amount < 0) return res.status(400).json({ success: false, error: "amount_to_collect must be a finite number >= 0" });
   if (!(await first(pool, "SELECT id FROM month WHERE id=? AND user_id=? LIMIT 1", [monthId, userId(req)]))) return res.status(403).json({ success: false, error: "Invalid month for this user" });
   const result = await execute(pool, "INSERT INTO orders (month_id, order_name, order_details, amount_to_collect, user_id) VALUES (?, ?, ?, ?, ?)", [monthId, name, details, amount, userId(req)]);
   res.json({ success: true, id: Number(result.insertId) });
@@ -36,7 +36,7 @@ router.post(paths("updateOrder"), asyncHandler(async (req, res) => {
   const id = int(req.body?.id); const name = req.body?.order_name == null ? null : trim(req.body.order_name);
   const details = req.body?.order_details == null ? "" : String(req.body.order_details); const amount = number(req.body?.amount_to_collect, 0);
   if (id <= 0 || details === "") return res.status(400).json({ success: false, error: "id and order_details are required" });
-  if (amount < 0) return res.status(400).json({ success: false, error: "amount_to_collect must be >= 0" });
+  if (!finite(amount) || amount < 0) return res.status(400).json({ success: false, error: "amount_to_collect must be a finite number >= 0" });
   const result = await execute(pool, "UPDATE orders SET order_name=?, order_details=?, amount_to_collect=? WHERE id=? AND user_id=?", [name, details, amount, id, userId(req)]);
   res.json({ success: true, affected: result.affectedRows });
 }));

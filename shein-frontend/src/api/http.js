@@ -1,4 +1,5 @@
 // src/api/http.js
+import { getToken, triggerSessionExpired } from "../utils/auth";
 
 function toText(value) {
   if (value == null) return "";
@@ -12,7 +13,8 @@ function toText(value) {
 
 function buildErrorMessage(res, data, rawText) {
   const statusPart = `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`;
-  const apiMsg = data?.error || data?.detail || data?.message;
+  const apiError = data?.error;
+  const apiMsg = typeof apiError === "object" ? apiError?.message : apiError || data?.detail || data?.message;
   const bodyMsg = (rawText || "").trim();
   const shortBody = bodyMsg.length > 300 ? `${bodyMsg.slice(0, 300)}...` : bodyMsg;
 
@@ -22,12 +24,13 @@ function buildErrorMessage(res, data, rawText) {
 }
 
 export async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = getToken();
 
   const headers = {
     ...(options.headers || {}),
-    "Content-Type": "application/json",
   };
+
+  if (!(typeof FormData !== "undefined" && options.body instanceof FormData)) headers["Content-Type"] = "application/json";
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -46,6 +49,11 @@ export async function apiFetch(url, options = {}) {
     data = null;
   }
 
+  // A forbidden operation is a permission result, not an expired session.
+  if (res.status === 401) {
+    triggerSessionExpired();
+  }
+
   // Always fail hard on non-2xx and include backend body in message.
   if (!res.ok) {
     const err = new Error(buildErrorMessage(res, data, text));
@@ -57,7 +65,15 @@ export async function apiFetch(url, options = {}) {
 
   // 2xx but backend app-level error.
   if (data && (data.ok === false || data.success === false)) {
-    const err = new Error(data.error || data.detail || "Request failed");
+    const errorMsg = String(typeof data.error === "object" ? data.error?.message : data.error || data.detail || "").toLowerCase();
+    if (
+      errorMsg.includes("invalid token") ||
+      errorMsg.includes("expired token") ||
+      errorMsg.includes("unauthorized")
+    ) {
+      triggerSessionExpired();
+    }
+    const err = new Error(typeof data.error === "object" ? data.error?.message || "Request failed" : data.error || data.detail || "Request failed");
     err.status = res.status;
     err.payload = data;
     err.raw = text;

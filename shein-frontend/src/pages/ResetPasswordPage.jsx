@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { resetPassword } from "../api/authApi";
 import { CustomModal } from "../components/CustomModal";
+import { clearAuthSession } from "../utils/auth";
 import "../login.css"; // reuse your login styles (or create resetpassword.css)
 
 export default function ResetPasswordPage() {
@@ -50,8 +51,7 @@ export default function ResetPasswordPage() {
 
       // ✅ After success: show modal then logout user
       openInfo("Success", "Password updated. You will be logged out now.", () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearAuthSession();
         nav("/login", { replace: true });
       });
     } catch (err) {

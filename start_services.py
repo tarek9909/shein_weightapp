@@ -3,7 +3,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import socket
 import subprocess
+import time
+from urllib.request import urlopen
 from pathlib import Path
 
 
@@ -13,13 +17,6 @@ PID_FILE = LOG_DIR / "service-pids.json"
 
 
 SERVICES = [
-    {
-        "name": "Ampps",
-        "cwd": Path(r"C:\Program Files\Ampps"),
-        "command": [r"C:\Program Files\Ampps\Ampps.exe"],
-        "env": {},
-        "log_file": "ampps.log",
-    },
     {
         "name": "Node backend",
         "cwd": ROOT,
@@ -36,23 +33,22 @@ SERVICES = [
             "uvicorn",
             "app:app",
             "--host",
-            "0.0.0.0",
+            "127.0.0.1",
             "--port",
             "8000",
-            "--reload",
         ],
         "env": {
-            "PLAYWRIGHT_HEADLESS": "0",
+            "PLAYWRIGHT_HEADLESS": "1",
         },
         "log_file": "api-server.log",
     },
     {
         "name": "Frontend",
         "cwd": ROOT / "shein-frontend",
-        "command": ["npm.cmd", "start"],
+        "command": ["cmd.exe", "/c", "set HOST=127.0.0.1&&set BROWSER=none&&npm start"],
         "env": {
             "BROWSER": "none",
-            "HOST": "0.0.0.0",
+            "HOST": "127.0.0.1",
         },
         "log_file": "frontend.log",
     },
@@ -71,18 +67,14 @@ def launch_service(
 
     if os.name == "nt":
         if hidden:
-            creationflags = (
-                subprocess.DETACHED_PROCESS
-                | subprocess.CREATE_NEW_PROCESS_GROUP
-                | subprocess.CREATE_NO_WINDOW
-            )
+            creationflags = subprocess.CREATE_NO_WINDOW
         else:
             creationflags = subprocess.CREATE_NEW_CONSOLE
 
     if hidden:
         LOG_DIR.mkdir(exist_ok=True)
         log_path = LOG_DIR / str(service["log_file"])
-        log_handle = log_path.open("ab")
+        log_handle = log_path.open("wb")
         stdout = log_handle
         stderr = log_handle
     else:
@@ -103,6 +95,35 @@ def launch_service(
             log_handle.close()
 
 
+def port_is_free(port: int) -> bool:
+    with socket.socket() as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
+def wait_ready(
+    url: str,
+    process: subprocess.Popen[bytes],
+    timeout: float = 60,
+    check_process: bool = True,
+) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if check_process and process.poll() is not None:
+            return False
+        try:
+            with urlopen(url, timeout=2) as response:  # nosec B310 - local configured service URL
+                if response.status == 200:
+                    return True
+        except Exception:
+            time.sleep(0.5)
+    return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -115,6 +136,14 @@ def main() -> int:
     failures: list[str] = []
     started: dict[str, int] = {}
 
+    for port, service in ((8081, "Node backend"), (8000, "API server"), (3000, "Frontend")):
+        if not port_is_free(port):
+            failures.append(f"{service}: port {port} is already in use")
+    if failures:
+        for failure in failures:
+            print(failure)
+        return 1
+
     for service in SERVICES:
         name = service["name"]
         cwd = Path(service["cwd"])
@@ -124,9 +153,17 @@ def main() -> int:
             continue
 
         try:
+            executable = str(service["command"][0])  # type: ignore[index]
+            if not Path(executable).exists() and shutil.which(executable) is None:
+                failures.append(f"{name}: command not found: {executable}")
+                continue
             process = launch_service(service, hidden=args.hidden)
             started[str(name)] = process.pid
             print(f"Started {name} (PID {process.pid})")
+            if name in {"Node backend", "API server", "Frontend"}:
+                url = {"Node backend": "http://127.0.0.1:8081/ready", "API server": "http://127.0.0.1:8000/ping", "Frontend": "http://127.0.0.1:3000"}[str(name)]
+                if not wait_ready(url, process, check_process=name != "Frontend"):
+                    failures.append(f"{name}: process did not become ready")
         except FileNotFoundError as exc:
             failures.append(f"{name}: command not found: {exc.filename}")
         except Exception as exc:  # pragma: no cover
@@ -140,6 +177,8 @@ def main() -> int:
         print("\nSome services did not start:")
         for failure in failures:
             print(f"- {failure}")
+        for pid in started.values():
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
         return 1
 
     if args.hidden:

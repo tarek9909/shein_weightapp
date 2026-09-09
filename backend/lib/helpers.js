@@ -12,8 +12,9 @@ const int = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 const number = (value, fallback = 0) => {
+  if (value === null || value === undefined || value === "") return fallback;
   const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
+  return Number.isFinite(n) ? n : Number.NaN;
 };
 const finite = (value) => Number.isFinite(Number(value));
 const round2 = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;

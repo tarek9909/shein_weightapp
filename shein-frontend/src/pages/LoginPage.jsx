@@ -1,8 +1,9 @@
 // src/pages/LoginPage.jsx
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CustomModal } from "../components/CustomModal";
 import { API_ORIGIN } from "../api/baseUrl";
+import { isAuthenticated, setAuthSession } from "../utils/auth";
 import "../login.css";
 
 const BASE_URL = API_ORIGIN + "/auth";
@@ -14,6 +15,20 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // If already authenticated, redirect to intended target
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get("redirect");
+      const fromPath = location.state?.from?.pathname
+        ? (location.state.from.pathname + (location.state.from.search || ""))
+        : redirectParam || "/";
+      const target = fromPath.startsWith("/login") ? "/" : fromPath;
+      navigate(target, { replace: true });
+    }
+  }, [location, navigate]);
 
   // modal
   const [modal, setModal] = useState({ isOpen: false });
@@ -45,14 +60,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/login.php`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ username, password }),
-});
-const text = await res.text();
-console.log("STATUS:", res.status);
-console.log("CONTENT-TYPE:", res.headers.get("content-type"));
-console.log("RAW RESPONSE:", text.slice(0, 300)); // show first 300 chars
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const text = await res.text();
 
       let data;
       try {
@@ -66,11 +78,16 @@ console.log("RAW RESPONSE:", text.slice(0, 300)); // show first 300 chars
         throw new Error(data.error || `Login failed (${res.status})`);
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user || {}));
+      setAuthSession(data.token, data.user || {});
 
-      // your app routes: "/" = Dashboard (from your App.js)
-      navigate("/", { replace: true });
+      // Navigate to intended destination or default "/"
+      const searchParams = new URLSearchParams(location.search);
+      const redirectParam = searchParams.get("redirect");
+      const fromPath = location.state?.from?.pathname
+        ? (location.state.from.pathname + (location.state.from.search || ""))
+        : redirectParam || "/";
+      const target = fromPath.startsWith("/login") ? "/" : fromPath;
+      navigate(target, { replace: true });
     } catch (err) {
       console.error(err);
       openInfo("Login Error", err.message || "Failed to login.");

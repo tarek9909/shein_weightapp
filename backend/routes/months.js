@@ -1,10 +1,10 @@
 const express = require("express");
 const { pool } = require("../config/db");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireWriteAccess } = require("../middleware/auth");
 const { asyncHandler, paths, int, trim, execute, rows } = require("../lib/helpers");
 
 const router = express.Router();
-router.use(requireAuth);
+router.use(requireAuth, requireWriteAccess);
 
 router.get(paths("getMonths", true), asyncHandler(async (req, res) => {
   res.json(await rows(pool, "SELECT id, name FROM month WHERE user_id=? ORDER BY id DESC", [Number(req.user.user_id)]));

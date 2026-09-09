@@ -27,7 +27,7 @@ class Order(Base):
     __table_args__ = (UniqueConstraint("user_id", "order_no", name="uniq_user_order"),)
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("shein_api_users.id"), nullable=False)
 
     order_no = Column(String(64), nullable=False)
     carrier = Column(String(64), nullable=True)

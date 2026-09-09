@@ -10,6 +10,7 @@ import CustomDropdown from "../components/CustomDropdown";
 import "../orders.css";
 
 const emptyForm = {
+  id: null,
   email: "",
   shein_email: "",
   shein_password: "",
@@ -90,11 +91,12 @@ export default function SheinAccountsPage() {
       const data = await getSheinUserDetail(email);
       const u = data?.user || {};
       setEditForm({
+        id: u.id,
         email: u.email || email,
         shein_email: u.shein_email || "",
-        shein_password: u.shein_password || "",
+        shein_password: "",
         gmail_email: u.gmail_email || "",
-        gmail_app_password: u.gmail_app_password || "",
+        gmail_app_password: "",
         profile_key: u.profile_key || "Default",
       });
       setEditOpen(true);
@@ -107,9 +109,7 @@ export default function SheinAccountsPage() {
     if (
       !editForm.email ||
       !editForm.shein_email ||
-      !editForm.shein_password ||
-      !editForm.gmail_email ||
-      !editForm.gmail_app_password
+      !editForm.gmail_email
     ) {
       openInfo("Missing Data", "Please fill all fields in edit form.");
       return;
@@ -191,6 +191,7 @@ export default function SheinAccountsPage() {
             />
             <input
               className="loginInput"
+              type="password"
               placeholder="Gmail app password"
               value={form.gmail_app_password}
                 onChange={(e) => setForm((p) => ({ ...p, gmail_app_password: e.target.value }))}
@@ -269,7 +270,7 @@ export default function SheinAccountsPage() {
               <input
                 className="cmInput"
                 type="password"
-                placeholder="SHEIN password"
+                placeholder="SHEIN password (leave blank to keep current)"
                 value={editForm.shein_password}
                 onChange={(e) => setEditForm((p) => ({ ...p, shein_password: e.target.value }))}
               />
@@ -281,7 +282,8 @@ export default function SheinAccountsPage() {
               />
               <input
                 className="cmInput"
-                placeholder="Gmail app password"
+                placeholder="Gmail app password (leave blank to keep current)"
+                type="password"
                 value={editForm.gmail_app_password}
                 onChange={(e) => setEditForm((p) => ({ ...p, gmail_app_password: e.target.value }))}
               />

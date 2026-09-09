@@ -1,8 +1,8 @@
 const express = require("express");
 const { pool } = require("../config/db");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireWriteAccess } = require("../middleware/auth");
 const { asyncHandler, paths, int, number, finite, trim, execute, rows, first } = require("../lib/helpers");
-const router = express.Router(); router.use(requireAuth);
+const router = express.Router(); router.use(requireAuth, requireWriteAccess);
 const uid = (req) => Number(req.user.user_id);
 
 router.get(paths("getKgPrice", true), asyncHandler(async (req, res) => {
@@ -25,7 +25,7 @@ router.post(paths("addDeliveryChargePreset"), asyncHandler(async (req, res) => {
   catch (e) { if (e.code === "ER_DUP_ENTRY") return res.status(409).json({ ok: false, error: "A preset with this label already exists" }); throw e; }
 }));
 router.post(paths("updateDeliveryChargePreset"), asyncHandler(async (req, res) => {
-  const id = int(req.body?.id); const label = trim(req.body?.label); const amount = Number(req.body?.adjustment_amount); const active = req.body && Object.prototype.hasOwnProperty.call(req.body, "active") ? (req.body.active ? 1 : 0) : 1; const sortOrder = int(req.body?.sort_order);
+  const id = int(req.body?.id); const label = trim(req.body?.label); const amount = Number(req.body?.adjustment_amount); const rawActive = req.body?.active; if (req.body && Object.prototype.hasOwnProperty.call(req.body, "active") && ![true, false, 0, 1, "0", "1", "true", "false"].includes(rawActive)) return res.status(400).json({ ok: false, error: "active must be a boolean" }); const active = req.body && Object.prototype.hasOwnProperty.call(req.body, "active") ? (rawActive === true || rawActive === 1 || rawActive === "1" || rawActive === "true" ? 1 : 0) : 1; const sortOrder = int(req.body?.sort_order);
   if (id <= 0 || !label || label.length > 32 || !Number.isFinite(amount)) return res.status(400).json({ ok: false, error: "id, label, and a finite adjustment_amount are required" });
   try { const result = await execute(pool, "UPDATE delivery_charge_presets SET label=?, adjustment_amount=?, active=?, sort_order=? WHERE id=? AND user_id=?", [label, amount, active, sortOrder, id, uid(req)]); res.json({ ok: true, affected: result.affectedRows }); }
   catch (e) { if (e.code === "ER_DUP_ENTRY") return res.status(409).json({ ok: false, error: "A preset with this label already exists" }); throw e; }

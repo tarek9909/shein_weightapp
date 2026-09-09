@@ -1,7 +1,17 @@
 const jwt = require("jsonwebtoken");
 const { pool } = require("../config/db");
 
-const secret = () => process.env.JWT_SECRET || process.env.AUTH_SECRET || "CHANGE_THIS_SECRET_123";
+const INVALID_SECRETS = new Set(["", "CHANGE_THIS_SECRET_123", "change-me", "replace-me"]);
+
+function secret() {
+  const value = String(process.env.JWT_SECRET || process.env.AUTH_SECRET || "").trim();
+  if (INVALID_SECRETS.has(value) || value.length < 32 || /change[_ -]?this|default|replace-me/i.test(value)) throw new Error("JWT_SECRET must be configured with a strong, non-default value");
+  return value;
+}
+
+function assertAuthConfig() {
+  secret();
+}
 
 function getToken(req) {
   const header = req.get("authorization") || req.get("Authorization");
@@ -19,10 +29,18 @@ function requireAuth(req, res, next) {
     const payload = jwt.verify(token, secret(), { algorithms: ["HS256"] });
     const userId = Number(payload?.user_id);
     if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error("Invalid token payload");
-    return pool.execute("SELECT id, username FROM users WHERE id=? LIMIT 1", [userId])
+    return pool.execute("SELECT id, username, role, owner_user_id, is_active, auth_version FROM users WHERE id=? LIMIT 1", [userId])
       .then(([rows]) => {
-        if (!rows[0]) return res.status(401).json({ ok: false, error: "Invalid token" });
-        req.user = { ...payload, user_id: userId, username: payload.username || rows[0].username };
+        if (!rows[0] || Number(rows[0].is_active) !== 1) return res.status(401).json({ ok: false, error: "Invalid or disabled account" });
+        if (Number(payload.auth_version || 0) !== Number(rows[0].auth_version || 0)) return res.status(401).json({ ok: false, error: "Session expired" });
+        req.user = {
+          ...payload,
+          user_id: userId,
+          username: rows[0].username,
+          role: rows[0].role || payload.role || "admin",
+          owner_user_id: rows[0].owner_user_id == null ? null : Number(rows[0].owner_user_id),
+          auth_version: Number(rows[0].auth_version || 0),
+        };
         return next();
       })
       .catch(next);
@@ -35,8 +53,27 @@ function createToken(user) {
   return jwt.sign({
     user_id: Number(user.id),
     username: user.username,
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
-  }, secret(), { algorithm: "HS256", noTimestamp: true });
+    role: user.role || "admin",
+    auth_version: Number(user.auth_version || 0),
+  }, secret(), { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN || "8h", noTimestamp: true });
 }
 
-module.exports = { requireAuth, createToken, jwtSecret: secret };
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    const role = req.user?.role || "admin";
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({ ok: false, error: "You do not have permission to perform this action" });
+    }
+    return next();
+  };
+}
+
+const requireAdmin = requireRole("admin");
+const requireOperations = requireRole("admin", "operations");
+
+function requireWriteAccess(req, res, next) {
+  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+  return requireOperations(req, res, next);
+}
+
+module.exports = { requireAuth, requireRole, requireAdmin, requireOperations, requireWriteAccess, createToken, jwtSecret: secret, assertAuthConfig };

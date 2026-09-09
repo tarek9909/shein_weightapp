@@ -10,6 +10,7 @@ import {
   acceptPendingCargoPayroll,
 } from "../api/customsApi";
 import { CustomModal } from "../components/CustomModal";
+import { clearAuthSession } from "../utils/auth";
 import CustomDropdown from "../components/CustomDropdown";
 import "../dashboard.css";
 
@@ -71,9 +72,8 @@ export default function CargoSortingPage() {
     });
 
   const handleAuthFail = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    nav("/login");
+    clearAuthSession();
+    nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
   };
 
   useEffect(() => {

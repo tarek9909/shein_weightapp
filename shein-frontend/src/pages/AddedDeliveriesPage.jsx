@@ -9,6 +9,7 @@ import {
 } from "../api/deliveryTrackingApi";
 
 import { CustomModal } from "../components/CustomModal";
+import { isAuthenticated, clearAuthSession } from "../utils/auth";
 import "../addedDeliveries.css";
 
 const money = (n) =>
@@ -40,17 +41,17 @@ const AddedDeliveriesPage = () => {
   const closeModal = () => setModal({ isOpen: false });
 
   const ensureAuth = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      nav("/login");
+    if (!isAuthenticated()) {
+      clearAuthSession();
+      nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
       return false;
     }
     return true;
   };
 
   const handleAuthFail = () => {
-    localStorage.removeItem("token");
-    nav("/login");
+    clearAuthSession();
+    nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
   };
 
   const openInfo = ({ title, message }) => {

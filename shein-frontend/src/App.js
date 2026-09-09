@@ -1,5 +1,5 @@
-// src/App.js
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
@@ -11,14 +11,33 @@ import LossesWorkspace from "./pages/LossesWorkspace";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import LoginPage from "./pages/LoginPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import UserAccountsPage from "./pages/UserAccountsPage.jsx";
 import HamburgerMenu from "./components/HamburgerMenu";
 import PrivateRoute from "./components/PrivateRoute";
 import "./App.css";
 
-/* Separate layout so we can hide hamburger on login */
+/* Separate layout so we can hide hamburger on login and listen for session expiration */
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isLogin = location.pathname === "/login";
+
+  useEffect(() => {
+    const handleSessionExpired = (event) => {
+      const from =
+        event?.detail?.from ||
+        (location.pathname + location.search);
+      if (!location.pathname.startsWith("/login")) {
+        navigate(`/login?redirect=${encodeURIComponent(from)}`, {
+          replace: true,
+          state: { from: location },
+        });
+      }
+    };
+
+    window.addEventListener("shein:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("shein:session-expired", handleSessionExpired);
+  }, [location, navigate]);
 
   return (
     <>
@@ -41,7 +60,7 @@ function AppLayout() {
           <Route
             path="/reports"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <Reports />
               </PrivateRoute>
             }
@@ -50,7 +69,7 @@ function AppLayout() {
           <Route
             path="/orders"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <OrdersPage />
               </PrivateRoute>
             }
@@ -59,8 +78,17 @@ function AppLayout() {
           <Route
             path="/shein-accounts"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <SheinAccountsPage />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/user-accounts"
+            element={
+              <PrivateRoute allowedRoles={["admin"]}>
+                <UserAccountsPage />
               </PrivateRoute>
             }
           />
@@ -68,7 +96,7 @@ function AppLayout() {
           <Route
             path="/delivery"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <DeliveryWorkspace />
               </PrivateRoute>
             }
@@ -77,7 +105,7 @@ function AppLayout() {
           <Route
             path="/cargo"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <CargoPage />
               </PrivateRoute>
             }
@@ -86,7 +114,7 @@ function AppLayout() {
           <Route
             path="/history"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <ActivityHistoryPage />
               </PrivateRoute>
             }
@@ -94,12 +122,19 @@ function AppLayout() {
           <Route
             path="/losses"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["admin", "operations"]}>
                 <LossesWorkspace />
               </PrivateRoute>
             }
           />
-<Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/reset-password"
+            element={
+              <PrivateRoute>
+                <ResetPasswordPage />
+              </PrivateRoute>
+            }
+          />
 
           {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />

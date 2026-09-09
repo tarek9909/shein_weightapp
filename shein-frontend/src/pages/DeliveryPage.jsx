@@ -17,6 +17,7 @@ import {
 } from "../api/deliveryApi";
 
 import { CustomModal } from "../components/CustomModal";
+import { isAuthenticated, clearAuthSession } from "../utils/auth";
 import CustomDropdown from "../components/CustomDropdown";
 import "../delivery.css";
 
@@ -65,17 +66,17 @@ const DeliveryPage = () => {
   };
 
   const ensureAuth = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      nav("/login");
+    if (!isAuthenticated()) {
+      clearAuthSession();
+      nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
       return false;
     }
     return true;
   };
 
   const handleAuthFail = () => {
-    localStorage.removeItem("token");
-    nav("/login");
+    clearAuthSession();
+    nav(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
   };
 
   const refreshCustomers = async () => {
