@@ -1,0 +1,305 @@
+.customerDirectoryPage {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 0 48px;
+  color: #0f172a;
+}
+
+.customerDirectoryHeader,
+.customerDirectoryListHeading,
+.customerDirectoryCardHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.customerDirectoryHeader {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.customerDirectoryEyebrow {
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.customerDirectoryPage h1,
+.customerDirectoryPage h2,
+.customerDirectoryPage p {
+  margin: 0;
+}
+
+.customerDirectoryPage h1 {
+  margin-top: 5px;
+  font-size: 29px;
+  letter-spacing: -.6px;
+}
+
+.customerDirectoryPage h2 {
+  font-size: 16px;
+}
+
+.customerDirectoryPage p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.customerDirectoryCount,
+.customerDirectoryBulkCount {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 58px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.customerDirectoryCount strong {
+  font-size: 20px;
+}
+
+.customerDirectoryCount span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.customerDirectoryNotice {
+  margin-bottom: 16px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.customerDirectoryNotice.is-success {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.customerDirectoryNotice.is-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.customerDirectoryLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.customerDirectoryCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 12px -1px rgba(15, 23, 42, .05);
+  padding: 18px;
+}
+
+.customerDirectoryCardHeading {
+  margin-bottom: 16px;
+}
+
+.customerDirectoryForm {
+  display: grid;
+  gap: 8px;
+}
+
+.customerDirectoryForm label {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.customerDirectoryForm input,
+.customerDirectoryForm textarea,
+.customerDirectoryBulkInput,
+.customerDirectorySearch {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  padding: 10px 11px;
+}
+
+.customerDirectoryForm textarea,
+.customerDirectoryBulkInput {
+  resize: vertical;
+}
+
+.customerDirectoryForm input:focus,
+.customerDirectoryForm textarea:focus,
+.customerDirectoryBulkInput:focus,
+.customerDirectorySearch:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, .13);
+}
+
+.customerDirectoryFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.customerDirectoryButton,
+.customerDirectorySmallButton {
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.customerDirectoryButton {
+  padding: 10px 15px;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.customerDirectoryButton:hover:not(:disabled) {
+  background: #1e40af;
+}
+
+.customerDirectoryButton.secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.customerDirectoryButton:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.customerDirectoryBulkInput {
+  min-height: 202px;
+  margin-bottom: 10px;
+  line-height: 1.55;
+}
+
+.customerDirectoryCard code {
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.customerDirectoryBulkCount {
+  min-width: 42px;
+  min-height: 42px;
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.customerDirectoryListCard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.customerDirectoryListHeading {
+  align-items: center;
+  padding: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.customerDirectorySearch {
+  max-width: 280px;
+}
+
+.customerDirectoryEmpty {
+  padding: 34px 18px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.customerDirectoryTableWrap {
+  overflow-x: auto;
+}
+
+.customerDirectoryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.customerDirectoryTable th,
+.customerDirectoryTable td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.customerDirectoryTable th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.customerDirectoryTable td {
+  color: #475569;
+}
+
+.customerDirectoryTable td strong {
+  color: #0f172a;
+}
+
+.customerDirectoryActions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.customerDirectorySmallButton {
+  padding: 7px 9px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.customerDirectorySmallButton.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+@media (max-width: 800px) {
+  .customerDirectoryLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .customerDirectoryListHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .customerDirectorySearch {
+    max-width: none;
+  }
+}

@@ -1,0 +1,411 @@
+/* reports.css - Executive Financial & Operational Reports Styling */
+
+@keyframes rptFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rptPage {
+  padding: 32px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 70px);
+  color: #0f172a;
+  animation: rptFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Header Section */
+.rptHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.rptHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rptTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rptTitle {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+  margin: 0;
+}
+
+.rptBadge {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+}
+
+.rptSub {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.rptHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rptSearchInput {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  min-width: 240px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.rptSearchInput:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3.5px rgba(99, 102, 241, 0.15);
+}
+
+.rptBtnExport {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rptBtnExport:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+/* KPI Summary Cards */
+.rptKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.rptKpiCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rptKpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+
+.rptKpiCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #e2e8f0;
+}
+
+.rptKpiCard--primary::before { background: linear-gradient(90deg, #4f46e5, #6366f1); }
+.rptKpiCard--success::before { background: linear-gradient(90deg, #059669, #10b981); }
+.rptKpiCard--warning::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.rptKpiCard--danger::before { background: linear-gradient(90deg, #dc2626, #ef4444); }
+
+.rptKpiHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.rptKpiLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rptKpiIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rptKpiCard--primary .rptKpiIcon { background: #eef2ff; color: #4f46e5; }
+.rptKpiCard--success .rptKpiIcon { background: #ecfdf5; color: #059669; }
+.rptKpiCard--warning .rptKpiIcon { background: #fffbebf; color: #d97706; }
+.rptKpiCard--danger .rptKpiIcon { background: #fef2f2; color: #dc2626; }
+
+.rptKpiValue {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.rptKpiSub {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Main Section Content */
+.rptSection {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.rptSectionHead {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.rptSectionTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rptCountPill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Table Styling */
+.rptTableWrap {
+  overflow-x: auto;
+}
+
+.rptTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.rptTable th {
+  background: #f8fafc;
+  padding: 14px 24px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.rptTable td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  vertical-align: middle;
+  transition: background 0.15s ease;
+}
+
+.rptTable tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.rptTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rptMonthCell {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rptMonthBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.rptAmount {
+  font-weight: 700;
+}
+
+.rptAmount--collect { color: #4338ca; }
+.rptAmount--payments { color: #059669; }
+.rptAmount--customs { color: #d97706; }
+.rptAmount--losses { color: #dc2626; }
+.rptAmount--netPositive { color: #047857; font-weight: 800; }
+.rptAmount--netNegative { color: #be123c; font-weight: 800; }
+
+/* Progress bar inside table */
+.rptProgressWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.rptProgressBar {
+  flex: 1;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rptProgressFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.rptProgressFill--high { background: #10b981; }
+.rptProgressFill--med { background: #f59e0b; }
+.rptProgressFill--low { background: #ef4444; }
+
+.rptPercentText {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 36px;
+}
+
+/* Empty & Error State */
+.rptEmpty {
+  padding: 60px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.rptEmptyIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rptEmptyTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.rptEmptySub {
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.rptErrorAlert {
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+  font-weight: 700;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .rptKpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .rptPage {
+    padding: 20px 16px;
+  }
+  .rptKpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .rptHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rptSearchInput {
+    width: 100%;
+  }
+}
