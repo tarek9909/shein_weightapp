@@ -195,16 +195,7 @@ const CartsEditor = ({
     });
   };
 
-  const handleAssignShein = async (cart, selectedEmail) => {
-    const effectiveEmail = (selectedEmail || defaultSheinEmail || "").trim();
-    if (!effectiveEmail) {
-      openInfo({
-        title: "Missing SHEIN Account",
-        message: "Please select a SHEIN account email from the dropdown first.",
-      });
-      return;
-    }
-
+  const handleAssignShein = async (cart) => {
     openPrompt({
       title: "Assign SHEIN Order Number",
       placeholder: "Order number (GSH...)",
@@ -220,14 +211,14 @@ const CartsEditor = ({
         }
         try {
           await updateCart(cart.id, cart.cart_order_number, cart.cart_price, {
-            shein_email: effectiveEmail,
+            shein_email: cart.shein_email || null,
             shein_order_no: normalizedOrderNo,
           });
           await loadCarts();
         } catch (err) {
           openInfo({
             title: "Assign Error",
-            message: err?.message || "Failed to assign SHEIN data to cart.",
+            message: err?.message || "Failed to assign SHEIN order number to cart.",
           });
         }
       },
@@ -235,10 +226,10 @@ const CartsEditor = ({
   };
 
   const handleRefreshSheinForCart = async (cart) => {
-    if (!cart.shein_email || !cart.shein_order_no) {
+    if (!cart.shein_order_no) {
       openInfo({
-        title: "Missing SHEIN Data",
-        message: "Assign SHEIN email and order number first.",
+        title: "Missing SHEIN Order Number",
+        message: "Assign SHEIN order number first.",
       });
       return;
     }
@@ -325,10 +316,6 @@ const CartsEditor = ({
 
                   <div className="ceInfoGrid">
                     <div className="ceInfoRow">
-                      <span className="ceInfoKey">SHEIN</span>
-                      <span className="ceInfoVal">{cart.shein_email || "-"}</span>
-                    </div>
-                    <div className="ceInfoRow">
                       <span className="ceInfoKey">Order</span>
                       <span className="ceInfoVal">{cart.shein_order_no || "-"}</span>
                     </div>
@@ -348,35 +335,6 @@ const CartsEditor = ({
                     </div>
                   </div>
                   <div className="ceAssignWrap">
-                    <CustomDropdown
-                      className="cmInput"
-                      value={cart.shein_email || ""}
-                      placeholder="Select SHEIN account"
-                      searchable={true}
-                      options={sheinUserEmails.map((email) => ({
-                        value: email,
-                        label: email,
-                      }))}
-                      onChange={async (e) => {
-                        const nextEmail = e.target.value;
-                        try {
-                          await updateCart(cart.id, cart.cart_order_number, cart.cart_price, {
-                            shein_email: nextEmail || null,
-                            shein_order_no: cart.shein_order_no || null,
-                          });
-                          setSelectedProfileByCart((current) => ({
-                            ...current,
-                            [cart.id]: profileByEmail.get(nextEmail.trim().toLowerCase()) || "",
-                          }));
-                          await loadCarts();
-                        } catch (err) {
-                          openInfo({
-                            title: "Assign Error",
-                            message: err?.message || "Failed to update SHEIN account for this cart.",
-                          });
-                        }
-                      }}
-                    />
                     <CustomDropdown
                       className="cmInput"
                       value={getCartProfileKey(cart)}
@@ -431,7 +389,7 @@ const CartsEditor = ({
                       Edit
                     </button>
 
-                    <button className="ceBtnSoft" onClick={() => handleAssignShein(cart, cart.shein_email || defaultSheinEmail)}>
+                    <button className="ceBtnSoft" onClick={() => handleAssignShein(cart)}>
                       Assign SHEIN
                     </button>
 
