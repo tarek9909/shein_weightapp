@@ -68,6 +68,7 @@ export default function Dashboard() {
   const nav = useNavigate();
   const readOnly = getUser()?.role === "dashboard";
 
+  const [activeView, setActiveView] = useState("overview");
   const [months, setMonths] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState("");
 
@@ -680,7 +681,7 @@ export default function Dashboard() {
           ? ` [In Customs: $${money(item.customs_fee)}]`
           : "";
 
-        const label = `${item.already_in_customs ? "✓ " : "📦 "}${item.tracking_no || "(No track #)"} • ${refPart}${splitPart} • ${weightPart} ${feePart}${statusPart}`;
+        const label = `${item.already_in_customs ? "[Recorded] " : ""}${item.tracking_no || "(No track #)"} • ${refPart}${splitPart} • ${weightPart} ${feePart}${statusPart}`;
         return {
           value: item.key,
           label,
@@ -801,26 +802,29 @@ export default function Dashboard() {
         </div>
 
         <div className="dashHeaderRight">
-          <label className="dashLabel">Active Month Cycle</label>
+          <div className="dashMonthControl">
+            <label className="dashLabel">Active Month Cycle</label>
 
-          <CustomDropdown
-            className="dashSelect"
-            onChange={(e) => setSelectedMonth(String(e.target.value))}
-            value={selectedMonth || ""}
-            disabled={!Array.isArray(months) || months.length === 0}
-            placeholder="-- Choose Month --"
-            options={(Array.isArray(months) ? months : []).map((m) => ({
-              value: String(m.id),
-              label: `${m.name} (#${m.id})`,
-            }))}
-          />
+            <CustomDropdown
+              className="dashSelect"
+              onChange={(e) => setSelectedMonth(String(e.target.value))}
+              value={selectedMonth || ""}
+              disabled={!Array.isArray(months) || months.length === 0}
+              placeholder="-- Choose Month --"
+              options={(Array.isArray(months) ? months : []).map((m) => ({
+                value: String(m.id),
+                label: `${m.name} (#${m.id})`,
+              }))}
+            />
+          </div>
 
-          <div className="dashAddMonth">
+          <div className="dashAddMonth" style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
             <input
               className="dashInput"
               value={newMonthName}
               onChange={(e) => setNewMonthName(e.target.value)}
               placeholder="New Month name..."
+              style={{ width: "160px" }}
             />
             <button className="dashBtn" onClick={handleAddMonth}>
               + Add Month
@@ -829,299 +833,270 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Tier 1: Hero Financial KPIs */}
-      <div className="dashSectionHeaderRow">
-        <div className="dashSectionTitle">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
-          Executive Financial Health
-        </div>
+      {/* Top Level Navigation Switcher */}
+      <div className="dashNavTabs">
+        <button
+          type="button"
+          className={`dashNavTab ${activeView === "overview" ? "active" : ""}`}
+          onClick={() => setActiveView("overview")}
+        >
+          Overview & Financials
+        </button>
+        <button
+          type="button"
+          className={`dashNavTab ${activeView === "orders" ? "active" : ""}`}
+          onClick={() => setActiveView("orders")}
+        >
+          Orders & Pipeline <span className="dashNavBadge">{orders.length}</span>
+        </button>
+        <button
+          type="button"
+          className={`dashNavTab ${activeView === "customs" ? "active" : ""}`}
+          onClick={() => setActiveView("customs")}
+        >
+          Customs & Freight <span className="dashNavBadge">{customs.length}</span>
+        </button>
+        <button
+          type="button"
+          className={`dashNavTab ${activeView === "treasury" ? "active" : ""}`}
+          onClick={() => setActiveView("treasury")}
+        >
+          Treasury & Payments <span className="dashNavBadge">{payments.length}</span>
+        </button>
+        <button
+          type="button"
+          className={`dashNavTab ${activeView === "all" ? "active" : ""}`}
+          onClick={() => setActiveView("all")}
+        >
+          All Workspaces
+        </button>
       </div>
 
-      <div className="dashHeroKpis">
-        <StatCard
-          hero
-          title="Realized Net Profit"
-          value={`${totals.realizedNetProfit >= 0 ? "+" : ""}$${money(totals.realizedNetProfit)}`}
-          variant={totals.realizedNetProfit >= 0 ? "profit" : "loss"}
-          subtitle="Net cash profit (Payments - Cost - Customs - Losses)"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-              <polyline points="17 6 23 6 23 12" />
-            </svg>
-          }
-        />
-        <StatCard
-          hero
-          title="Estimated Net Profit"
-          value={`$${money(totals.totalEstimatedProfitAfterLosses)}`}
-          variant="profit"
-          subtitle="Net return after freight & deductions"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          hero
-          title="Confirmed Losses"
-          value={`$${money(totals.totalLosses)}`}
-          variant="loss"
-          subtitle="Customer & cargo losses → View in Losses"
-          onClick={() => nav("/losses")}
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          }
-        />
-        <StatCard
-          hero
-          title="Actual Available Cash"
-          value={`$${money(actualCash)}`}
-          variant="cash"
-          subtitle="Realized funds in hand"
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="6" width="20" height="12" rx="2" />
-              <circle cx="12" cy="12" r="2" />
-              <path d="M6 12h.01M18 12h.01" />
-            </svg>
-          }
-        />
-      </div>
-
-      {/* Dedicated Profit & Loss Performance Matrix */}
-      <div className="dashPnLCard">
-        <div className="dashPnLCardHead">
-          <div className="dashPnLCardHeadLeft">
-            <div className="dashPnLBadge">P&L STATEMENT</div>
-            <h3 className="dashPnLCardTitle">Profit & Loss Financial Performance</h3>
-            <p className="dashPnLCardSub">Full reconciliation of collected payments, goods purchases, customs logistics, and customer losses.</p>
-          </div>
-          <div className="dashPnLCardHeadRight">
-            <button type="button" className="dashBtnSoft" onClick={() => nav("/losses")} title="Open Losses Workspace">
-              📉 Losses Workspace (${money(totals.totalLosses)}) →
-            </button>
-            <button type="button" className="dashBtnSoft" onClick={() => nav("/reports")} title="Open Comprehensive Reports">
-              📊 Full Reports →
-            </button>
-          </div>
-        </div>
-
-        <div className="dashPnLGrid">
-          {/* Revenue Stream */}
-          <div className="dashPnLCol">
-            <div className="dashPnLColHeader">
-              <span className="dashPnLPill dashPnLPillGreen">Revenue & Collections</span>
-              <div className="dashPnLMetricTitle">Total Orders To Collect</div>
-              <div className="dashPnLMetricNumber">${money(totals.totalCollect)}</div>
-            </div>
-            <div className="dashPnLDetails">
-              <div className="dashPnLItem">
-                <span>Payments Actually Collected</span>
-                <b className="dashTextGood">+${money(totals.totalPayments)}</b>
-              </div>
-              <div className="dashPnLItem">
-                <span>Outstanding Uncollected</span>
-                <b className="dashTextMuted">${money(Math.max(0, totals.totalCollect - totals.totalPayments))}</b>
-              </div>
-              <div className="dashPnLItem">
-                <span>Collection Progress</span>
-                <b>{totals.collectionRate}%</b>
-              </div>
+      {/* Tier 1: Hero Financial Health KPIs */}
+      {(activeView === "overview" || activeView === "all") && (
+        <>
+          <div className="dashSectionHeaderRow">
+            <div className="dashSectionTitle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              Executive Financial Health
             </div>
           </div>
 
-          {/* Outflow & Losses Stream */}
-          <div className="dashPnLCol">
-            <div className="dashPnLColHeader">
-              <span className="dashPnLPill dashPnLPillRed">Deductions & Losses</span>
-              <div className="dashPnLMetricTitle">Total Costs & Losses</div>
-              <div className="dashPnLMetricNumber">-${money(totals.totalOrders + totals.totalCustoms + totals.totalLosses)}</div>
+          <div className="dashHeroKpis">
+            <StatCard
+              hero
+              title="Realized Net Profit"
+              value={`${totals.realizedNetProfit >= 0 ? "+" : ""}$${money(totals.realizedNetProfit)}`}
+              variant={totals.realizedNetProfit >= 0 ? "profit" : "loss"}
+              subtitle="Net cash profit (Payments - Cost - Customs - Losses)"
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              }
+            />
+            <StatCard
+              hero
+              title="Cash Collected"
+              value={`$${money(serverSummary?.payments_total ?? totals.totalPayments)}`}
+              variant="neutral"
+              subtitle={`${totals.collectionRate}% of $${money(totals.totalCollect)} expected revenue`}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="2" />
+                </svg>
+              }
+            >
+              <div className="dashStatProgressTrack">
+                <div className="dashStatProgressBar" style={{ width: `${totals.collectionRate}%` }} />
+              </div>
+            </StatCard>
+            <StatCard
+              hero
+              title="Goods & Customs Outflow"
+              value={`-$${money(totals.totalOrders + totals.totalCustoms)}`}
+              variant="loss"
+              subtitle={`Goods: $${money(totals.totalOrders)} • Customs: $${money(totals.totalCustoms)}`}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+              }
+            />
+            <StatCard
+              hero
+              title="Confirmed Losses"
+              value={`$${money(totals.totalLosses)}`}
+              variant="loss"
+              subtitle="Customer & cargo losses (Click to view)"
+              onClick={() => nav("/losses")}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              }
+            />
+          </div>
+
+          {/* Compact Operations KPI Strip */}
+          <div className="dashOpsStrip">
+            <div className="dashOpsItem">
+              <div className="dashOpsInfo">
+                <span className="dashOpsLabel">Available Cash</span>
+                <span className="dashOpsValue">${money(actualCash)}</span>
+                <span className="dashOpsSub">{remainingBudget >= 0 ? "Liquid in hand" : "Over budget"}</span>
+              </div>
             </div>
-            <div className="dashPnLDetails">
-              <div className="dashPnLItem">
-                <span>Orders Goods Cost</span>
-                <b className="dashTextDanger">-${money(totals.totalOrders)}</b>
+
+            <div className="dashOpsItem is-clickable" onClick={() => setActiveView("orders")} title="Filter to Orders Workspace">
+              <div className="dashOpsInfo">
+                <span className="dashOpsLabel">Orders Pipeline</span>
+                <span className="dashOpsValue">{orders.length} orders</span>
+                <span className="dashOpsSub">${money(totals.totalOrders)} total cost</span>
               </div>
-              <div className="dashPnLItem">
-                <span>Customs & Freight Fee</span>
-                <b className="dashTextDanger">-${money(totals.totalCustoms)}</b>
+              <span className="dashOpsAction">→</span>
+            </div>
+
+            <div className="dashOpsItem is-clickable" onClick={() => nav("/delivery")} title="Open Delivery Workspace">
+              <div className="dashOpsInfo">
+                <span className="dashOpsLabel">Ready for Delivery</span>
+                <span className="dashOpsValue">{serverSummary?.ready_customer_count ?? serverSummary?.received_customer_count ?? "0"} pkgs</span>
+                <span className="dashOpsSub">${money(serverSummary?.uncollected_customer_total)} unlocked</span>
               </div>
-              <div className="dashPnLItem" onClick={() => nav("/losses")} style={{ cursor: "pointer" }} title="Open Losses Workspace">
-                <span style={{ textDecoration: "underline", color: "#dc2626" }}>Confirmed Losses ↗</span>
-                <b className="dashTextDanger">-${money(totals.totalLosses)}</b>
+              <span className="dashOpsAction">→</span>
+            </div>
+
+            <div className="dashOpsItem is-clickable" onClick={() => nav("/cargo")} title="Open Cargo Receipts">
+              <div className="dashOpsInfo">
+                <span className="dashOpsLabel">Cargo Receipts</span>
+                <span className="dashOpsValue">{serverSummary?.carts_with_receipts ?? 0} / {serverSummary?.total_carts_count ?? 0} carts</span>
+                <span className="dashOpsSub">{Number(totals.totalActualWeightKg || 0).toFixed(2)} kg actual</span>
               </div>
-              <div className="dashPnLItem">
-                <span>Est. Freight Shipping</span>
-                <span className="dashTextMuted">${money(totals.totalEstimatedShipping)} ({Number(totals.totalEstimatedWeight || 0).toFixed(2)}kg)</span>
+              <span className="dashOpsAction">→</span>
+            </div>
+
+            <div className="dashOpsItem is-clickable" onClick={() => nav("/losses")} title="Open Losses Workspace">
+              <div className="dashOpsInfo">
+                <span className="dashOpsLabel">Loss Incidents</span>
+                <span className="dashOpsValue">${money(totals.totalLosses)}</span>
+                <span className="dashOpsSub">Registered losses</span>
               </div>
+              <span className="dashOpsAction">→</span>
             </div>
           </div>
 
-          {/* Net Profit Bottom Line */}
-          <div className="dashPnLCol dashPnLColHighlight">
-            <div className="dashPnLColHeader">
-              <span className="dashPnLPill dashPnLPillBlue">Net Bottom Line</span>
-              <div className="dashPnLMetricTitle">Realized Net Profit (Collected)</div>
-              <div className={`dashPnLMetricNumber ${totals.realizedNetProfit >= 0 ? "dashTextGood" : "dashTextDanger"}`}>
-                {totals.realizedNetProfit >= 0 ? "+" : ""}${money(totals.realizedNetProfit)}
+          {/* Dedicated Profit & Loss Performance Matrix */}
+          <div className="dashPnLCard">
+            <div className="dashPnLCardHead">
+              <div className="dashPnLCardHeadLeft">
+                <div className="dashPnLBadge">P&L STATEMENT</div>
+                <h3 className="dashPnLCardTitle">Profit & Loss Financial Performance</h3>
+                <p className="dashPnLCardSub">Full reconciliation of collected payments, goods purchases, customs logistics, and customer losses.</p>
+              </div>
+              <div className="dashPnLCardHeadRight">
+                <button type="button" className="dashBtnSoft" onClick={() => nav("/losses")} title="Open Losses Workspace">
+                  Losses Workspace (${money(totals.totalLosses)}) →
+                </button>
+                <button type="button" className="dashBtnSoft" onClick={() => nav("/reports")} title="Open Comprehensive Reports">
+                  Full Reports →
+                </button>
               </div>
             </div>
-            <div className="dashPnLDetails">
-              <div className="dashPnLItem">
-                <span>Profit Calculation Formula</span>
-                <small style={{ fontSize: "11px", color: "#64748b" }}>Payments - Orders - Customs - Losses</small>
+
+            <div className="dashPnLGrid">
+              {/* Revenue Stream */}
+              <div className="dashPnLCol">
+                <div className="dashPnLColHeader">
+                  <span className="dashPnLPill dashPnLPillGreen">Revenue & Collections</span>
+                  <div className="dashPnLMetricTitle">Total Orders To Collect</div>
+                  <div className="dashPnLMetricNumber">${money(totals.totalCollect)}</div>
+                </div>
+                <div className="dashPnLDetails">
+                  <div className="dashPnLItem">
+                    <span>Payments Actually Collected</span>
+                    <b className="dashTextGood">+${money(totals.totalPayments)}</b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Outstanding Uncollected</span>
+                    <b className="dashTextMuted">${money(Math.max(0, totals.totalCollect - totals.totalPayments))}</b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Collection Progress</span>
+                    <b>{totals.collectionRate}%</b>
+                  </div>
+                </div>
               </div>
-              <div className="dashPnLItem">
-                <span>Estimated Final Net Profit</span>
-                <b className={totals.totalEstimatedProfitAfterLosses >= 0 ? "dashTextGood" : "dashTextDanger"}>
-                  ${money(totals.totalEstimatedProfitAfterLosses)}
-                </b>
+
+              {/* Outflow & Losses Stream */}
+              <div className="dashPnLCol">
+                <div className="dashPnLColHeader">
+                  <span className="dashPnLPill dashPnLPillRed">Deductions & Losses</span>
+                  <div className="dashPnLMetricTitle">Total Costs & Losses</div>
+                  <div className="dashPnLMetricNumber">-${money(totals.totalOrders + totals.totalCustoms + totals.totalLosses)}</div>
+                </div>
+                <div className="dashPnLDetails">
+                  <div className="dashPnLItem">
+                    <span>Orders Goods Cost</span>
+                    <b className="dashTextDanger">-${money(totals.totalOrders)}</b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Customs & Freight Fee</span>
+                    <b className="dashTextDanger">-${money(totals.totalCustoms)}</b>
+                  </div>
+                  <div className="dashPnLItem" onClick={() => nav("/losses")} style={{ cursor: "pointer" }} title="Open Losses Workspace">
+                    <span style={{ textDecoration: "underline", color: "#b91c1c" }}>Confirmed Losses ↗</span>
+                    <b className="dashTextDanger">-${money(totals.totalLosses)}</b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Est. Freight Shipping</span>
+                    <span className="dashTextMuted">${money(totals.totalEstimatedShipping)} ({Number(totals.totalEstimatedWeight || 0).toFixed(2)}kg)</span>
+                  </div>
+                </div>
               </div>
-              <div className="dashPnLItem">
-                <span>Gross Profit (Before Losses)</span>
-                <b>${money(totals.totalEstimatedProfit)}</b>
-              </div>
-              <div className="dashPnLItem">
-                <span>Estimated Net Margin</span>
-                <b>{totals.profitMargin}%</b>
+
+              {/* Net Profit Bottom Line */}
+              <div className="dashPnLCol dashPnLColHighlight">
+                <div className="dashPnLColHeader">
+                  <span className="dashPnLPill dashPnLPillBlue">Net Bottom Line</span>
+                  <div className="dashPnLMetricTitle">Realized Net Profit (Collected)</div>
+                  <div className={`dashPnLMetricNumber ${totals.realizedNetProfit >= 0 ? "dashTextGood" : "dashTextDanger"}`}>
+                    {totals.realizedNetProfit >= 0 ? "+" : ""}${money(totals.realizedNetProfit)}
+                  </div>
+                </div>
+                <div className="dashPnLDetails">
+                  <div className="dashPnLItem">
+                    <span>Profit Calculation Basis</span>
+                    <small style={{ fontSize: "11px", color: "#64748b" }}>Payments - Orders - Customs - Losses</small>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Estimated Final Net Profit</span>
+                    <b className={totals.totalEstimatedProfitAfterLosses >= 0 ? "dashTextGood" : "dashTextDanger"}>
+                      ${money(totals.totalEstimatedProfitAfterLosses)}
+                    </b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Gross Profit (Before Losses)</span>
+                    <b>${money(totals.totalEstimatedProfit)}</b>
+                  </div>
+                  <div className="dashPnLItem">
+                    <span>Estimated Net Margin</span>
+                    <b>{totals.profitMargin}%</b>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Tier 2: Secondary Operational & Balance Metrics */}
-      <div className="dashSectionHeaderRow">
-        <div className="dashSectionTitle">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-            <line x1="8" y1="21" x2="16" y2="21" />
-            <line x1="12" y1="17" x2="12" y2="21" />
-          </svg>
-          Operational Pipeline & Liquidity Matrix
-        </div>
-      </div>
-
-      <div className="dashSecondaryStats">
-        <StatCard
-          title="Orders Goods Cost"
-          value={`$${money(totals.totalOrders)}`}
-          variant="orders"
-          subtitle={`${orders.length} order${orders.length !== 1 ? "s" : ""}`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Orders To Collect"
-          value={`$${money(totals.totalCollect)}`}
-          variant="collect"
-          subtitle={`Expected revenue across ${orders.length} order(s)`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Est. vs Actual Weight"
-          value={`${Number(totals.totalEstimatedWeight || 0).toFixed(2)} / ${Number(totals.totalActualWeightKg || 0).toFixed(2)} kg`}
-          variant="weight"
-          subtitle={`Shipping rate: $${money(kgPrice)}/kg ($${money(totals.totalEstimatedShipping)})`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-              <line x1="12" y1="22.08" x2="12" y2="12" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Customs & Freight"
-          value={`$${money(totals.totalCustoms)}`}
-          variant="customs"
-          subtitle={`${customs.length} recorded entries`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Payments Collected"
-          value={`$${money(serverSummary?.payments_total ?? totals.totalPayments)}`}
-          variant="payments"
-          subtitle={`${serverSummary?.payment_count ?? payments.length} payment records`}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-              <line x1="1" y1="10" x2="23" y2="10" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Remaining Budget"
-          value={`$${money(remainingBudget)}`}
-          variant={remainingBudget >= 0 ? "profit" : "remaining"}
-          subtitle={totalBudget > 0 ? `From $${money(totalBudget)} total budget` : "Net cash position (no budget set)"}
-          icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          }
-        />
-      </div>
-
-      <div className="dashSecondaryStats">
-        <div onClick={() => nav("/delivery")} style={{ cursor: "pointer" }} title="Open Delivery Workspace">
-          <StatCard
-            title="Ready for Delivery"
-            value={serverSummary?.ready_customer_count ?? serverSummary?.received_customer_count ?? "-"}
-            variant="collect"
-            subtitle={`$${money(serverSummary?.uncollected_customer_total)} unlocked → Open Delivery`}
-          />
-        </div>
-        <div onClick={() => nav("/delivery")} style={{ cursor: "pointer" }} title="Open Delivery Workspace">
-          <StatCard
-            title="Assigned to Courier"
-            value={serverSummary?.assigned_customer_count ?? "-"}
-            variant="orders"
-            subtitle={`$${money(serverSummary?.assigned_customer_total)} in delivery →`}
-          />
-        </div>
-        <div onClick={() => nav("/cargo")} style={{ cursor: "pointer" }} title="Open Cargo Receipts">
-          <StatCard
-            title="Cargo Shipments"
-            value={`${serverSummary?.carts_with_receipts ?? 0} / ${serverSummary?.total_carts_count ?? 0}`}
-            variant="weight"
-            subtitle="Carts with received tracking → Open Cargo"
-          />
-        </div>
-        <StatCard
-          title="Payment Reconciliation"
-          value={`$${money(serverSummary?.reconciliation?.payment_collection_difference)}`}
-          variant="payments"
-          subtitle="Payments total minus customer collections"
-        />
-      </div>
+        </>
+      )}
 
       {/* Tier 3: Workspaces & Registry */}
       <div className="dashSectionHeaderRow">
@@ -1132,779 +1107,890 @@ export default function Dashboard() {
             <rect x="14" y="14" width="7" height="7" />
             <rect x="3" y="14" width="7" height="7" />
           </svg>
-          Operations & Treasury Workspaces
+          {activeView === "orders"
+            ? "Orders & Pipeline Workspace"
+            : activeView === "customs"
+            ? "Customs, Freight & Rates Workspace"
+            : activeView === "treasury"
+            ? "Treasury & Payments Workspace"
+            : "Operations & Treasury Workspaces"}
         </div>
       </div>
 
-      <div className="dashWorkspace">
-        {/* Column 1: Orders & Customs Operations */}
-        <div className="dashWorkspaceCol">
-          {/* Orders */}
-          <SectionCard
-            title="Orders"
-            subtitle="Order name, amount, and amount to collect"
-            badge={`${orders.length} orders`}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-            }
-          >
-            <div className="dashOrdersTop">
-              <div>
-                <div className="dashFormRow dashOrderFormRow">
-                  <input
-                    className="dashInput"
-                    value={newOrderName}
-                    onChange={(e) => setNewOrderName(e.target.value)}
-                    placeholder="Order Name"
-                  />
-                  <input
-                    className="dashInput"
-                    value={newOrder}
-                    onChange={(e) => setNewOrder(e.target.value)}
-                    placeholder="Order Amount"
-                  />
-                  <input
-                    className="dashInput"
-                    type="number"
-                    value={newOrderCollect}
-                    onChange={(e) => setNewOrderCollect(e.target.value)}
-                    placeholder="Amount To Collect"
-                  />
-                  <button className="dashBtn" onClick={handleAddOrder}>
-                    Add
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <List>
-              {orders.map((o) => (
-                <AccordionItem
-                  key={o.id}
-                  header={
-                    <div className="dashAccHeaderContent">
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                        <div className="dashAccTitle">{o.order_name || "Order"}</div>
-                        <button
-                          type="button"
-                          className="dashBtnSoft"
-                          style={{ padding: "4px 10px", fontSize: "12px", gap: "4px" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            nav("/orders");
-                          }}
-                          title="Navigate immediately to Orders workspace"
-                        >
-                          <span>Open in Orders</span>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                            <polyline points="12 5 19 12 12 19" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="dashAccMetaRow">
-                        <span className="dashAccPill">Cost: ${money(o.order_details)}</span>
-                        <span className="dashAccPill">Collect: ${money(o.amount_to_collect)}</span>
-                        <span className="dashAccPill">
-                          Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
-                        </span>
-                        <span className="dashAccPill">
-                          Carts: {Number(o.carts_count || 0)}
-                        </span>
-                        <span className="dashAccPill">
-                          Customers: {Number(o.cart_customers_count || o.customer_count || 0)}
-                        </span>
-                      </div>
-                    </div>
-                  }
-                >
-                  <div className="dashAccFormGrid dashOrderGrid">
-                    <div className="dashOrderInputsLine">
+      <div className={`dashWorkspace ${activeView !== "overview" && activeView !== "all" ? "dashWorkspaceFull" : ""}`}>
+        {/* Column 1: Operations (Orders, Customs, KG Price) */}
+        {(activeView === "overview" || activeView === "all" || activeView === "orders" || activeView === "customs") && (
+          <div className="dashWorkspaceCol">
+            {/* Orders */}
+            {(activeView === "overview" || activeView === "all" || activeView === "orders") && (
+              <SectionCard
+                key={`orders-${activeView}`}
+                title="Orders"
+                subtitle="Order name, amount, and amount to collect"
+                badge={`${orders.length} orders`}
+                defaultOpen={true}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                }
+              >
+                <div className="dashOrdersTop">
+                  <div>
+                    <div className="dashFormRow dashOrderFormRow">
                       <input
                         className="dashInput"
-                        value={o.order_name}
-                        onChange={(e) =>
-                          setOrders((prev) =>
-                            prev.map((ord) =>
-                              ord.id === o.id ? { ...ord, order_name: e.target.value } : ord
-                            )
-                          )
-                        }
-                        onBlur={(e) => handleUpdateOrder(o.id, e.target.value, o.order_details, o.amount_to_collect)}
+                        value={newOrderName}
+                        onChange={(e) => setNewOrderName(e.target.value)}
+                        placeholder="Order Name"
                       />
                       <input
                         className="dashInput"
-                        value={o.order_details}
-                        onChange={(e) =>
-                          setOrders((prev) =>
-                            prev.map((ord) =>
-                              ord.id === o.id ? { ...ord, order_details: e.target.value } : ord
-                            )
-                          )
-                        }
-                        onBlur={(e) => handleUpdateOrder(o.id, o.order_name, e.target.value, o.amount_to_collect)}
+                        value={newOrder}
+                        onChange={(e) => setNewOrder(e.target.value)}
+                        placeholder="Order Amount"
                       />
                       <input
                         className="dashInput"
                         type="number"
-                        value={o.amount_to_collect ?? ""}
-                        onChange={(e) =>
-                          setOrders((prev) =>
-                            prev.map((ord) =>
-                              ord.id === o.id ? { ...ord, amount_to_collect: e.target.value } : ord
-                            )
-                          )
-                        }
-                        onBlur={(e) => handleUpdateOrder(o.id, o.order_name, o.order_details, e.target.value)}
+                        value={newOrderCollect}
+                        onChange={(e) => setNewOrderCollect(e.target.value)}
+                        placeholder="Amount To Collect"
                       />
-                    </div>
-                    <div className="dashOrderMetricsLine">
-                      <div className="dashInlineMetric">
-                        Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
-                      </div>
-                      <div className="dashInlineMetric">
-                        Shipping: $
-                        {money(
-                          Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)
-                        )}
-                      </div>
-                      <div
-                        className="dashInlineMetric"
-                        style={{
-                          color:
-                            Number(o.amount_to_collect || 0) -
-                              Number(o.order_details || 0) -
-                              (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)) >=
-                            0
-                              ? "#059669"
-                              : "#dc2626",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Est. Profit: $
-                        {money(
-                          Number(o.amount_to_collect || 0) -
-                            Number(o.order_details || 0) -
-                            (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0))
-                        )}
-                      </div>
-                    </div>
-                    <div className="dashOrderActionsLine" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        className="dashBtn"
-                        onClick={() => nav("/orders")}
-                        title="Navigate immediately to Orders workspace"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" />
-                          <line x1="10" y1="14" x2="21" y2="3" />
-                        </svg>
-                        <span>Open Orders Workspace</span>
-                      </button>
-
-                      <button
-                        className="dashBtnDanger"
-                        onClick={() =>
-                          openConfirm({
-                            title: "Delete Order",
-                            message: "Are you sure you want to delete this order?",
-                            onYes: async () => {
-                              const res = await deleteOrder(o.id);
-                              if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
-                              setOrders((prev) => prev.filter((x) => x.id !== o.id));
-                            },
-                          })
-                        }
-                      >
-                        Delete
+                      <button className="dashBtn" onClick={handleAddOrder}>
+                        Add
                       </button>
                     </div>
                   </div>
-                </AccordionItem>
-              ))}
-            </List>
-          </SectionCard>
-
-          {/* Customs */}
-          <SectionCard
-            title="Customs"
-            subtitle="Track customs fees"
-            badge={`${customs.length} entries`}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
-            }
-          >
-            <div className="dashMiniStats" style={{ marginBottom: 10 }}>
-              <div className="dashMiniStat">
-                <div className="dashMiniTitle">Actual Weight Sum</div>
-                <div className="dashMiniValue">{Number(totals.totalActualWeightKg || 0).toFixed(3)} kg</div>
-              </div>
-              <div className="dashMiniStat">
-                <div className="dashMiniTitle">Entries With Weight</div>
-                <div className="dashMiniValue">
-                  {totals.customsWithWeight} / {customs.length}
                 </div>
-              </div>
-            </div>
 
-            {/* Quick Auto-Fill from Get-Weight Trackings with Searchable Dropdown */}
-            <div
-              style={{
-                marginBottom: "12px",
-                background: "rgba(99, 102, 241, 0.04)",
-                border: "1px solid rgba(99, 102, 241, 0.16)",
-                borderRadius: "10px",
-                padding: "10px 12px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "6px",
-                  flexWrap: "wrap",
-                  gap: "6px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    color: "var(--ce-primary, #6366f1)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <span>📦 Autofill from Get-Weight & Tracking</span>
-                  {availableTrackingsCount > 0 && (
-                    <span
-                      style={{
-                        background: "#10b981",
-                        color: "#fff",
-                        fontSize: "10px",
-                        padding: "1px 6px",
-                        borderRadius: "10px",
-                        fontWeight: "600",
-                      }}
+                <List>
+                  {orders.map((o) => (
+                    <AccordionItem
+                      key={o.id}
+                      header={
+                        <div className="dashAccHeaderContent">
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                            <div className="dashAccTitle">{o.order_name || "Order"}</div>
+                            <button
+                              type="button"
+                              className="dashBtnSoft"
+                              style={{ padding: "4px 10px", fontSize: "12px", gap: "4px" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nav("/orders");
+                              }}
+                              title="Navigate immediately to Orders workspace"
+                            >
+                              <span>Open in Orders</span>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                                <polyline points="12 5 19 12 12 19" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="dashAccMetaRow">
+                            <span className="dashAccPill">Cost: ${money(o.order_details)}</span>
+                            <span className="dashAccPill">Collect: ${money(o.amount_to_collect)}</span>
+                            <span className="dashAccPill">
+                              Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
+                            </span>
+                            <span className="dashAccPill">
+                              Carts: {Number(o.carts_count || 0)}
+                            </span>
+                            <span className="dashAccPill">
+                              Customers: {Number(o.cart_customers_count || o.customer_count || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      }
                     >
-                      {availableTrackingsCount} available
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: "11px", color: "var(--ce-muted, #64748b)" }}>
-                  Customs rate:{" "}
-                  <strong style={{ color: Number(kgPrice) > 0 ? "#10b981" : "#f59e0b" }}>
-                    ${money(kgPrice)}/kg
-                  </strong>
-                </div>
-              </div>
+                      <div className="dashAccFormGrid dashOrderGrid">
+                        <div className="dashOrderInputsLine">
+                          <input
+                            className="dashInput"
+                            value={o.order_name}
+                            onChange={(e) =>
+                              setOrders((prev) =>
+                                prev.map((ord) =>
+                                  ord.id === o.id ? { ...ord, order_name: e.target.value } : ord
+                                )
+                              )
+                            }
+                            onBlur={(e) => handleUpdateOrder(o.id, e.target.value, o.order_details, o.amount_to_collect)}
+                          />
+                          <input
+                            className="dashInput"
+                            value={o.order_details}
+                            onChange={(e) =>
+                              setOrders((prev) =>
+                                prev.map((ord) =>
+                                  ord.id === o.id ? { ...ord, order_details: e.target.value } : ord
+                                )
+                              )
+                            }
+                            onBlur={(e) => handleUpdateOrder(o.id, o.order_name, e.target.value, o.amount_to_collect)}
+                          />
+                          <input
+                            className="dashInput"
+                            type="number"
+                            value={o.amount_to_collect ?? ""}
+                            onChange={(e) =>
+                              setOrders((prev) =>
+                                prev.map((ord) =>
+                                  ord.id === o.id ? { ...ord, amount_to_collect: e.target.value } : ord
+                                )
+                              )
+                            }
+                            onBlur={(e) => handleUpdateOrder(o.id, o.order_name, o.order_details, e.target.value)}
+                          />
+                        </div>
+                        <div className="dashOrderMetricsLine">
+                          <div className="dashInlineMetric">
+                            Est. Weight: {Number(o.shein_total_weight_plus_2kg_sum || 0).toFixed(3)} kg
+                          </div>
+                          <div className="dashInlineMetric">
+                            Shipping: $
+                            {money(
+                              Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)
+                            )}
+                          </div>
+                          <div
+                            className="dashInlineMetric"
+                            style={{
+                              color:
+                                Number(o.amount_to_collect || 0) -
+                                  Number(o.order_details || 0) -
+                                  (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0)) >=
+                                0
+                                  ? "#166534"
+                                  : "#b91c1c",
+                              fontWeight: 700,
+                            }}
+                          >
+                            Est. Profit: $
+                            {money(
+                              Number(o.amount_to_collect || 0) -
+                                Number(o.order_details || 0) -
+                                (Number(o.shein_total_weight_plus_2kg_sum || 0) * Number(kgPrice || 0))
+                            )}
+                          </div>
+                        </div>
+                        <div className="dashOrderActionsLine" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="dashBtn"
+                            onClick={() => nav("/orders")}
+                            title="Navigate immediately to Orders workspace"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            <span>Open Orders Workspace</span>
+                          </button>
 
-              <CustomDropdown
-                searchable={true}
-                placeholder="🔍 Search tracking #, cart, order or weight..."
-                value={selectedWeightTrackingKey}
-                onChange={handleSelectWeightTracking}
-                options={weightTrackingOptions}
-              />
-
-              {selectedCartRef && (
-                <div
-                  style={{
-                    marginTop: "6px",
-                    fontSize: "11px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "4px",
-                    color: "var(--ce-muted, #64748b)",
-                  }}
-                >
-                  <span>
-                    Selected: <strong>{selectedCartRef.tracking_no || "Cart"}</strong>
-                    {selectedCartRef.order_name ? ` (Order ${selectedCartRef.order_name}` : ""}
-                    {selectedCartRef.cart_order_number ? ` / Cart ${selectedCartRef.cart_order_number})` : selectedCartRef.order_name ? ")" : ""}
-                  </span>
-                  {Number(newCustomWeight) > 0 && Number(kgPrice) > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setNewCustom((Number(newCustomWeight) * Number(kgPrice)).toFixed(2))}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        color: "#10b981",
-                        fontWeight: "600",
-                        textDecoration: "underline",
-                      }}
-                      title="Click to recalculate fee with formula"
-                    >
-                      Formula: {Number(newCustomWeight).toFixed(3)} kg × ${money(kgPrice)} = ${money(Number(newCustomWeight) * Number(kgPrice))}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {isDuplicateTracking && (
-                <div
-                  style={{
-                    marginTop: "6px",
-                    padding: "6px 10px",
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    borderRadius: "6px",
-                    color: "#b91c1c",
-                    fontSize: "11px",
-                    fontWeight: "500",
-                  }}
-                >
-                  ⚠️ Tracking number "{newCustomTracking}" is already recorded in customs for this month. Duplicate tracking entries cannot be added.
-                </div>
-              )}
-            </div>
-
-            <div className="dashFormRow" style={{ flexWrap: "wrap", gap: "8px" }}>
-              <input
-                className="dashInput"
-                type="number"
-                step="0.01"
-                min="0"
-                style={{ minWidth: "110px", flex: 1 }}
-                value={newCustom}
-                onChange={(e) => setNewCustom(e.target.value)}
-                placeholder="Custom Fee ($)"
-              />
-              <input
-                className="dashInput"
-                type="number"
-                step="0.001"
-                min="0"
-                style={{ minWidth: "100px", flex: 1 }}
-                value={newCustomWeight}
-                onChange={handleWeightChange}
-                placeholder="Weight (kg)"
-              />
-              <input
-                className="dashInput"
-                style={{ minWidth: "130px", flex: 1.2 }}
-                value={newCustomTracking}
-                onChange={(e) => setNewCustomTracking(e.target.value)}
-                placeholder="Tracking # (optional)"
-              />
-              <CustomDropdown
-                className="dashInput"
-                style={{ minWidth: "100px", flex: 1 }}
-                value={newCustomDescription}
-                onChange={(e) => setNewCustomDescription(e.target.value)}
-                options={[
-                  { value: "freight", label: "freight" },
-                  { value: "customs", label: "customs" },
-                  { value: "benzene", label: "benzene" },
-                  { value: "bags", label: "bags" },
-                  { value: "other", label: "other" },
-                ]}
-              />
-              <button 
-                className="dashBtn" 
-                onClick={handleAddCustom}
-                disabled={isDuplicateTracking || !newCustom || Number(newCustom) < 0}
-                title={isDuplicateTracking ? "Tracking number already in customs" : "Add custom entry"}
-              >
-                + Add
-              </button>
-            </div>
-            <List>
-              {customs.map((c) => (
-                <AccordionItem
-                  key={c.id}
-                  header={
-                    <div className="dashAccHeaderContent">
-                      <div className="dashAccTitle">
-                        Custom Fee: ${money(c.customs_fee)}
-                        {Number(c.weight_kg || 0) > 0 ? ` | ${Number(c.weight_kg).toFixed(3)} kg` : ""}
+                          <button
+                            className="dashBtnDanger"
+                            onClick={() =>
+                              openConfirm({
+                                title: "Delete Order",
+                                message: "Are you sure you want to delete this order?",
+                                onYes: async () => {
+                                  const res = await deleteOrder(o.id);
+                                  if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
+                                  setOrders((prev) => prev.filter((x) => x.id !== o.id));
+                                },
+                              })
+                            }
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                      <div className="dashAccMetaRow">
-                        <span className="dashAccPill">Desc: {c.description || "benzene"}</span>
-                        {c.tracking_no && <span className="dashAccPill">Track: {c.tracking_no}</span>}
-                        {c.note && <span className="dashAccPill">{c.note}</span>}
-                        <span className="dashAccPill">
-                          {[
-                            c.cart_ref || null,
-                            c.order_ref || null,
-                          ]
-                            .filter(Boolean)
-                            .join(" | ") || "-"}
+                    </AccordionItem>
+                  ))}
+                </List>
+              </SectionCard>
+            )}
+
+            {/* Customs */}
+            {(activeView === "overview" || activeView === "all" || activeView === "customs") && (
+              <SectionCard
+                key={`customs-${activeView}`}
+                title="Customs"
+                subtitle="Track customs fees"
+                badge={`${customs.length} entries`}
+                defaultOpen={true}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                }
+              >
+                <div className="dashMiniStats" style={{ marginBottom: 10 }}>
+                  <div className="dashMiniStat">
+                    <div className="dashMiniTitle">Actual Weight Sum</div>
+                    <div className="dashMiniValue">{Number(totals.totalActualWeightKg || 0).toFixed(3)} kg</div>
+                  </div>
+                  <div className="dashMiniStat">
+                    <div className="dashMiniTitle">Entries With Weight</div>
+                    <div className="dashMiniValue">
+                      {totals.customsWithWeight} / {customs.length}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Auto-Fill from Get-Weight Trackings with Searchable Dropdown */}
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "6px",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        color: "#0f172a",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
+                      </svg>
+                      <span>Autofill from Get-Weight & Tracking</span>
+                      {availableTrackingsCount > 0 && (
+                        <span
+                          style={{
+                            background: "#f0fdf4",
+                            color: "#166534",
+                            border: "1px solid #bbf7d0",
+                            fontSize: "10px",
+                            padding: "1px 6px",
+                            borderRadius: "10px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          {availableTrackingsCount} available
                         </span>
-                      </div>
+                      )}
                     </div>
-                  }
-                >
-                  <div className="dashAccFormGrid dashCustomGrid" style={{ gridTemplateColumns: "1fr 1fr 1.5fr auto", gap: "8px" }}>
-                    <input
-                      className="dashInput"
-                      type="number"
-                      step="0.01"
-                      value={c.customs_fee}
-                      onChange={(e) =>
-                        setCustoms((prev) =>
-                          prev.map((cu) =>
-                            cu.id === c.id ? { ...cu, customs_fee: e.target.value } : cu
-                          )
-                        )
-                      }
-                      onBlur={(e) => handleUpdateCustom(c.id, e.target.value, c.note || null, c.tracking_no || undefined, c.weight_kg || undefined)}
-                      placeholder="Fee ($)"
-                    />
-                    <input
-                      className="dashInput"
-                      type="number"
-                      step="0.001"
-                      value={c.weight_kg ?? ""}
-                      onChange={(e) =>
-                        setCustoms((prev) =>
-                          prev.map((cu) =>
-                            cu.id === c.id ? { ...cu, weight_kg: e.target.value } : cu
-                          )
-                        )
-                      }
-                      onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, c.note || null, c.tracking_no || undefined, e.target.value)}
-                      placeholder="Weight (kg)"
-                    />
-                    <input
-                      className="dashInput"
-                      value={c.note || ""}
-                      onChange={(e) =>
-                        setCustoms((prev) =>
-                          prev.map((cu) =>
-                            cu.id === c.id ? { ...cu, note: e.target.value } : cu
-                          )
-                        )
-                      }
-                      onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, e.target.value, c.tracking_no || undefined, c.weight_kg || undefined)}
-                      placeholder="Reference / note"
-                    />
-                    <button
-                      className="dashBtnDanger"
-                      onClick={() =>
-                        openConfirm({
-                          title: "Delete Customs",
-                          message: "Are you sure you want to delete this customs entry?",
-                          onYes: async () => {
-                            const res = await deleteCustom(c.id);
-                            if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
-                            setCustoms((prev) => prev.filter((x) => x.id !== c.id));
-                            loadWeightTrackings(selectedMonth);
-                          },
-                        })
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </AccordionItem>
-              ))}
-            </List>
-          </SectionCard>
-        </div>
-
-        {/* Column 2: Budgets, Payments & Universal Rates */}
-        <div className="dashWorkspaceCol">
-          {/* Budgets */}
-          <SectionCard
-            title="Budgets"
-            subtitle="Track starting budget and monthly entries"
-            badge={`${budgets.length} entries`}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-                <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-              </svg>
-            }
-          >
-            <div className="dashFormRow">
-              <input
-                className="dashInput"
-                type="number"
-                value={newBudgetValue}
-                onChange={(e) => setNewBudgetValue(e.target.value)}
-                placeholder="Value"
-              />
-              <input
-                className="dashInput"
-                value={newBudgetDesc}
-                onChange={(e) => setNewBudgetDesc(e.target.value)}
-                placeholder="Description (ex: initial)"
-              />
-              <button className="dashBtn" onClick={handleAddBudget}>
-                Add
-              </button>
-            </div>
-
-            <List>
-              {budgets.map((b) => (
-                <AccordionItem
-                  key={b.id}
-                  header={
-                    <div className="dashAccHeaderContent">
-                      <div className="dashAccTitle">{b.description || "Budget Item"}</div>
-                      <div className="dashAccMetaRow">
-                        <span className="dashAccPill">Value: ${money(b.value)}</span>
-                      </div>
+                    <div style={{ fontSize: "11px", color: "var(--dash-text-muted, #64748b)" }}>
+                      Customs rate:{" "}
+                      <strong style={{ color: Number(kgPrice) > 0 ? "#166534" : "#b45309" }}>
+                        ${money(kgPrice)}/kg
+                      </strong>
                     </div>
-                  }
-                >
-                  <div className="dashAccFormGrid dashBudgetGrid">
-                    <input
-                      className="dashInput"
-                      type="number"
-                      value={b.value}
-                      onChange={(e) =>
-                        setBudgets((prev) =>
-                          prev.map((bu) => (bu.id === b.id ? { ...bu, value: e.target.value } : bu))
-                        )
-                      }
-                      onBlur={(e) => handleUpdateBudget(b.id, e.target.value, b.description)}
-                    />
-                    <input
-                      className="dashInput"
-                      value={b.description}
-                      onChange={(e) =>
-                        setBudgets((prev) =>
-                          prev.map((bu) =>
-                            bu.id === b.id ? { ...bu, description: e.target.value } : bu
-                          )
-                        )
-                      }
-                      onBlur={(e) => handleUpdateBudget(b.id, b.value, e.target.value)}
-                    />
-                    <button
-                      className="dashBtnDanger"
-                      onClick={() =>
-                        openConfirm({
-                          title: "Delete Budget",
-                          message: "Are you sure you want to delete this budget item?",
-                          onYes: async () => {
-                            const res = await deleteBudget(b.id);
-                            if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
-                            setBudgets((prev) => prev.filter((x) => x.id !== b.id));
-                          },
-                        })
-                      }
-                    >
-                      Delete
-                    </button>
                   </div>
-                </AccordionItem>
-              ))}
-            </List>
-          </SectionCard>
 
-          {/* Payments */}
-          <SectionCard
-            title="Payments"
-            subtitle="Track payments made"
-            badge={`${payments.length} payments`}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                <line x1="1" y1="10" x2="23" y2="10" />
-              </svg>
-            }
-          >
-            <div className="dashModeRow">
-              <button
-                type="button"
-                className={paymentMode === "manual" ? "dashModeBtn dashModeBtnActive" : "dashModeBtn"}
-                onClick={() => setPaymentMode("manual")}
-              >
-                Manual Entry
-              </button>
-              <button
-                type="button"
-                className={paymentMode === "customers" ? "dashModeBtn dashModeBtnActive" : "dashModeBtn"}
-                onClick={() => setPaymentMode("customers")}
-              >
-                By Customers
-              </button>
-            </div>
+                  <CustomDropdown
+                    searchable={true}
+                    placeholder="Search tracking #, cart, order or weight..."
+                    value={selectedWeightTrackingKey}
+                    onChange={handleSelectWeightTracking}
+                    options={weightTrackingOptions}
+                  />
 
-            {paymentMode === "manual" ? (
-              <div className="dashFormRow">
-                <input
-                  className="dashInput"
-                  value={newPayment}
-                  onChange={(e) => setNewPayment(e.target.value)}
-                  placeholder="New Payment"
-                />
-                <button className="dashBtn" onClick={handleAddPayment}>
-                  Add
-                </button>
-              </div>
-            ) : (
-              <div className="dashCustomerPayWrap">
-                <div className="dashCustomerSearchRow">
+                  {selectedCartRef && (
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        fontSize: "11px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: "4px",
+                        color: "var(--dash-text-muted, #64748b)",
+                      }}
+                    >
+                      <span>
+                        Selected: <strong>{selectedCartRef.tracking_no || "Cart"}</strong>
+                        {selectedCartRef.order_name ? ` (Order ${selectedCartRef.order_name}` : ""}
+                        {selectedCartRef.cart_order_number ? ` / Cart ${selectedCartRef.cart_order_number})` : selectedCartRef.order_name ? ")" : ""}
+                      </span>
+                      {Number(newCustomWeight) > 0 && Number(kgPrice) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setNewCustom((Number(newCustomWeight) * Number(kgPrice)).toFixed(2))}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            color: "#166534",
+                            fontWeight: "600",
+                            textDecoration: "underline",
+                          }}
+                          title="Click to recalculate fee with formula"
+                        >
+                          Formula: {Number(newCustomWeight).toFixed(3)} kg × ${money(kgPrice)} = ${money(Number(newCustomWeight) * Number(kgPrice))}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {isDuplicateTracking && (
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        padding: "6px 10px",
+                        background: "#fef2f2",
+                        border: "1px solid #fca5a5",
+                        borderRadius: "6px",
+                        color: "#991b1b",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      <span>Tracking number "{newCustomTracking}" is already recorded in customs for this month. Duplicate tracking entries cannot be added.</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="dashFormRow" style={{ flexWrap: "wrap", gap: "8px" }}>
                   <input
                     className="dashInput"
-                    value={paymentCustomerSearch}
-                    onChange={(e) => setPaymentCustomerSearch(e.target.value)}
-                    placeholder="Search customer, cart, order, delivery number"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    style={{ minWidth: "110px", flex: 1 }}
+                    value={newCustom}
+                    onChange={(e) => setNewCustom(e.target.value)}
+                    placeholder="Custom Fee ($)"
                   />
+                  <input
+                    className="dashInput"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    style={{ minWidth: "100px", flex: 1 }}
+                    value={newCustomWeight}
+                    onChange={handleWeightChange}
+                    placeholder="Weight (kg)"
+                  />
+                  <input
+                    className="dashInput"
+                    style={{ minWidth: "130px", flex: 1.2 }}
+                    value={newCustomTracking}
+                    onChange={(e) => setNewCustomTracking(e.target.value)}
+                    placeholder="Tracking # (optional)"
+                  />
+                  <CustomDropdown
+                    className="dashInput"
+                    style={{ minWidth: "100px", flex: 1 }}
+                    value={newCustomDescription}
+                    onChange={(e) => setNewCustomDescription(e.target.value)}
+                    options={[
+                      { value: "freight", label: "freight" },
+                      { value: "customs", label: "customs" },
+                      { value: "benzene", label: "benzene" },
+                      { value: "bags", label: "bags" },
+                      { value: "other", label: "other" },
+                    ]}
+                  />
+                  <button 
+                    className="dashBtn" 
+                    onClick={handleAddCustom}
+                    disabled={isDuplicateTracking || !newCustom || Number(newCustom) < 0}
+                    title={isDuplicateTracking ? "Tracking number already in customs" : "Add custom entry"}
+                  >
+                    + Add
+                  </button>
                 </div>
-
-                <div className="dashCustomerDropdown">
-                  <div className="dashCustomerDropdownHead">
-                    <div>Select</div>
-                    <div>Customer</div>
-                    <div>Amount</div>
-                    <div>Cart</div>
-                    <div>Order</div>
-                  </div>
-                  {paymentCustomerOptions.map((c) => {
-                    const cid = Number(c.customer_id);
-                    const checked = selectedPaymentCustomers.some((x) => Number(x.customer_id) === cid);
-                    return (
-                      <label key={cid} className="dashCustomerOption">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => togglePaymentCustomer(c)}
-                        />
-                        <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
-                        <span className="dashCustomerCol">${money(c.usd_to_collect)}</span>
-                        <span className="dashCustomerCol">{c.cart_order_number || "-"}</span>
-                        <span className="dashCustomerCol">{c.order_name || "-"}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-
-                {selectedPaymentCustomers.length > 0 ? (
-                  <div className="dashSelectedCustomers">
-                    {selectedPaymentCustomers.map((c) => (
-                      <div key={c.customer_id} className="dashSelectedCustomerRow">
-                        <div className="dashSelectedCustomerName">
-                          {c.customer_name || "(empty)"} | Cart: {c.cart_order_number || "-"} | Order: {c.order_name || "-"}
+                <List>
+                  {customs.map((c) => (
+                    <AccordionItem
+                      key={c.id}
+                      header={
+                        <div className="dashAccHeaderContent">
+                          <div className="dashAccTitle">
+                            Custom Fee: ${money(c.customs_fee)}
+                            {Number(c.weight_kg || 0) > 0 ? ` | ${Number(c.weight_kg).toFixed(3)} kg` : ""}
+                          </div>
+                          <div className="dashAccMetaRow">
+                            <span className="dashAccPill">Desc: {c.description || "benzene"}</span>
+                            {c.tracking_no && <span className="dashAccPill">Track: {c.tracking_no}</span>}
+                            {c.note && <span className="dashAccPill">{c.note}</span>}
+                            <span className="dashAccPill">
+                              {[
+                                c.cart_ref || null,
+                                c.order_ref || null,
+                              ]
+                                .filter(Boolean)
+                                .join(" | ") || "-"}
+                            </span>
+                          </div>
                         </div>
+                      }
+                    >
+                      <div className="dashAccFormGrid dashCustomGrid" style={{ gridTemplateColumns: "1fr 1fr 1.5fr auto", gap: "8px" }}>
                         <input
                           className="dashInput"
                           type="number"
-                          min="0"
                           step="0.01"
-                          value={c.amount}
-                          onChange={(e) => setSelectedPaymentCustomerAmount(c.customer_id, e.target.value)}
+                          value={c.customs_fee}
+                          onChange={(e) =>
+                            setCustoms((prev) =>
+                              prev.map((cu) =>
+                                cu.id === c.id ? { ...cu, customs_fee: e.target.value } : cu
+                              )
+                            )
+                          }
+                          onBlur={(e) => handleUpdateCustom(c.id, e.target.value, c.note || null, c.tracking_no || undefined, c.weight_kg || undefined)}
+                          placeholder="Fee ($)"
                         />
                         <input
                           className="dashInput"
                           type="number"
-                          min="0"
-                          step="0.01"
-                          value={c.delivery_charge ?? 0}
-                          onChange={(e) => setSelectedPaymentCustomerDeliveryCharge(c.customer_id, e.target.value)}
-                          placeholder="Delivery"
+                          step="0.001"
+                          value={c.weight_kg ?? ""}
+                          onChange={(e) =>
+                            setCustoms((prev) =>
+                              prev.map((cu) =>
+                                cu.id === c.id ? { ...cu, weight_kg: e.target.value } : cu
+                              )
+                            )
+                          }
+                          onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, c.note || null, c.tracking_no || undefined, e.target.value)}
+                          placeholder="Weight (kg)"
+                        />
+                        <input
+                          className="dashInput"
+                          value={c.note || ""}
+                          onChange={(e) =>
+                            setCustoms((prev) =>
+                              prev.map((cu) =>
+                                cu.id === c.id ? { ...cu, note: e.target.value } : cu
+                              )
+                            )
+                          }
+                          onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, e.target.value, c.tracking_no || undefined, c.weight_kg || undefined)}
+                          placeholder="Reference / note"
                         />
                         <button
                           className="dashBtnDanger"
                           onClick={() =>
-                            setSelectedPaymentCustomers((prev) =>
-                              prev.filter((x) => Number(x.customer_id) !== Number(c.customer_id))
-                            )
+                            openConfirm({
+                              title: "Delete Customs",
+                              message: "Are you sure you want to delete this customs entry?",
+                              onYes: async () => {
+                                const res = await deleteCustom(c.id);
+                                if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
+                                setCustoms((prev) => prev.filter((x) => x.id !== c.id));
+                                loadWeightTrackings(selectedMonth);
+                              },
+                            })
                           }
                         >
-                          Remove
+                          Delete
                         </button>
                       </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="dashCustomerTotals">
-                  <div className="dashMiniStat">
-                    <div className="dashMiniTitle">Original Total</div>
-                    <div className="dashMiniValue">${money(selectedCustomersOriginalTotal)}</div>
-                  </div>
-                  <div className="dashMiniStat">
-                    <div className="dashMiniTitle">Delivery Charge Total</div>
-                    <div className="dashMiniValue">${money(selectedCustomersDeliveryCharge)}</div>
-                  </div>
-                  <div className="dashMiniStat">
-                    <div className="dashMiniTitle">Net Payment</div>
-                    <div className="dashMiniValue">${money(selectedCustomersNetTotal)}</div>
-                  </div>
-                </div>
-
-                <button className="dashBtn" onClick={handleAddPayment}>
-                  Confirm Add Customer Payment
-                </button>
-              </div>
+                    </AccordionItem>
+                  ))}
+                </List>
+              </SectionCard>
             )}
 
-            <List>
-              {payments.map((p) => (
-                <AccordionItem
-                  key={p.id}
-                  header={
-                    <div className="dashAccHeaderContent">
-                      <div className="dashAccTitle">Payment ${money(p.payment_amount)}</div>
-                      <div className="dashAccMetaRow">
-                        <span className="dashAccPill">Type: {p.payment_type || "manual"}</span>
-                        {String(p.payment_type || "manual") === "customers" ? (
-                          <>
-                            <span className="dashAccPill">Original: ${money(p.original_amount)}</span>
-                            <span className="dashAccPill">Delivery: ${money(p.delivery_charge)}</span>
-                            <span className="dashAccPill">Customers: {Number(p.customer_count || 0)}</span>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  }
+            {/* KG Price */}
+            {(activeView === "overview" || activeView === "all" || activeView === "customs") && (
+              <SectionCard
+                key={`kg-${activeView}`}
+                title="KG Price"
+                subtitle="Universal shipping cost per 1kg used in profit calculation"
+                badge="Rate"
+                defaultOpen={true}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                  </svg>
+                }
+              >
+                <div className="dashKgRow">
+                  <input
+                    className="dashInput"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={kgPrice}
+                    onChange={(e) => setKgPrice(e.target.value)}
+                    placeholder="Price of 1kg"
+                    onBlur={handleSaveKgPrice}
+                  />
+                  <button className="dashBtn" onClick={handleSaveKgPrice}>
+                    Save KG Price
+                  </button>
+                </div>
+                <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--muted, #64748b)" }}>
+                  Estimated Shipping Cost: {Number(totals.totalEstimatedWeight || 0).toFixed(2)} kg × ${money(kgPrice)} = <strong style={{ color: "var(--text, #0f172a)" }}>${money(totals.totalEstimatedShipping)}</strong>
+                </div>
+              </SectionCard>
+            )}
+          </div>
+        )}
+
+        {/* Column 2: Treasury & Payments (Payments, Budgets) */}
+        {(activeView === "overview" || activeView === "all" || activeView === "treasury") && (
+          <div className="dashWorkspaceCol">
+            {/* Payments */}
+            <SectionCard
+              key={`payments-${activeView}`}
+              title="Payments"
+              subtitle="Track payments made"
+              badge={`${payments.length} payments`}
+              defaultOpen={true}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                  <line x1="1" y1="10" x2="23" y2="10" />
+                </svg>
+              }
+            >
+              <div className="dashModeRow">
+                <button
+                  type="button"
+                  className={paymentMode === "manual" ? "dashModeBtn dashModeBtnActive" : "dashModeBtn"}
+                  onClick={() => setPaymentMode("manual")}
                 >
-                  <div className="dashAccFormGrid dashPaymentGrid">
+                  Manual Entry
+                </button>
+                <button
+                  type="button"
+                  className={paymentMode === "customers" ? "dashModeBtn dashModeBtnActive" : "dashModeBtn"}
+                  onClick={() => setPaymentMode("customers")}
+                >
+                  By Customers
+                </button>
+              </div>
+
+              {paymentMode === "manual" ? (
+                <div className="dashFormRow">
+                  <input
+                    className="dashInput"
+                    value={newPayment}
+                    onChange={(e) => setNewPayment(e.target.value)}
+                    placeholder="New Payment"
+                  />
+                  <button className="dashBtn" onClick={handleAddPayment}>
+                    Add
+                  </button>
+                </div>
+              ) : (
+                <div className="dashCustomerPayWrap">
+                  <div className="dashCustomerSearchRow">
                     <input
                       className="dashInput"
-                      value={p.payment_amount}
-                      onChange={(e) =>
-                        setPayments((prev) =>
-                          prev.map((pay) =>
-                            pay.id === p.id ? { ...pay, payment_amount: e.target.value } : pay
-                          )
-                        )
-                      }
-                      onBlur={(e) => handleUpdatePayment(p.id, e.target.value)}
-                      disabled={String(p.payment_type || "manual") !== "manual"}
+                      value={paymentCustomerSearch}
+                      onChange={(e) => setPaymentCustomerSearch(e.target.value)}
+                      placeholder="Search customer, cart, order, delivery number"
                     />
-                    <div className="dashPaymentActions">
-                      {String(p.payment_type || "manual") === "customers" ? (
-                        <button className="dashBtnSoft" onClick={() => togglePaymentDetails(p.id)}>
-                          {openPaymentDetails[p.id] ? "Hide Customers" : "Show Customers"}
+                  </div>
+
+                  <div className="dashCustomerDropdown">
+                    <div className="dashCustomerDropdownHead">
+                      <div>Select</div>
+                      <div>Customer</div>
+                      <div>Amount</div>
+                      <div>Cart</div>
+                      <div>Order</div>
+                    </div>
+                    {paymentCustomerOptions.map((c) => {
+                      const cid = Number(c.customer_id);
+                      const checked = selectedPaymentCustomers.some((x) => Number(x.customer_id) === cid);
+                      return (
+                        <label key={cid} className="dashCustomerOption">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => togglePaymentCustomer(c)}
+                          />
+                          <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
+                          <span className="dashCustomerCol">${money(c.usd_to_collect)}</span>
+                          <span className="dashCustomerCol">{c.cart_order_number || "-"}</span>
+                          <span className="dashCustomerCol">{c.order_name || "-"}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {selectedPaymentCustomers.length > 0 ? (
+                    <div className="dashSelectedCustomers">
+                      {selectedPaymentCustomers.map((c) => (
+                        <div key={c.customer_id} className="dashSelectedCustomerRow">
+                          <div className="dashSelectedCustomerName">
+                            {c.customer_name || "(empty)"} | Cart: {c.cart_order_number || "-"} | Order: {c.order_name || "-"}
+                          </div>
+                          <input
+                            className="dashInput"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={c.amount}
+                            onChange={(e) => setSelectedPaymentCustomerAmount(c.customer_id, e.target.value)}
+                          />
+                          <input
+                            className="dashInput"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={c.delivery_charge ?? 0}
+                            onChange={(e) => setSelectedPaymentCustomerDeliveryCharge(c.customer_id, e.target.value)}
+                            placeholder="Delivery"
+                          />
+                          <button
+                            className="dashBtnDanger"
+                            onClick={() =>
+                              setSelectedPaymentCustomers((prev) =>
+                                prev.filter((x) => Number(x.customer_id) !== Number(c.customer_id))
+                              )
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="dashCustomerTotals">
+                    <div className="dashMiniStat">
+                      <div className="dashMiniTitle">Original Total</div>
+                      <div className="dashMiniValue">${money(selectedCustomersOriginalTotal)}</div>
+                    </div>
+                    <div className="dashMiniStat">
+                      <div className="dashMiniTitle">Delivery Charge Total</div>
+                      <div className="dashMiniValue">${money(selectedCustomersDeliveryCharge)}</div>
+                    </div>
+                    <div className="dashMiniStat">
+                      <div className="dashMiniTitle">Net Payment</div>
+                      <div className="dashMiniValue">${money(selectedCustomersNetTotal)}</div>
+                    </div>
+                  </div>
+
+                  <button className="dashBtn" onClick={handleAddPayment}>
+                    Confirm Add Customer Payment
+                  </button>
+                </div>
+              )}
+
+              <List>
+                {payments.map((p) => (
+                  <AccordionItem
+                    key={p.id}
+                    header={
+                      <div className="dashAccHeaderContent">
+                        <div className="dashAccTitle">Payment ${money(p.payment_amount)}</div>
+                        <div className="dashAccMetaRow">
+                          <span className="dashAccPill">Type: {p.payment_type || "manual"}</span>
+                          {String(p.payment_type || "manual") === "customers" ? (
+                            <>
+                              <span className="dashAccPill">Original: ${money(p.original_amount)}</span>
+                              <span className="dashAccPill">Delivery: ${money(p.delivery_charge)}</span>
+                              <span className="dashAccPill">Customers: {Number(p.customer_count || 0)}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="dashAccFormGrid dashPaymentGrid">
+                      <input
+                        className="dashInput"
+                        value={p.payment_amount}
+                        onChange={(e) =>
+                          setPayments((prev) =>
+                            prev.map((pay) =>
+                              pay.id === p.id ? { ...pay, payment_amount: e.target.value } : pay
+                            )
+                          )
+                        }
+                        onBlur={(e) => handleUpdatePayment(p.id, e.target.value)}
+                        disabled={String(p.payment_type || "manual") !== "manual"}
+                      />
+                      <div className="dashPaymentActions">
+                        {String(p.payment_type || "manual") === "customers" ? (
+                          <button className="dashBtnSoft" onClick={() => togglePaymentDetails(p.id)}>
+                            {openPaymentDetails[p.id] ? "Hide Customers" : "Show Customers"}
+                          </button>
+                        ) : null}
+                        <button
+                          className="dashBtnDanger"
+                          onClick={() =>
+                            openConfirm({
+                              title: "Delete Payment",
+                              message: "Are you sure you want to delete this payment?",
+                              onYes: async () => {
+                                const res = await deletePayment(p.id);
+                                if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
+                                setPayments((prev) => prev.filter((x) => x.id !== p.id));
+                              },
+                            })
+                          }
+                        >
+                          Delete
                         </button>
-                      ) : null}
+                      </div>
+                    </div>
+
+                    {openPaymentDetails[p.id] ? (
+                      <div className="dashPaymentDetails">
+                        {paymentItemsLoading[p.id] ? (
+                          <div className="dashRefText">Loading customers...</div>
+                        ) : (paymentItemsByPaymentId[p.id] || []).length === 0 ? (
+                          <div className="dashRefText">No customers linked to this payment.</div>
+                        ) : (
+                          <div className="dashTableWrap">
+                            <table className="dashTable">
+                              <thead>
+                                <tr>
+                                  <th>Customer</th>
+                                  <th>Amount</th>
+                                  <th>Delivery</th>
+                                  <th>Net</th>
+                                  <th>Cart</th>
+                                  <th>Order</th>
+                                  <th>Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(paymentItemsByPaymentId[p.id] || []).map((it) => (
+                                  <tr key={it.id}>
+                                    <td>{it.customer_name_snapshot || "(empty)"}</td>
+                                    <td>${money(it.amount)}</td>
+                                    <td>${money(it.delivery_charge)}</td>
+                                    <td>${money(it.net_amount)}</td>
+                                    <td>{it.cart_order_number || "-"}</td>
+                                    <td>{it.order_name || "-"}</td>
+                                    <td>{it.status || "-"} / {it.delivery_status || "-"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </AccordionItem>
+                ))}
+              </List>
+            </SectionCard>
+
+            {/* Budgets */}
+            <SectionCard
+              key={`budgets-${activeView}`}
+              title="Budgets"
+              subtitle="Track starting budget and monthly entries"
+              badge={`${budgets.length} entries`}
+              defaultOpen={true}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                  <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                  <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+                </svg>
+              }
+            >
+              <div className="dashFormRow">
+                <input
+                  className="dashInput"
+                  type="number"
+                  value={newBudgetValue}
+                  onChange={(e) => setNewBudgetValue(e.target.value)}
+                  placeholder="Value"
+                />
+                <input
+                  className="dashInput"
+                  value={newBudgetDesc}
+                  onChange={(e) => setNewBudgetDesc(e.target.value)}
+                  placeholder="Description (ex: initial)"
+                />
+                <button className="dashBtn" onClick={handleAddBudget}>
+                  Add
+                </button>
+              </div>
+
+              <List>
+                {budgets.map((b) => (
+                  <AccordionItem
+                    key={b.id}
+                    header={
+                      <div className="dashAccHeaderContent">
+                        <div className="dashAccTitle">{b.description || "Budget Item"}</div>
+                        <div className="dashAccMetaRow">
+                          <span className="dashAccPill">Value: ${money(b.value)}</span>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="dashAccFormGrid dashBudgetGrid">
+                      <input
+                        className="dashInput"
+                        type="number"
+                        value={b.value}
+                        onChange={(e) =>
+                          setBudgets((prev) =>
+                            prev.map((bu) => (bu.id === b.id ? { ...bu, value: e.target.value } : bu))
+                          )
+                        }
+                        onBlur={(e) => handleUpdateBudget(b.id, e.target.value, b.description)}
+                      />
+                      <input
+                        className="dashInput"
+                        value={b.description}
+                        onChange={(e) =>
+                          setBudgets((prev) =>
+                            prev.map((bu) =>
+                              bu.id === b.id ? { ...bu, description: e.target.value } : bu
+                            )
+                          )
+                        }
+                        onBlur={(e) => handleUpdateBudget(b.id, b.value, e.target.value)}
+                      />
                       <button
                         className="dashBtnDanger"
                         onClick={() =>
                           openConfirm({
-                            title: "Delete Payment",
-                            message: "Are you sure you want to delete this payment?",
+                            title: "Delete Budget",
+                            message: "Are you sure you want to delete this budget item?",
                             onYes: async () => {
-                              const res = await deletePayment(p.id);
+                              const res = await deleteBudget(b.id);
                               if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
-                              setPayments((prev) => prev.filter((x) => x.id !== p.id));
+                              setBudgets((prev) => prev.filter((x) => x.id !== b.id));
                             },
                           })
                         }
@@ -1912,83 +1998,12 @@ export default function Dashboard() {
                         Delete
                       </button>
                     </div>
-                  </div>
-
-                  {openPaymentDetails[p.id] ? (
-                    <div className="dashPaymentDetails">
-                      {paymentItemsLoading[p.id] ? (
-                        <div className="dashRefText">Loading customers...</div>
-                      ) : (paymentItemsByPaymentId[p.id] || []).length === 0 ? (
-                        <div className="dashRefText">No customers linked to this payment.</div>
-                      ) : (
-                        <div className="dashTableWrap">
-                          <table className="dashTable">
-                            <thead>
-                              <tr>
-                                <th>Customer</th>
-                                <th>Amount</th>
-                                <th>Delivery</th>
-                                <th>Net</th>
-                                <th>Cart</th>
-                                <th>Order</th>
-                                <th>Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(paymentItemsByPaymentId[p.id] || []).map((it) => (
-                                <tr key={it.id}>
-                                  <td>{it.customer_name_snapshot || "(empty)"}</td>
-                                  <td>${money(it.amount)}</td>
-                                  <td>${money(it.delivery_charge)}</td>
-                                  <td>${money(it.net_amount)}</td>
-                                  <td>{it.cart_order_number || "-"}</td>
-                                  <td>{it.order_name || "-"}</td>
-                                  <td>{it.status || "-"} / {it.delivery_status || "-"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </AccordionItem>
-              ))}
-            </List>
-          </SectionCard>
-
-          {/* KG Price */}
-          <SectionCard
-            title="KG Price"
-            subtitle="Universal shipping cost per 1kg used in profit calculation"
-            badge="Rate"
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
-              </svg>
-            }
-          >
-            <div className="dashKgRow">
-              <input
-                className="dashInput"
-                type="number"
-                min="0"
-                step="0.01"
-                value={kgPrice}
-                onChange={(e) => setKgPrice(e.target.value)}
-                placeholder="Price of 1kg"
-                onBlur={handleSaveKgPrice}
-              />
-              <button className="dashBtn" onClick={handleSaveKgPrice}>
-                Save KG Price
-              </button>
-            </div>
-            <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--muted, #64748b)" }}>
-              Estimated Shipping Cost: {Number(totals.totalEstimatedWeight || 0).toFixed(2)} kg × ${money(kgPrice)} = <strong style={{ color: "var(--text, #0f172a)" }}>${money(totals.totalEstimatedShipping)}</strong>
-            </div>
-          </SectionCard>
-        </div>
+                  </AccordionItem>
+                ))}
+              </List>
+            </SectionCard>
+          </div>
+        )}
       </div>
 
       <CustomModal {...modal} />
@@ -1999,7 +2014,7 @@ export default function Dashboard() {
 
 /* ---------- small UI components ---------- */
 
-function StatCard({ title, value, variant = "neutral", subtitle, icon, hero = false, onClick, style }) {
+function StatCard({ title, value, variant = "neutral", subtitle, icon, hero = false, onClick, style, children }) {
   return (
     <div
       className={`dashStat dashStat--${variant} ${hero ? "dashStat--hero" : ""}`}
@@ -2012,11 +2027,12 @@ function StatCard({ title, value, variant = "neutral", subtitle, icon, hero = fa
       </div>
       <div className="dashStatValue">{value}</div>
       {subtitle && <div className="dashStatSubText">{subtitle}</div>}
+      {children}
     </div>
   );
 }
 
-function SectionCard({ title, subtitle, badge, icon, children, defaultOpen = false }) {
+function SectionCard({ title, subtitle, badge, icon, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={`dashCard ${open ? "dashCardOpen" : ""}`}>

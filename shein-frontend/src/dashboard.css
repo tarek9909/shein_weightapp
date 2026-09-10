@@ -1,12 +1,12 @@
-/* dashboard.css - Executive Precision Design System (Solid Luxury / Zero Gradients) */
+/* dashboard.css - Executive Minimalist Precision Design System (White & Dark Slate Theme) */
 
 :root {
-  /* New Executive Sapphire / Cobalt Palette */
-  --dash-primary: #1d4ed8;
-  --dash-primary-hover: #1e40af;
-  --dash-primary-active: #172554;
-  --dash-primary-light: #eff6ff;
-  --dash-primary-border: #bfdbfe;
+  /* Executive Slate Palette */
+  --dash-primary: #0f172a;
+  --dash-primary-hover: #1e293b;
+  --dash-primary-active: #334155;
+  --dash-primary-light: #f8fafc;
+  --dash-primary-border: #cbd5e1;
   
   --dash-surface: #ffffff;
   --dash-surface-subtle: #f8fafc;
@@ -14,42 +14,38 @@
   
   --dash-border: #e2e8f0;
   --dash-border-hover: #cbd5e1;
-  --dash-border-focus: #1d4ed8;
+  --dash-border-focus: #0f172a;
   
   --dash-text-main: #0f172a;
-  --dash-text-muted: #475569;
+  --dash-text-muted: #64748b;
   --dash-text-subtle: #94a3b8;
   
-  /* Semantic Status - All Solid Colors (No Gradients) */
-  --dash-profit-text: #059669;
-  --dash-profit-bg: #ecfdf5;
-  --dash-profit-border: #a7f3d0;
+  /* Semantic Status - Muted, Calm Solid Colors (No Gradients) */
+  --dash-profit-text: #166534;
+  --dash-profit-bg: #f0fdf4;
+  --dash-profit-border: #bbf7d0;
   
-  --dash-cash-text: #0284c7;
-  --dash-cash-bg: #f0f9ff;
-  --dash-cash-border: #bae6fd;
+  --dash-cash-text: #0f172a;
+  --dash-cash-bg: #f8fafc;
+  --dash-cash-border: #cbd5e1;
   
-  --dash-loss-text: #dc2626;
+  --dash-loss-text: #b91c1c;
   --dash-loss-bg: #fef2f2;
-  --dash-loss-border: #fecaca;
-  
-  --dash-weight-text: #0891b2;
-  --dash-weight-bg: #ecfeff;
-  --dash-weight-border: #a5f3fc;
+  --dash-loss-border: #fca5a5;
   
   --dash-radius-sm: 8px;
   --dash-radius-md: 12px;
   --dash-radius-lg: 16px;
   
-  --dash-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --dash-shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.02);
-  --dash-shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.02);
+  --dash-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --dash-shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  --dash-shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.07);
 }
 
 .dashPage {
   max-width: 1540px;
   margin: 0 auto;
-  padding: 24px 0 48px;
+  padding: 24px 20px 60px;
   min-height: 100vh;
   font-family: inherit;
   color: var(--dash-text-main);
@@ -60,7 +56,6 @@
   padding-top: 10px;
 }
 
-/* Reset inside dashboard */
 .dashPage * {
   box-sizing: border-box;
 }
@@ -82,11 +77,11 @@
 /* -------------------- Executive Header -------------------- */
 .dashHeader {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
-  padding-bottom: 18px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--dash-border);
 }
 
@@ -102,9 +97,9 @@
 }
 
 .dashTitle {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.02em;
   color: var(--dash-text-main);
   margin: 0;
 }
@@ -113,36 +108,43 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #059669;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
   font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.2px;
 }
 
 .dashStatusDot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #10b981;
+  background: #16a34a;
 }
 
 .dashSub {
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--dash-text-muted);
   font-size: 13.5px;
   font-weight: 500;
+  line-height: 1.5;
 }
 
 /* Right Header Controls */
 .dashHeaderRight {
   display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashMonthControl {
+  display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 320px;
+  gap: 6px;
+  min-width: 220px;
 }
 
 .dashLabel {
@@ -150,30 +152,30 @@
   color: var(--dash-text-muted);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .dashSelect {
   width: 100%;
   border-radius: var(--dash-radius-sm);
   border: 1px solid var(--dash-border);
-  padding: 9.5px 14px;
+  padding: 8px 12px;
   background-color: #ffffff;
   outline: none;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   box-shadow: var(--dash-shadow-sm);
   color: var(--dash-text-main);
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .dashInput {
   border-radius: var(--dash-radius-sm);
   border: 1px solid var(--dash-border);
-  padding: 9px 12px;
+  padding: 8px 12px;
   background-color: #ffffff;
   outline: none;
-  font-size: 13.5px;
+  font-size: 13px;
   box-shadow: var(--dash-shadow-sm);
   color: var(--dash-text-main);
   transition: all 0.15s ease;
@@ -188,7 +190,7 @@
 .dashInput:focus {
   background: #ffffff;
   border-color: var(--dash-primary);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
 }
 
 .dashSelect:disabled {
@@ -197,76 +199,111 @@
   cursor: not-allowed;
 }
 
-.dashAddMonth {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+/* -------------------- Top View Switcher (Segmented Control) -------------------- */
+.dashNavTabs {
+  display: inline-flex;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
 }
 
-/* -------------------- Solid Executive Buttons (Zero Gradients) -------------------- */
+.dashNavTab {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 650;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease-in-out;
+}
+
+.dashNavTab:hover {
+  color: #0f172a;
+}
+
+.dashNavTab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 750;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.dashNavBadge {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 700;
+}
+
+.dashNavTab.active .dashNavBadge {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* -------------------- Executive Buttons -------------------- */
 .dashBtn,
 .dashBtnSoft,
 .dashBtnDanger {
-  width: auto;
   border-radius: var(--dash-radius-sm);
-  padding: 9px 15px;
+  padding: 8px 15px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  transition: all 0.14s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  box-shadow: none;
 }
 
 .dashBtn {
-  border: 1px solid var(--dash-primary-hover);
+  border: 1px solid var(--dash-primary);
   background: var(--dash-primary);
   color: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .dashBtn:hover {
   background: var(--dash-primary-hover);
-  border-color: var(--dash-primary-active);
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(29, 78, 216, 0.22);
+  border-color: var(--dash-primary-hover);
 }
 
 .dashBtnSoft {
   border: 1px solid var(--dash-border);
   background: #ffffff;
-  color: var(--dash-text-main);
-  box-shadow: var(--dash-shadow-sm);
+  color: #334155;
+  font-weight: 650;
 }
 
 .dashBtnSoft:hover {
   background: var(--dash-surface-subtle);
-  border-color: var(--dash-border-hover);
-  color: #000000;
-  transform: translateY(-1px);
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .dashBtnDanger {
   border: 1px solid var(--dash-loss-border);
   background: var(--dash-loss-bg);
   color: var(--dash-loss-text);
-  box-shadow: var(--dash-shadow-sm);
+  font-weight: 650;
 }
 
 .dashBtnDanger:hover {
   background: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
-  transform: translateY(-1px);
-}
-
-.dashBtn:active,
-.dashBtnSoft:active,
-.dashBtnDanger:active {
-  transform: scale(0.98);
+  border-color: #f87171;
+  color: #991b1b;
 }
 
 /* -------------------- Section Labels -------------------- */
@@ -274,35 +311,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 20px 0 12px;
+  margin: 18px 0 12px;
 }
 
 .dashSectionTitle {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.06em;
   color: var(--dash-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* -------------------- Tier 1: Hero Financial Health Hub -------------------- */
+/* -------------------- Tier 1: Hero Financial KPI Cards -------------------- */
 .dashHeroKpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 20px;
-}
-
-@media (max-width: 1200px) {
-  .dashHeroKpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .dashHeroKpis {
-    grid-template-columns: 1fr;
-  }
 }
 
 .dashStat {
@@ -311,64 +339,55 @@
   padding: 16px 18px;
   background: var(--dash-surface);
   box-shadow: var(--dash-shadow-sm);
-  transition: all 0.18s ease;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
 .dashStat:hover {
-  border-color: var(--dash-border-hover);
+  border-color: #cbd5e1;
   box-shadow: var(--dash-shadow-md);
-  transform: translateY(-1px);
 }
 
-/* Hero Cards - Solid Crisp Borders with Architectural Colored Left Edge */
 .dashStat--hero {
-  padding: 20px 22px;
-  border-radius: var(--dash-radius-md);
+  padding: 18px 20px;
   background: #ffffff;
+  border-radius: var(--dash-radius-md);
+  border: 1px solid var(--dash-border);
 }
 
-.dashStat--hero.dashStat--profit {
-  border-left: 4px solid var(--dash-profit-text);
-}
-
-.dashStat--hero.dashStat--cash {
-  border-left: 4px solid var(--dash-cash-text);
-}
-
-.dashStat--hero.dashStat--loss {
-  border-left: 4px solid var(--dash-loss-text);
+.dashStat--hero:hover {
+  border-color: #94a3b8;
 }
 
 .dashStatHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   gap: 8px;
 }
 
 .dashStatTitle {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--dash-text-muted);
-  font-weight: 700;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .dashStatIconWrap {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--dash-radius-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid transparent;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .dashStatValue {
@@ -376,12 +395,13 @@
   font-weight: 800;
   word-break: break-word;
   color: var(--dash-text-main);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
 }
 
 .dashStat--hero .dashStatValue {
-  font-size: 30px;
-  letter-spacing: -0.6px;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
 }
 
 .dashStatSubText {
@@ -391,98 +411,278 @@
   font-weight: 500;
 }
 
-/* Semantic Solid Icon Fills (NO GRADIENTS) */
-.dashStat--profit .dashStatIconWrap {
-  background: var(--dash-profit-bg);
-  color: var(--dash-profit-text);
-  border-color: var(--dash-profit-border);
-}
+/* Subtle Semantic Text Colors */
 .dashStat--profit .dashStatValue {
-  color: var(--dash-profit-text);
+  color: #166534;
 }
 
-.dashStat--cash .dashStatIconWrap {
-  background: var(--dash-cash-bg);
-  color: var(--dash-cash-text);
-  border-color: var(--dash-cash-border);
-}
-.dashStat--cash .dashStatValue {
-  color: var(--dash-cash-text);
-}
-
-.dashStat--loss .dashStatIconWrap {
-  background: var(--dash-loss-bg);
-  color: var(--dash-loss-text);
-  border-color: var(--dash-loss-border);
-}
 .dashStat--loss .dashStatValue {
-  color: var(--dash-loss-text);
+  color: #b91c1c;
 }
 
-.dashStat--orders .dashStatIconWrap {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
+/* Progress bar inside KPI card */
+.dashStatProgressTrack {
+  width: 100%;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  margin-top: 8px;
+  overflow: hidden;
 }
 
-.dashStat--collect .dashStatIconWrap {
-  background: #f0fdf4;
-  color: #059669;
-  border-color: #bbf7d0;
+.dashStatProgressBar {
+  height: 100%;
+  background: #0f172a;
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
-.dashStat--weight .dashStatIconWrap {
-  background: #ecfeff;
-  color: #0891b2;
-  border-color: #a5f3fc;
-}
-
-.dashStat--customs .dashStatIconWrap {
-  background: #fffbeb;
-  color: #d97706;
-  border-color: #fde68a;
-}
-
-.dashStat--payments .dashStatIconWrap {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.dashStat--remaining .dashStatIconWrap {
-  background: #f8fafc;
-  color: #334155;
-  border-color: #e2e8f0;
-}
-
-/* -------------------- Tier 2: Secondary Operational Metrics -------------------- */
-.dashSecondaryStats {
+/* -------------------- Tier 2: Operations Compact Strip -------------------- */
+.dashOpsStrip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dashOpsItem {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.15s ease;
+}
+
+.dashOpsItem.is-clickable {
+  cursor: pointer;
+}
+
+.dashOpsItem.is-clickable:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.dashOpsInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashOpsLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.dashOpsValue {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 1px;
+}
+
+.dashOpsSub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.dashOpsAction {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* -------------------- Executive P&L Financial Performance Card -------------------- */
+.dashPnLCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.dashPnLCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
   margin-bottom: 16px;
+}
+
+.dashPnLCardHeadLeft {
+  min-width: 0;
+}
+
+.dashPnLBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.dashPnLCardTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dash-text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.dashPnLCardSub {
+  font-size: 12px;
+  color: var(--dash-text-muted);
+  margin-top: 2px;
+}
+
+.dashPnLCardHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashPnLGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 960px) {
+  .dashPnLGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashPnLCol {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dashPnLColHighlight {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.dashPnLColHeader {
+  margin-bottom: 12px;
+}
+
+.dashPnLPill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-bottom: 6px;
+}
+
+.dashPnLPillGreen {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.dashPnLPillRed {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.dashPnLPillBlue {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.dashPnLMetricTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dash-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashPnLMetricNumber {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--dash-text-main);
+  margin-top: 3px;
+}
+
+.dashPnLDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dashPnLItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--dash-text-muted);
+}
+
+.dashPnLItem b {
+  color: var(--dash-text-main);
+  font-weight: 700;
+}
+
+.dashTextGood {
+  color: #166534 !important;
+}
+
+.dashTextDanger {
+  color: #b91c1c !important;
+}
+
+.dashTextMuted {
+  color: var(--dash-text-muted) !important;
 }
 
 /* -------------------- Structured Workspace Layout -------------------- */
 .dashWorkspace {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 18px;
-  margin-top: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
   align-items: start;
+}
+
+.dashWorkspaceFull {
+  grid-template-columns: 1fr;
 }
 
 .dashWorkspaceCol {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-/* Fallback legacy grid */
-.dashGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .dashCard {
@@ -491,22 +691,20 @@
   background: #ffffff;
   box-shadow: var(--dash-shadow-sm);
   overflow: hidden;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.15s ease;
 }
 
 .dashCard:hover {
-  border-color: var(--dash-border-hover);
-  box-shadow: var(--dash-shadow-md);
+  border-color: #cbd5e1;
 }
 
 .dashCardHead {
-  padding: 14px 18px;
+  padding: 13px 16px;
   border-bottom: 1px solid transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  transition: background-color 0.15s ease;
 }
 
 .dashCardOpen .dashCardHead {
@@ -520,7 +718,7 @@
   background: transparent;
   cursor: pointer;
   text-align: left;
-  padding: 14px 18px;
+  padding: 13px 16px;
 }
 
 .dashCardHeadBtn:hover {
@@ -530,66 +728,62 @@
 .dashCardTitleRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .dashCardTitle {
-  font-weight: 800;
-  font-size: 15.5px;
+  font-weight: 750;
+  font-size: 15px;
   color: var(--dash-text-main);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.01em;
 }
 
 .dashCardBadge {
-  padding: 2.5px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  font-size: 11px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #1d4ed8;
-  letter-spacing: 0.2px;
+  color: #475569;
 }
 
 .dashCardSub {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--dash-text-muted);
   font-size: 12px;
-  font-weight: 500;
 }
 
 .dashCardBody {
-  padding: 18px;
+  padding: 16px;
 }
 
 .dashSectionBody {
   max-height: 0;
   opacity: 0;
-  transform: translateY(-4px);
   overflow: hidden;
-  transition: max-height 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease, transform 200ms ease;
+  transition: max-height 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
 }
 
 .dashSectionBodyOpen {
-  max-height: 4000px;
+  max-height: 4500px;
   opacity: 1;
-  transform: translateY(0);
 }
 
 /* -------------------- Form Rows & Inputs Inside Cards -------------------- */
 .dashFormRow {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .dashOrdersTop {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .dashOrderFormRow {
@@ -600,39 +794,34 @@
 .dashKgRow {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dashMiniStats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .dashMiniStat {
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius-sm);
-  padding: 12px;
+  padding: 10px 12px;
   background: var(--dash-surface-subtle);
-  transition: border-color 0.15s ease;
-}
-
-.dashMiniStat:hover {
-  border-color: var(--dash-border-hover);
 }
 
 .dashMiniTitle {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--dash-text-muted);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.04em;
 }
 
 .dashMiniValue {
-  margin-top: 4px;
-  font-size: 15px;
+  margin-top: 3px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--dash-text-main);
 }
@@ -650,11 +839,11 @@
   background: #ffffff;
   box-shadow: var(--dash-shadow-sm);
   overflow: hidden;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .dashAccItem:hover {
-  border-color: var(--dash-border-hover);
+  border-color: #cbd5e1;
 }
 
 .dashAccItemOpen {
@@ -666,14 +855,13 @@
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 11px 14px;
+  padding: 10px 13px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.14s ease;
 }
 
 .dashAccBtn:hover {
@@ -688,12 +876,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .dashAccTitle {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--dash-text-main);
 }
@@ -701,15 +889,15 @@
 .dashAccMetaRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .dashAccPill {
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 2.5px 8px;
-  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 6px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #334155;
@@ -733,7 +921,7 @@
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transition: max-height 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+  transition: max-height 250ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms ease;
   border-top: 1px solid transparent;
 }
 
@@ -745,12 +933,12 @@
 }
 
 .dashAccInner {
-  padding: 14px;
+  padding: 12px;
 }
 
 .dashAccFormGrid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dashBudgetGrid {
@@ -765,14 +953,23 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .dashOrderMetricsLine {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.dashInlineMetric {
+  font-size: 12px;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 6px;
 }
 
 .dashPaymentGrid {
@@ -782,7 +979,7 @@
 .dashPaymentActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* -------------------- Tables (Solid Minimalist) -------------------- */
@@ -791,32 +988,31 @@
   border-radius: var(--dash-radius-sm);
   background: #ffffff;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .dashTable {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 13px;
-  min-width: 600px;
+  font-size: 12.5px;
+  min-width: 580px;
 }
 
 .dashTable th {
   background: #f8fafc;
   color: var(--dash-text-muted);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10.5px;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 10px 14px;
+  letter-spacing: 0.05em;
+  padding: 9px 12px;
   text-align: left;
   border-bottom: 1px solid var(--dash-border);
 }
 
 .dashTable td {
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-bottom: 1px solid #f1f5f9;
   color: var(--dash-text-main);
   font-weight: 500;
@@ -830,80 +1026,120 @@
   border-bottom: 0;
 }
 
-/* Customer Search Dropdown */
+/* Mode row */
+.dashModeRow {
+  display: inline-flex;
+  gap: 3px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.dashModeBtn {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 650;
+  font-size: 12.5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dashModeBtn:hover {
+  color: #0f172a;
+}
+
+.dashModeBtnActive {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 750;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+/* Customer Search in Payments */
 .dashCustomerSearchRow {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-bottom: 10px;
 }
 
-.dashCustomerListWrap {
+.dashCustomerDropdown {
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius-sm);
   background: #ffffff;
-  max-height: 220px;
+  max-height: 200px;
   overflow-y: auto;
   margin-bottom: 10px;
 }
 
+.dashCustomerDropdownHead {
+  display: grid;
+  grid-template-columns: 50px 1.5fr 1fr 1fr 1fr;
+  padding: 7px 10px;
+  background: #f8fafc;
+  font-size: 10.5px;
+  font-weight: 750;
+  color: #64748b;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .dashCustomerOption {
-  display: flex;
+  display: grid;
+  grid-template-columns: 50px 1.5fr 1fr 1fr 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  padding: 7px 10px;
   cursor: pointer;
   border-bottom: 1px solid #f8fafc;
-  font-size: 12.5px;
-  transition: background-color 0.12s ease;
+  font-size: 12px;
 }
 
 .dashCustomerOption:hover {
   background: #f1f5f9;
 }
 
+.dashSelectedCustomers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.dashSelectedCustomerRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+}
+
+.dashSelectedCustomerName {
+  font-size: 12px;
+  font-weight: 650;
+  color: #0f172a;
+}
+
 .dashCustomerTotals {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin: 10px 0;
   flex-wrap: wrap;
 }
 
-.dashInvoiceBox {
-  margin-top: 10px;
-}
-
-.dashTextArea {
-  width: 100%;
-  min-height: 90px;
-  resize: vertical;
-  font-family: inherit;
-}
-
-/* -------------------- Comprehensive Responsive Breakpoints -------------------- */
-@media (max-width: 1280px) {
-  .dashSecondaryStats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .dashWorkspace {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 1024px) {
+/* Responsive */
+@media (max-width: 1200px) {
   .dashHeroKpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .dashHeroKpis > :first-child {
-    grid-column: 1 / -1;
-  }
-
-  .dashSecondaryStats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .dashGrid {
+  .dashWorkspace {
     grid-template-columns: 1fr;
   }
 }
@@ -912,272 +1148,19 @@
   .dashHeader {
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
   }
-
   .dashHeaderRight {
     width: 100%;
-    min-width: unset;
   }
-
-  .dashSecondaryStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .dashHeroKpis {
+    grid-template-columns: 1fr;
   }
-
+  .dashOpsStrip {
+    grid-template-columns: 1fr;
+  }
   .dashBudgetGrid,
   .dashOrderGrid,
   .dashPaymentGrid {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 640px) {
-  .dashPage {
-    padding: 12px 0 36px;
-  }
-
-  .dashTitle {
-    font-size: 24px;
-  }
-
-  .dashHeroKpis {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .dashHeroKpis > :first-child {
-    grid-column: auto;
-  }
-
-  .dashStat--hero {
-    padding: 16px;
-  }
-
-  .dashStat--hero .dashStatValue {
-    font-size: 24px;
-  }
-
-  .dashSecondaryStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .dashStat {
-    padding: 12px 10px;
-  }
-
-  .dashStatValue {
-    font-size: 16px;
-  }
-
-  .dashStatTitle {
-    font-size: 10.5px;
-  }
-
-  .dashFormRow,
-  .dashOrderFormRow,
-  .dashKgRow {
-    grid-template-columns: 1fr;
-  }
-
-  .dashBtn,
-  .dashBtnSoft,
-  .dashBtnDanger {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 420px) {
-  .dashSecondaryStats {
-    grid-template-columns: 1fr;
-  }
-}
-.dashReadOnlyNotice {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border: 1px solid #f0c36a;
-  border-radius: 8px;
-  background: #fff8e6;
-  color: #765313;
-  font-size: 13px;
-}
-
-.dashReadOnly .dashInput,
-.dashReadOnly .dashBtn,
-.dashReadOnly .dashBtnSoft,
-.dashReadOnly .dashBtnDanger {
-  pointer-events: none;
-  opacity: 0.55;
-}
-
-/* -------------------- Profit & Loss Performance Matrix Card -------------------- */
-.dashPnLCard {
-  background: var(--dash-surface);
-  border: 1px solid var(--dash-border);
-  border-radius: var(--dash-radius-md);
-  padding: 20px 22px;
-  margin-bottom: 24px;
-  box-shadow: var(--dash-shadow-sm);
-  transition: all 0.18s ease;
-}
-
-.dashPnLCard:hover {
-  border-color: var(--dash-border-hover);
-  box-shadow: var(--dash-shadow-md);
-}
-
-.dashPnLCardHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--dash-border);
-  margin-bottom: 18px;
-}
-
-.dashPnLCardHeadLeft {
-  min-width: 0;
-}
-
-.dashPnLBadge {
-  display: inline-block;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 2px 8px;
-  border-radius: 999px;
-  margin-bottom: 6px;
-}
-
-.dashPnLCardTitle {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--dash-text-main);
-  letter-spacing: -0.3px;
-  margin: 0;
-}
-
-.dashPnLCardSub {
-  font-size: 12.5px;
-  color: var(--dash-text-muted);
-  margin-top: 4px;
-}
-
-.dashPnLCardHeadRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.dashPnLGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-@media (max-width: 960px) {
-  .dashPnLGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.dashPnLCol {
-  background: var(--dash-surface-subtle);
-  border: 1px solid var(--dash-border);
-  border-radius: var(--dash-radius-sm);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.dashPnLColHighlight {
-  background: #f8faff;
-  border-color: #c7d2fe;
-}
-
-.dashPnLColHeader {
-  margin-bottom: 14px;
-}
-
-.dashPnLPill {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 750;
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
-.dashPnLPillGreen {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-
-.dashPnLPillRed {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.dashPnLPillBlue {
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
-}
-
-.dashPnLMetricTitle {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--dash-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.dashPnLMetricNumber {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: var(--dash-text-main);
-  margin-top: 4px;
-}
-
-.dashPnLDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--dash-border);
-}
-
-.dashPnLItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12.5px;
-  color: var(--dash-text-muted);
-}
-
-.dashPnLItem b {
-  color: var(--dash-text-main);
-}
-
-.dashTextGood {
-  color: #059669 !important;
-}
-
-.dashTextDanger {
-  color: #dc2626 !important;
-}
-
-.dashTextMuted {
-  color: var(--dash-text-muted) !important;
 }
