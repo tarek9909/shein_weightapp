@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addLoss } from "../api/lossesApi";
+import { addLoss, addLosses } from "../api/lossesApi";
 
 const LOSS_TYPES = [
   { value: "package not added / missing", label: "Package Not Added / Missing Cargo" },
@@ -66,12 +66,14 @@ export default function RecordCustomerLossModal({
             return;
           }
         }
-        for (const item of targetList) {
+        const payloadRows = targetList.map((item, index) => {
           const itemAmt = bulkAmountMode === "individual"
             ? Number(item.usd_to_collect || item.final_amount || item.base_amount || 0)
             : parseFloat(amount);
-          if (itemAmt <= 0) continue;
-          const payload = {
+          if (!Number.isFinite(itemAmt) || itemAmt <= 0) {
+            throw new Error(`Customer ${item.customer_name || `#${index + 1}`} does not have a positive loss amount.`);
+          }
+          return {
             customer_id: item.customer_id || item.id,
             order_id: item.order_id || null,
             month_id: item.month_id || null,
@@ -79,9 +81,12 @@ export default function RecordCustomerLossModal({
             amount: Math.round(itemAmt * 100) / 100,
             description: description.trim() || `Bulk loss: ${item.customer_name || "Customer"} (${lossType})`,
           };
-          await addLoss(payload);
+        });
+        const res = await addLosses(payloadRows);
+        if (Number(res?.created) !== payloadRows.length) {
+          throw new Error("The bulk loss request did not create every selected loss.");
         }
-        if (onSuccess) onSuccess({ count: targetList.length, total: totalCalculatedLoss });
+        if (onSuccess) onSuccess({ count: payloadRows.length, total: totalCalculatedLoss });
         onClose();
       } else {
         const numAmount = parseFloat(amount);

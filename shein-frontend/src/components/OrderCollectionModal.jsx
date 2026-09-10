@@ -105,7 +105,9 @@ export default function OrderCollectionModal({
 
   const collectedTotal = customers.reduce((s, c) => {
     const isPaid = c.is_collected || c.collection_status === "collected" || c.payment_status === "paid";
-    return isPaid ? s + Number(c.usd_to_collect || 0) : s;
+    const grossAmount = Number(c.usd_to_collect || 0);
+    const deliveryCharge = Number(c.delivery_charge_usd || 0);
+    return isPaid ? s + Math.max(0, grossAmount - deliveryCharge) : s;
   }, 0);
 
   const progressPercent = targetBudget > 0

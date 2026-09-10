@@ -60,7 +60,7 @@ router.get(paths("getSummary", true), asyncHandler(async (req, res) => {
   // 5. Confirmed Delivery Losses
   const lossRow = await first(
     pool,
-    "SELECT COALESCE(SUM(amount), 0) AS total FROM delivery_losses WHERE user_id=? AND month_id=? AND reversed_at IS NULL",
+    "SELECT COALESCE(SUM(amount), 0) AS total FROM delivery_losses WHERE user_id=? AND month_id=? AND status='confirmed' AND reversed_at IS NULL",
     [userId, monthId]
   );
   const lossTotal = Number(lossRow?.total || 0);

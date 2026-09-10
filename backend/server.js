@@ -20,6 +20,7 @@ const cargoRoutes = require("./routes/cargo");
 const dashboardRoutes = require("./routes/dashboard");
 const lossRoutes = require("./routes/losses");
 const reportsRoutes = require("./routes/reports");
+const { validateReceiveShipment } = require("./middleware/cargoValidation");
 const { ensureRuntimeSchema, checkDatabase, checkTenantIntegrity, pool } = require("./config/db");
 const { assertAuthConfig } = require("./middleware/auth");
 const { requestMetrics, metricsSnapshot } = require("./lib/observability");
@@ -37,7 +38,7 @@ app.use((_req, res, next) => {
 const allowedOrigins = new Set(String(process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000").split(",").map((value) => value.trim()).filter(Boolean));
 const corsOptions = {
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
   exposedHeaders: ["X-Request-Id"],
   maxAge: 86400,
@@ -87,7 +88,7 @@ app.use("/history", historyRoutes);
 app.use("/settings", settingsRoutes);
 app.use("/sheinAccounts", sheinAccountRoutes);
 app.use("/delivery", deliveryRoutes);
-app.use("/cargo", cargoRoutes);
+app.use("/cargo", validateReceiveShipment, cargoRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/losses", lossRoutes);
 app.use("/reports", reportsRoutes);

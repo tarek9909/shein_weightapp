@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateDirectoryCustomers,
   createDirectoryCustomer,
@@ -55,6 +55,7 @@ export default function CustomersPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [notice, setNotice] = useState({ type: "", text: "" });
   const [modal, setModal] = useState({ isOpen: false });
+  const loadRequest = useRef(0);
 
   const closeModal = () => setModal({ isOpen: false });
 
@@ -81,14 +82,21 @@ export default function CustomersPage() {
   );
 
   const loadCustomers = async (search = query) => {
+    const requestId = loadRequest.current + 1;
+    loadRequest.current = requestId;
     setLoading(true);
     try {
       const response = await getCustomerDirectory(search);
-      setCustomers(Array.isArray(response?.customers) ? response.customers : []);
+      if (requestId === loadRequest.current) {
+        setCustomers(Array.isArray(response?.customers) ? response.customers : []);
+      }
     } catch (error) {
-      setNotice({ type: "error", text: error?.message || "Could not load customers." });
+      if (requestId === loadRequest.current) {
+        setCustomers([]);
+        setNotice({ type: "error", text: error?.message || "Could not load customers." });
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequest.current) setLoading(false);
     }
   };
 

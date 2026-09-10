@@ -72,9 +72,10 @@ router.post(paths("updateCart"), asyncHandler(async (req, res) => {
   const deliveredValue = req.body?.shein_delivered;
   if (Object.prototype.hasOwnProperty.call(req.body || {}, "shein_delivered") && ![true, false, 0, 1, "0", "1", "true", "false"].includes(deliveredValue)) return okError(res, 400, "shein_delivered must be a boolean");
   const delivered = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_delivered") ? (deliveredValue === true || deliveredValue === 1 || deliveredValue === "1" || deliveredValue === "true" ? 1 : 0) : Number(existing.shein_delivered || 0);
-  const weightG = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_g") ? number(req.body.shein_total_weight_g) : (existing.shein_total_weight_g == null ? null : Number(existing.shein_total_weight_g));
-  const weightKg = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_kg") ? number(req.body.shein_total_weight_kg) : (existing.shein_total_weight_kg == null ? null : Number(existing.shein_total_weight_kg));
-  const plus2 = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_plus_2kg") ? number(req.body.shein_total_weight_plus_2kg) : (existing.shein_total_weight_plus_2kg == null ? null : Number(existing.shein_total_weight_plus_2kg));
+  const nullableNumber = (value) => value == null || value === "" ? null : number(value);
+  const weightG = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_g") ? nullableNumber(req.body.shein_total_weight_g) : (existing.shein_total_weight_g == null ? null : Number(existing.shein_total_weight_g));
+  const weightKg = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_kg") ? nullableNumber(req.body.shein_total_weight_kg) : (existing.shein_total_weight_kg == null ? null : Number(existing.shein_total_weight_kg));
+  const plus2 = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_plus_2kg") ? nullableNumber(req.body.shein_total_weight_plus_2kg) : (existing.shein_total_weight_plus_2kg == null ? null : Number(existing.shein_total_weight_plus_2kg));
   if ((Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_g") && (!finite(weightG) || weightG < 0)) || (Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_kg") && (!finite(weightKg) || weightKg < 0)) || (Object.prototype.hasOwnProperty.call(req.body || {}, "shein_total_weight_plus_2kg") && (!finite(plus2) || plus2 < 0))) return okError(res, 400, "Weight values must be finite non-negative numbers");
   await execute(pool, `UPDATE order_carts SET cart_order_number=?, cart_price=?, shein_email=?, shein_order_no=?, chrome_profile_key=?, shein_carrier=?, shein_tracking_no=?, shein_status_text=?, shein_last_details=?, shein_last_timestamp=?, shein_track_url=?, shein_delivered=?, shein_total_weight_g=?, shein_total_weight_kg=?, shein_total_weight_plus_2kg=? WHERE id=? AND user_id=?`, [
     cartNumber, price, value("shein_email"), value("shein_order_no"), profileKey, value("shein_carrier"), value("shein_tracking_no"), value("shein_status_text"), value("shein_last_details"), value("shein_last_timestamp"), value("shein_track_url"), delivered, weightG, weightKg, plus2, id, uid(req),
@@ -351,7 +352,7 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
   if (requestedProfile && !isChromeProfileKey(requestedProfile)) return okError(res, 400, "A valid Chrome profile is required", "ok");
 
-  const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_delivered,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? AND COALESCE(shein_delivered,0)=0 ORDER BY id DESC", [orderId, uid(req)]);
+  const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_delivered,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC", [orderId, uid(req)]);
   let updated = 0;
   let skipped = 0;
   const errors = [];

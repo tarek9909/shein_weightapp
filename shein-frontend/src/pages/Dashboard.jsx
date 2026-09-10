@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getMonths, addMonth } from "../api/monthApi";
@@ -100,6 +100,8 @@ export default function Dashboard() {
   const [newBudgetValue, setNewBudgetValue] = useState("");
   const [newBudgetDesc, setNewBudgetDesc] = useState("");
   const [kgPrice, setKgPrice] = useState("0");
+  const [loadingMonthData, setLoadingMonthData] = useState(false);
+  const monthDataRequest = useRef(0);
 
   const [modal, setModal] = useState({ isOpen: false });
   const [confirm, setConfirm] = useState({ isOpen: false });
@@ -130,6 +132,7 @@ export default function Dashboard() {
   };
 
   const openConfirm = ({ title, message, onYes, variant = "danger" }) => {
+    if (readOnly) return;
     setConfirm({
       isOpen: true,
       title,
@@ -148,6 +151,7 @@ export default function Dashboard() {
   };
 
   const handleSaveKgPrice = async () => {
+    if (readOnly) return;
     try {
       const parsed = Number(kgPrice);
       if (!Number.isFinite(parsed) || parsed < 0) {
@@ -217,6 +221,16 @@ export default function Dashboard() {
     if (!selectedMonth) return;
     if (!ensureAuth()) return;
 
+    const requestId = monthDataRequest.current + 1;
+    monthDataRequest.current = requestId;
+    setLoadingMonthData(true);
+    setOrders([]);
+    setPayments([]);
+    setCustoms([]);
+    setBudgets([]);
+    setServerSummary(null);
+    setWeightTrackings([]);
+
     setPaymentCustomerOptions([]);
     setSelectedPaymentCustomers([]);
     setPaymentCustomerSearch("");
@@ -253,6 +267,7 @@ export default function Dashboard() {
           openError("Failed to load month data.");
         }
 
+        if (requestId !== monthDataRequest.current) return;
         setOrders(o.data || []);
         setPayments(p.data || []);
         setCustoms(c.data || []);
@@ -261,7 +276,17 @@ export default function Dashboard() {
         setWeightTrackings(Array.isArray(wtRes?.items) ? wtRes.items : []);
 
       } catch (err) {
-        openError("Failed to load month data.");
+        if (requestId === monthDataRequest.current) {
+          setOrders([]);
+          setPayments([]);
+          setCustoms([]);
+          setBudgets([]);
+          setServerSummary(null);
+          setWeightTrackings([]);
+          openError("Failed to load month data.");
+        }
+      } finally {
+        if (requestId === monthDataRequest.current) setLoadingMonthData(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,6 +310,7 @@ export default function Dashboard() {
   }, [paymentCustomerSearch, paymentMode, selectedMonth]);
 
   const handleAddMonth = async () => {
+    if (readOnly) return;
     if (!newMonthName.trim()) return;
     try {
       const res = await addMonth(newMonthName.trim());
@@ -308,6 +334,7 @@ export default function Dashboard() {
   };
 
   const handleAddOrder = async () => {
+    if (readOnly) return;
     if (!newOrderName.trim() || !newOrder || !selectedMonth) return;
     try {
       const collect = Number(newOrderCollect || 0);
@@ -438,6 +465,7 @@ export default function Dashboard() {
   );
 
   const handleAddPayment = async () => {
+    if (readOnly) return;
     if (!selectedMonth) return;
     try {
       if (paymentMode === "manual") {
@@ -519,6 +547,7 @@ export default function Dashboard() {
   };
 
   const handleAddCustom = async () => {
+    if (readOnly) return;
     if (!newCustom || !selectedMonth) return;
     try {
       const fee = Number(newCustom);
@@ -562,6 +591,7 @@ export default function Dashboard() {
   };
 
   const handleAddBudget = async () => {
+    if (readOnly) return;
     if (!newBudgetValue || !selectedMonth) return;
     try {
       const res = await addBudget(selectedMonth, newBudgetValue, newBudgetDesc);
@@ -581,6 +611,7 @@ export default function Dashboard() {
   };
 
   const handleUpdateOrder = async (id, name, value, amountToCollect = 0) => {
+    if (readOnly) return;
     try {
       const collect = Number(amountToCollect || 0);
       if (!Number.isFinite(collect) || collect < 0) throw new Error("Amount to collect must be >= 0");
@@ -599,6 +630,7 @@ export default function Dashboard() {
   };
 
   const handleUpdatePayment = async (id, value) => {
+    if (readOnly) return;
     try {
       const res = await updatePayment(id, value);
       if (res?.ok === false || res?.success === false) {
@@ -614,6 +646,7 @@ export default function Dashboard() {
   };
 
   const handleUpdateCustom = async (id, value, note = null, tracking = undefined, weight = undefined) => {
+    if (readOnly) return;
     try {
       const customId = Number(id || 0);
       if (customId <= 0) return;
@@ -637,6 +670,7 @@ export default function Dashboard() {
   };
 
   const handleUpdateBudget = async (id, value, description) => {
+    if (readOnly) return;
     try {
       const res = await updateBudget(id, value, description);
       if (res?.ok === false || res?.success === false) {
@@ -750,12 +784,8 @@ export default function Dashboard() {
         ),
       0
     );
-    const totalCustoms = serverSummary
-      ? Number(serverSummary.customs_total || 0)
-      : customs.reduce((sum, c) => sum + Number(c.customs_fee || 0), 0);
-    const totalPayments = serverSummary
-      ? Number(serverSummary.payments_total || 0)
-      : payments.reduce((sum, p) => sum + Number(p.payment_amount || 0), 0);
+    const totalCustoms = customs.reduce((sum, c) => sum + Number(c.customs_fee || 0), 0);
+    const totalPayments = payments.reduce((sum, p) => sum + Number(p.payment_amount || 0), 0);
     const totalLosses = serverSummary
       ? Number(serverSummary.loss_total || 0)
       : 0;
@@ -790,6 +820,7 @@ export default function Dashboard() {
   return (
     <div className={`dashPage dashTopSpacer${readOnly ? " dashReadOnly" : ""}`}>
       {readOnly && <div className="dashReadOnlyNotice">Dashboard access is read-only. Contact an administrator for operational changes.</div>}
+      {loadingMonthData && <div className="dashReadOnlyNotice">Loading selected month data...</div>}
       <div className="dashHeader">
         <div className="dashHeaderLeft">
           <div className="dashTitleRow">
@@ -825,8 +856,9 @@ export default function Dashboard() {
               onChange={(e) => setNewMonthName(e.target.value)}
               placeholder="New Month name..."
               style={{ width: "160px" }}
+              disabled={readOnly}
             />
-            <button className="dashBtn" onClick={handleAddMonth}>
+            <button className="dashBtn" onClick={handleAddMonth} disabled={readOnly}>
               + Add Month
             </button>
           </div>
@@ -902,7 +934,7 @@ export default function Dashboard() {
             <StatCard
               hero
               title="Cash Collected"
-              value={`$${money(serverSummary?.payments_total ?? totals.totalPayments)}`}
+              value={`$${money(totals.totalPayments)}`}
               variant="neutral"
               subtitle={`${totals.collectionRate}% of $${money(totals.totalCollect)} expected revenue`}
               icon={
@@ -1145,12 +1177,14 @@ export default function Dashboard() {
                         value={newOrderName}
                         onChange={(e) => setNewOrderName(e.target.value)}
                         placeholder="Order Name"
+                        disabled={readOnly}
                       />
                       <input
                         className="dashInput"
                         value={newOrder}
                         onChange={(e) => setNewOrder(e.target.value)}
                         placeholder="Order Amount"
+                        disabled={readOnly}
                       />
                       <input
                         className="dashInput"
@@ -1158,8 +1192,9 @@ export default function Dashboard() {
                         value={newOrderCollect}
                         onChange={(e) => setNewOrderCollect(e.target.value)}
                         placeholder="Amount To Collect"
+                        disabled={readOnly}
                       />
-                      <button className="dashBtn" onClick={handleAddOrder}>
+                      <button className="dashBtn" onClick={handleAddOrder} disabled={readOnly}>
                         Add
                       </button>
                     </div>
@@ -1220,6 +1255,7 @@ export default function Dashboard() {
                               )
                             }
                             onBlur={(e) => handleUpdateOrder(o.id, e.target.value, o.order_details, o.amount_to_collect)}
+                            disabled={readOnly}
                           />
                           <input
                             className="dashInput"
@@ -1232,6 +1268,7 @@ export default function Dashboard() {
                               )
                             }
                             onBlur={(e) => handleUpdateOrder(o.id, o.order_name, e.target.value, o.amount_to_collect)}
+                            disabled={readOnly}
                           />
                           <input
                             className="dashInput"
@@ -1245,6 +1282,7 @@ export default function Dashboard() {
                               )
                             }
                             onBlur={(e) => handleUpdateOrder(o.id, o.order_name, o.order_details, e.target.value)}
+                            disabled={readOnly}
                           />
                         </div>
                         <div className="dashOrderMetricsLine">
@@ -1306,6 +1344,7 @@ export default function Dashboard() {
                                 },
                               })
                             }
+                            disabled={readOnly}
                           >
                             Delete
                           </button>
@@ -1489,9 +1528,10 @@ export default function Dashboard() {
                     step="0.01"
                     min="0"
                     style={{ minWidth: "110px", flex: 1 }}
-                    value={newCustom}
-                    onChange={(e) => setNewCustom(e.target.value)}
-                    placeholder="Custom Fee ($)"
+                  value={newCustom}
+                  onChange={(e) => setNewCustom(e.target.value)}
+                  placeholder="Custom Fee ($)"
+                  disabled={readOnly}
                   />
                   <input
                     className="dashInput"
@@ -1499,22 +1539,25 @@ export default function Dashboard() {
                     step="0.001"
                     min="0"
                     style={{ minWidth: "100px", flex: 1 }}
-                    value={newCustomWeight}
-                    onChange={handleWeightChange}
-                    placeholder="Weight (kg)"
+                  value={newCustomWeight}
+                  onChange={handleWeightChange}
+                  placeholder="Weight (kg)"
+                  disabled={readOnly}
                   />
                   <input
                     className="dashInput"
                     style={{ minWidth: "130px", flex: 1.2 }}
-                    value={newCustomTracking}
-                    onChange={(e) => setNewCustomTracking(e.target.value)}
-                    placeholder="Tracking # (optional)"
+                  value={newCustomTracking}
+                  onChange={(e) => setNewCustomTracking(e.target.value)}
+                  placeholder="Tracking # (optional)"
+                  disabled={readOnly}
                   />
                   <CustomDropdown
                     className="dashInput"
                     style={{ minWidth: "100px", flex: 1 }}
                     value={newCustomDescription}
                     onChange={(e) => setNewCustomDescription(e.target.value)}
+                    disabled={readOnly}
                     options={[
                       { value: "freight", label: "freight" },
                       { value: "customs", label: "customs" },
@@ -1526,7 +1569,7 @@ export default function Dashboard() {
                   <button 
                     className="dashBtn" 
                     onClick={handleAddCustom}
-                    disabled={isDuplicateTracking || !newCustom || Number(newCustom) < 0}
+                    disabled={readOnly || isDuplicateTracking || !newCustom || Number(newCustom) < 0}
                     title={isDuplicateTracking ? "Tracking number already in customs" : "Add custom entry"}
                   >
                     + Add
@@ -1573,6 +1616,7 @@ export default function Dashboard() {
                           }
                           onBlur={(e) => handleUpdateCustom(c.id, e.target.value, c.note || null, c.tracking_no || undefined, c.weight_kg || undefined)}
                           placeholder="Fee ($)"
+                          disabled={readOnly}
                         />
                         <input
                           className="dashInput"
@@ -1588,6 +1632,7 @@ export default function Dashboard() {
                           }
                           onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, c.note || null, c.tracking_no || undefined, e.target.value)}
                           placeholder="Weight (kg)"
+                          disabled={readOnly}
                         />
                         <input
                           className="dashInput"
@@ -1601,6 +1646,7 @@ export default function Dashboard() {
                           }
                           onBlur={(e) => handleUpdateCustom(c.id, c.customs_fee, e.target.value, c.tracking_no || undefined, c.weight_kg || undefined)}
                           placeholder="Reference / note"
+                          disabled={readOnly}
                         />
                         <button
                           className="dashBtnDanger"
@@ -1616,6 +1662,7 @@ export default function Dashboard() {
                               },
                             })
                           }
+                          disabled={readOnly}
                         >
                           Delete
                         </button>
@@ -1651,8 +1698,9 @@ export default function Dashboard() {
                     onChange={(e) => setKgPrice(e.target.value)}
                     placeholder="Price of 1kg"
                     onBlur={handleSaveKgPrice}
+                    disabled={readOnly}
                   />
-                  <button className="dashBtn" onClick={handleSaveKgPrice}>
+                  <button className="dashBtn" onClick={handleSaveKgPrice} disabled={readOnly}>
                     Save KG Price
                   </button>
                 </div>
@@ -1705,8 +1753,9 @@ export default function Dashboard() {
                     value={newPayment}
                     onChange={(e) => setNewPayment(e.target.value)}
                     placeholder="New Payment"
+                    disabled={readOnly}
                   />
-                  <button className="dashBtn" onClick={handleAddPayment}>
+                  <button className="dashBtn" onClick={handleAddPayment} disabled={readOnly}>
                     Add
                   </button>
                 </div>
@@ -1738,6 +1787,7 @@ export default function Dashboard() {
                             type="checkbox"
                             checked={checked}
                             onChange={() => togglePaymentCustomer(c)}
+                            disabled={readOnly}
                           />
                           <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
                           <span className="dashCustomerCol">${money(c.usd_to_collect)}</span>
@@ -1762,6 +1812,7 @@ export default function Dashboard() {
                             step="0.01"
                             value={c.amount}
                             onChange={(e) => setSelectedPaymentCustomerAmount(c.customer_id, e.target.value)}
+                            disabled={readOnly}
                           />
                           <input
                             className="dashInput"
@@ -1771,6 +1822,7 @@ export default function Dashboard() {
                             value={c.delivery_charge ?? 0}
                             onChange={(e) => setSelectedPaymentCustomerDeliveryCharge(c.customer_id, e.target.value)}
                             placeholder="Delivery"
+                            disabled={readOnly}
                           />
                           <button
                             className="dashBtnDanger"
@@ -1779,6 +1831,7 @@ export default function Dashboard() {
                                 prev.filter((x) => Number(x.customer_id) !== Number(c.customer_id))
                               )
                             }
+                            disabled={readOnly}
                           >
                             Remove
                           </button>
@@ -1802,7 +1855,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <button className="dashBtn" onClick={handleAddPayment}>
+                  <button className="dashBtn" onClick={handleAddPayment} disabled={readOnly}>
                     Confirm Add Customer Payment
                   </button>
                 </div>
@@ -1840,7 +1893,7 @@ export default function Dashboard() {
                           )
                         }
                         onBlur={(e) => handleUpdatePayment(p.id, e.target.value)}
-                        disabled={String(p.payment_type || "manual") !== "manual"}
+                        disabled={readOnly || String(p.payment_type || "manual") !== "manual"}
                       />
                       <div className="dashPaymentActions">
                         {String(p.payment_type || "manual") === "customers" ? (
@@ -1861,6 +1914,7 @@ export default function Dashboard() {
                               },
                             })
                           }
+                          disabled={readOnly}
                         >
                           Delete
                         </button>
@@ -1932,14 +1986,16 @@ export default function Dashboard() {
                   value={newBudgetValue}
                   onChange={(e) => setNewBudgetValue(e.target.value)}
                   placeholder="Value"
+                  disabled={readOnly}
                 />
                 <input
                   className="dashInput"
                   value={newBudgetDesc}
                   onChange={(e) => setNewBudgetDesc(e.target.value)}
                   placeholder="Description (ex: initial)"
+                  disabled={readOnly}
                 />
-                <button className="dashBtn" onClick={handleAddBudget}>
+                <button className="dashBtn" onClick={handleAddBudget} disabled={readOnly}>
                   Add
                 </button>
               </div>
@@ -1968,6 +2024,7 @@ export default function Dashboard() {
                           )
                         }
                         onBlur={(e) => handleUpdateBudget(b.id, e.target.value, b.description)}
+                        disabled={readOnly}
                       />
                       <input
                         className="dashInput"
@@ -1980,6 +2037,7 @@ export default function Dashboard() {
                           )
                         }
                         onBlur={(e) => handleUpdateBudget(b.id, b.value, e.target.value)}
+                        disabled={readOnly}
                       />
                       <button
                         className="dashBtnDanger"
@@ -1992,8 +2050,9 @@ export default function Dashboard() {
                               if (res?.ok === false || res?.success === false) throw new Error(res?.error || "Delete failed");
                               setBudgets((prev) => prev.filter((x) => x.id !== b.id));
                             },
-                          })
-                        }
+                            })
+                          }
+                          disabled={readOnly}
                       >
                         Delete
                       </button>

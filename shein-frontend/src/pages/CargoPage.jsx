@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getMonths } from "../api/monthApi";
 import { getReceivableCarts, getShipmentDetail, receiveShipment } from "../api/cargoApi";
 import "../operations.css";
@@ -10,8 +10,12 @@ export default function CargoPage() {
   const [carts, setCarts] = useState([]);
   const [detail, setDetail] = useState(null);
   const [busy, setBusy] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loadingMonths, setLoadingMonths] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const loadRequest = useRef(0);
 
   const [receiveModal, setReceiveModal] = useState({
     isOpen: false,
@@ -27,12 +31,27 @@ export default function CargoPage() {
   });
 
   const load = useCallback(async () => {
-    if (!monthId) return;
+    const requestId = loadRequest.current + 1;
+    loadRequest.current = requestId;
+    if (!monthId) {
+      setCarts([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
     try {
       const response = await getReceivableCarts(monthId, query);
-      setCarts(Array.isArray(response?.carts) ? response.carts : []);
+      if (requestId === loadRequest.current) {
+        setCarts(Array.isArray(response?.carts) ? response.carts : []);
+      }
     } catch (err) {
-      setError(err.message || "Failed to load cargo shipments.");
+      if (requestId === loadRequest.current) {
+        setCarts([]);
+        setError(err.message || "Failed to load cargo shipments.");
+      }
+    } finally {
+      if (requestId === loadRequest.current) setLoading(false);
     }
   }, [monthId, query]);
 
@@ -43,7 +62,8 @@ export default function CargoPage() {
         setMonths(list);
         if (list.length) setMonthId(String(list[0].id));
       })
-      .catch((err) => setError(err.message || "Failed to load months."));
+      .catch((err) => setError(err.message || "Failed to load months."))
+      .finally(() => setLoadingMonths(false));
   }, []);
 
   useEffect(() => {
@@ -101,6 +121,18 @@ export default function CargoPage() {
 
   const handleConfirmReceive = async (withCustoms = true) => {
     if (!receiveModal.cart || !receiveModal.tracking_no) return;
+    const weight = receiveModal.weightKg === "" ? null : Number(receiveModal.weightKg);
+    if (weight !== null && (!Number.isFinite(weight) || weight < 0)) {
+      setError("Package weight must be a valid non-negative number.");
+      return;
+    }
+    if (withCustoms && receiveModal.customsFee !== "") {
+      const fee = Number(receiveModal.customsFee);
+      if (!Number.isFinite(fee) || fee < 0) {
+        setError("Customs fee must be a valid non-negative number.");
+        return;
+      }
+    }
     const key = `${receiveModal.cart.cart_id}:${receiveModal.tracking_no}`;
     setBusy(key);
     setError("");
@@ -123,7 +155,7 @@ export default function CargoPage() {
         tracking_no: receiveModal.tracking_no,
         add_customs: withCustoms,
         customs_fee: feeToSend,
-        weight_kg: receiveModal.weightKg !== "" ? Number(receiveModal.weightKg) : null,
+        weight_kg: weight,
         description: receiveModal.description || "freight",
       });
 
@@ -148,11 +180,17 @@ export default function CargoPage() {
   };
 
   const showDetail = async (cart) => {
+    setDetailLoading(true);
+    setDetail(null);
+    setError("");
     try {
       const response = await getShipmentDetail(cart.cart_id);
       setDetail(response?.shipment || null);
     } catch (err) {
+      setDetail(null);
       setError(err.message || "Failed to load shipment detail.");
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -195,10 +233,12 @@ export default function CargoPage() {
             <h2>Existing shipment carts</h2>
             <p className="opsMuted">{carts.length} matching cart(s)</p>
           </div>
-          <button onClick={load}>Refresh</button>
+          <button disabled={loading} onClick={load}>{loading ? "Loading..." : "Refresh"}</button>
         </div>
 
-        {!carts.length ? (
+        {loadingMonths || loading ? (
+          <div className="opsEmpty">Loading shipment carts...</div>
+        ) : !carts.length ? (
           <div className="opsEmpty">No persisted tracking data matches this search.</div>
         ) : (
           <div className="opsTableWrap">
@@ -266,7 +306,7 @@ export default function CargoPage() {
                     </td>
                     <td>{cart.delivered ? "Yes" : "No"}</td>
                     <td>
-                      <button onClick={() => showDetail(cart)}>Details</button>
+                      <button disabled={detailLoading} onClick={() => showDetail(cart)}>{detailLoading ? "Loading..." : "Details"}</button>
                       {cart.parts.map((part) => {
                         const isBusy = busy === `${cart.cart_id}:${part.tracking_no}`;
                         if (!part.received) {

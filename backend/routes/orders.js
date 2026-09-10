@@ -45,7 +45,7 @@ router.get(paths("getOrders", true), asyncHandler(async (req, res) => {
       0
     ) AS customs_sum,
     COALESCE(
-      (SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.order_id=o.id AND dl.user_id=o.user_id AND dl.reversed_at IS NULL),
+      (SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.order_id=o.id AND dl.user_id=o.user_id AND dl.status='confirmed' AND dl.reversed_at IS NULL),
       0
     ) AS losses_sum
     FROM orders o
@@ -63,7 +63,7 @@ router.get([...paths("getOrderCustomers", true), "/:id/orderCustomers"], asyncHa
       0
     ) AS customs_sum,
     COALESCE(
-      (SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.order_id=o.id AND dl.user_id=o.user_id AND dl.reversed_at IS NULL),
+      (SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.order_id=o.id AND dl.user_id=o.user_id AND dl.status='confirmed' AND dl.reversed_at IS NULL),
       0
     ) AS losses_sum
     FROM orders o WHERE o.id=? AND o.user_id=? LIMIT 1`, [orderId, userId(req)]);
@@ -73,7 +73,7 @@ router.get([...paths("getOrderCustomers", true), "/:id/orderCustomers"], asyncHa
     cc.delivery_number, cc.status, cc.delivery_status, cc.collection_status, cc.payment_status,
     cc.collected_at, cc.received_at, cc.cart_id, oc.cart_order_number,
     o.id AS order_id, o.order_name, o.month_id,
-    COALESCE((SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.customer_id=cc.id AND dl.user_id=cc.user_id AND dl.reversed_at IS NULL), 0) AS losses_sum
+    COALESCE((SELECT SUM(dl.amount) FROM delivery_losses dl WHERE dl.customer_id=cc.id AND dl.user_id=cc.user_id AND dl.status='confirmed' AND dl.reversed_at IS NULL), 0) AS losses_sum
     FROM cart_customers cc
     JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=cc.user_id
     JOIN orders o ON o.id=oc.order_id AND o.user_id=oc.user_id

@@ -26,6 +26,8 @@ export default function SheinAccountsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm);
   const [modal, setModal] = useState({ isOpen: false });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const closeModal = () => setModal({ isOpen: false });
 
@@ -58,21 +60,28 @@ export default function SheinAccountsPage() {
     });
 
   const loadAccounts = async () => {
+    setLoading(true);
     try {
       const data = await listSheinUsers();
-      setAccounts(data?.users || []);
-      setChromeProfiles(data?.chrome_profiles || []);
+      setAccounts(Array.isArray(data?.users) ? data.users : []);
+      setChromeProfiles(Array.isArray(data?.chrome_profiles) ? data.chrome_profiles : []);
     } catch (err) {
+      setAccounts([]);
+      setChromeProfiles([]);
       openInfo("SHEIN API", err?.message || "Failed to load SHEIN accounts.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const saveAccount = async () => {
+    if (saving) return;
     if (!form.email || !form.shein_email || !form.shein_password || !form.gmail_email || !form.gmail_app_password) {
       openInfo("Missing Data", "Please fill all fields.");
       return;
     }
 
+    setSaving(true);
     try {
       await registerSheinAccount({
         ...form,
@@ -83,6 +92,8 @@ export default function SheinAccountsPage() {
       openInfo("Done", "SHEIN account saved.");
     } catch (err) {
       openInfo("SHEIN API", err?.message || "Failed to save SHEIN account.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -106,6 +117,7 @@ export default function SheinAccountsPage() {
   };
 
   const saveEdit = async () => {
+    if (saving) return;
     if (
       !editForm.email ||
       !editForm.shein_email ||
@@ -114,6 +126,7 @@ export default function SheinAccountsPage() {
       openInfo("Missing Data", "Please fill all fields in edit form.");
       return;
     }
+    setSaving(true);
     try {
       await registerSheinAccount({
         ...editForm,
@@ -123,11 +136,15 @@ export default function SheinAccountsPage() {
       openInfo("Done", "SHEIN account updated.");
     } catch (err) {
       openInfo("SHEIN API", err?.message || "Failed to update SHEIN account.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const onDelete = async (email) => {
+    if (saving) return;
     openConfirm("Delete SHEIN Account", `Delete ${email}?`, async () => {
+      setSaving(true);
       try {
         await deleteSheinUserByOwner(email);
         if ((localStorage.getItem("shein_api_email") || "").toLowerCase() === email.toLowerCase()) {
@@ -138,6 +155,8 @@ export default function SheinAccountsPage() {
         openInfo("Done", "SHEIN account deleted.");
       } catch (err) {
         openInfo("SHEIN API", err?.message || "Failed to delete SHEIN account.");
+      } finally {
+        setSaving(false);
       }
     });
   };
@@ -206,8 +225,8 @@ export default function SheinAccountsPage() {
               }))}
               placeholder="Select Chrome Profile"
             />
-            <button className="ordBtn" onClick={saveAccount}>
-              Add Account
+            <button className="ordBtn" disabled={saving} onClick={saveAccount}>
+              {saving ? "Saving..." : "Add Account"}
             </button>
           </div>
         </div>
@@ -217,7 +236,9 @@ export default function SheinAccountsPage() {
             <div className="ordCardTitle">Existing API Emails</div>
           </div>
           <div className="ordCardBody" style={{ display: "grid", gap: 10 }}>
-            {accounts.length === 0 ? (
+            {loading ? (
+              <div className="ordSub">Loading accounts...</div>
+            ) : accounts.length === 0 ? (
               <div className="ordSub">No accounts found.</div>
             ) : (
               accounts.map((u) => (
@@ -236,10 +257,10 @@ export default function SheinAccountsPage() {
                     <div className="ordSub">Chrome profile: {u.profile_key || "Default"}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button className="ordBtn" onClick={() => openEdit(u.email)}>
+                    <button className="ordBtn" disabled={saving} onClick={() => openEdit(u.email)}>
                       Edit
                     </button>
-                    <button className="ceBtnDanger" onClick={() => onDelete(u.email)}>
+                    <button className="ceBtnDanger" disabled={saving} onClick={() => onDelete(u.email)}>
                       Delete
                     </button>
                   </div>
@@ -312,8 +333,8 @@ export default function SheinAccountsPage() {
               <button className="cmBtnSoft" onClick={() => setEditOpen(false)}>
                 Cancel
               </button>
-              <button className="cmBtn" onClick={saveEdit}>
-                Save
+              <button className="cmBtn" disabled={saving} onClick={saveEdit}>
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

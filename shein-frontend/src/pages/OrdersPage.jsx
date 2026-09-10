@@ -39,6 +39,7 @@ const OrdersPage = () => {
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
   const [orderCustomerCollectByOrderId, setOrderCustomerCollectByOrderId] = useState({});
   const [collectionOrder, setCollectionOrder] = useState(null);
   const [lossCustomer, setLossCustomer] = useState(null);
@@ -139,7 +140,7 @@ const OrdersPage = () => {
         getKgPrice(mId).catch(() => null),
       ]);
       setOrders(ordersData || []);
-      setKgPrice(Number(kgPriceData?.price || 0));
+      setKgPrice(Number(kgPriceData?.kg_price || 0));
 
       const map = {};
       if (historyData && (historyData.ok === true || historyData.success === true) && Array.isArray(historyData.orders)) {
@@ -282,6 +283,7 @@ const OrdersPage = () => {
 
   const handleSaveOrder = async (e) => {
     if (e) e.preventDefault();
+    if (savingOrder) return;
     if (!orderForm.order_name.trim()) {
       setFormError("Order Name is required.");
       return;
@@ -297,6 +299,7 @@ const OrdersPage = () => {
       return;
     }
 
+    setSavingOrder(true);
     try {
       if (orderModalMode === "add") {
         const res = await addOrder(monthId, orderForm.order_name.trim(), String(cost), collect, orderForm.customer_ids);
@@ -313,6 +316,8 @@ const OrdersPage = () => {
       await loadOrders(monthId);
     } catch (err) {
       setFormError(err.message || "Failed to save order.");
+    } finally {
+      setSavingOrder(false);
     }
   };
 
@@ -683,7 +688,7 @@ const OrdersPage = () => {
                     <button
                       className="ordBtnSoft"
                       onClick={() => handleRefreshOrderTrack(order)}
-                      disabled={refreshingTrackOrderId === order.id}
+                      disabled={refreshingTrackOrderId === order.id || refreshingWeightOrderId === order.id}
                       title="Fetch live carrier tracking status from SHEIN"
                     >
                       {refreshingTrackOrderId === order.id ? "Refreshing Track..." : "Refresh Track"}
@@ -691,7 +696,7 @@ const OrdersPage = () => {
                     <button
                       className="ordBtnSoft"
                       onClick={() => handleRefreshOrderWeight(order)}
-                      disabled={refreshingWeightOrderId === order.id}
+                      disabled={refreshingWeightOrderId === order.id || refreshingTrackOrderId === order.id}
                       title="Fetch live parcel weights from SHEIN"
                     >
                       {refreshingWeightOrderId === order.id ? "Getting Weight..." : "Get Weight"}
@@ -866,8 +871,9 @@ const OrdersPage = () => {
                 <button
                   type="submit"
                   className="modalBtn modalBtnConfirm"
+                  disabled={savingOrder}
                 >
-                  {orderModalMode === "add" ? "Create Order" : "Save Changes"}
+                  {savingOrder ? "Saving..." : orderModalMode === "add" ? "Create Order" : "Save Changes"}
                 </button>
               </div>
             </form>

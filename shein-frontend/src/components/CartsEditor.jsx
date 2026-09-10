@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getCarts, addCart, updateCart, deleteCart } from "../api/cartsApi";
 import {
   getCustomerDirectory,
@@ -19,11 +19,14 @@ const CartsEditor = ({
   chromeProfiles = [],
 }) => {
   const [carts, setCarts] = useState([]);
+  const [loadingCarts, setLoadingCarts] = useState(true);
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [presets, setPresets] = useState([]);
   const [selectedCart, setSelectedCart] = useState(null);
   const [refreshingCartId, setRefreshingCartId] = useState(null);
   const [selectedProfileByCart, setSelectedProfileByCart] = useState({});
+  const [profileSavingCartId, setProfileSavingCartId] = useState(null);
+  const cartLoadRequest = useRef(0);
 
   const [modal, setModal] = useState({ isOpen: false });
   const canEdit = true;
@@ -55,15 +58,25 @@ const CartsEditor = ({
   };
 
   const loadCarts = async () => {
+    const requestId = cartLoadRequest.current + 1;
+    cartLoadRequest.current = requestId;
+    setLoadingCarts(true);
     try {
       const data = await getCarts(order.id);
-      setCarts(data || []);
-      if (onUpdated) onUpdated();
+      if (requestId === cartLoadRequest.current) {
+        setCarts(Array.isArray(data) ? data : []);
+        if (onUpdated) onUpdated();
+      }
     } catch (err) {
-      openInfo({
-        title: "Load Error",
-        message: err?.message || "Failed to load carts.",
-      });
+      if (requestId === cartLoadRequest.current) {
+        setCarts([]);
+        openInfo({
+          title: "Load Error",
+          message: err?.message || "Failed to load carts.",
+        });
+      }
+    } finally {
+      if (requestId === cartLoadRequest.current) setLoadingCarts(false);
     }
   };
 
@@ -247,6 +260,7 @@ const CartsEditor = ({
       shein_delivered: cartFormModal.shein_delivered ? 1 : 0,
     };
 
+    let customerAttachmentWarning = "";
     try {
       if (cartFormModal.editingCart) {
         const cartId = cartFormModal.editingCart.id;
@@ -297,14 +311,20 @@ const CartsEditor = ({
 
             try {
               await addCustomer(newId, custName, net, delivery);
-            } catch {
-              // non-blocking for cart creation
+            } catch (err) {
+              customerAttachmentWarning = err?.message || "Customer could not be attached.";
             }
           }
         }
       }
       await loadCarts();
       handleCloseCartForm();
+      if (customerAttachmentWarning) {
+        openInfo({
+          title: "Customer Attachment Warning",
+          message: `Cart saved, but the initial customer could not be attached: ${customerAttachmentWarning}`,
+        });
+      }
     } catch (err) {
       setCartFormModal((prev) => ({
         ...prev,
@@ -334,6 +354,9 @@ const CartsEditor = ({
 
   const handleChromeProfileChange = async (cart, profileKey) => {
     const normalizedProfile = String(profileKey || "").trim();
+    const previousProfile = getCartProfileKey(cart);
+    if (profileSavingCartId === cart.id) return;
+    setProfileSavingCartId(cart.id);
     setSelectedProfileByCart((current) => ({
       ...current,
       [cart.id]: normalizedProfile,
@@ -348,10 +371,16 @@ const CartsEditor = ({
         )
       );
     } catch (err) {
+      setSelectedProfileByCart((current) => ({
+        ...current,
+        [cart.id]: previousProfile,
+      }));
       openInfo({
         title: "Profile Error",
         message: err?.message || "Failed to save the Chrome profile.",
       });
+    } finally {
+      setProfileSavingCartId(null);
     }
   };
 
@@ -419,7 +448,7 @@ const CartsEditor = ({
         </div>
 
         <div className="ceActionsTop">
-          <button className="ceBtn" onClick={handleOpenAddCart}>
+          <button className="ceBtn" disabled={loadingCarts} onClick={handleOpenAddCart}>
             Add Cart
           </button>
           <a
@@ -435,7 +464,12 @@ const CartsEditor = ({
         </div>
 
         <div className="ceGrid">
-          {carts.length === 0 ? (
+          {loadingCarts ? (
+            <div className="ceEmpty">
+              <div className="ceEmptyTitle">Loading carts...</div>
+              <div className="ceEmptySub">Reading the selected order from Node.</div>
+            </div>
+          ) : carts.length === 0 ? (
             <div className="ceEmpty">
               <div className="ceEmptyTitle">No carts</div>
               <div className="ceEmptySub">Add a cart to start assigning customers.</div>
@@ -493,6 +527,7 @@ const CartsEditor = ({
                         value: profile.profile_key,
                         label: profileLabel(profile),
                       }))}
+                      disabled={profileSavingCartId === cart.id}
                       onChange={(e) => handleChromeProfileChange(cart, e.target.value)}
                     />
                   </div>

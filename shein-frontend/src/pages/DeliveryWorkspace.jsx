@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getMonths } from "../api/monthApi";
 import {
   addDeliveryChargePreset,
@@ -45,7 +45,9 @@ export default function DeliveryWorkspace() {
   const [newPresetAmount, setNewPresetAmount] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [loadingMonths, setLoadingMonths] = useState(true);
   const [saving, setSaving] = useState(false);
+  const customerRequest = useRef(0);
   
   // Loss Modal State (supports single customer or array of bulk customers)
   const [lossModalState, setLossModalState] = useState(null);
@@ -54,39 +56,59 @@ export default function DeliveryWorkspace() {
   const [notice, setNotice] = useState("");
 
   const loadCustomers = async () => {
-    if (!monthId) return;
+    const requestId = customerRequest.current + 1;
+    customerRequest.current = requestId;
+    if (!monthId) {
+      setCustomers([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       const response = await getDeliveryCustomers(monthId, query, status);
       const list = Array.isArray(response?.customers) ? response.customers : [];
-      setCustomers(list);
-      setDeliveryNoMap((prev) => {
-        const next = { ...prev };
-        list.forEach((c) => {
-          if (c.delivery_number != null && next[c.customer_id] === undefined) {
-            next[c.customer_id] = String(c.delivery_number);
-          }
+      if (requestId === customerRequest.current) {
+        setCustomers(list);
+        setDeliveryNoMap((prev) => {
+          const next = { ...prev };
+          list.forEach((c) => {
+            if (c.delivery_number != null && next[c.customer_id] === undefined) {
+              next[c.customer_id] = String(c.delivery_number);
+            }
+          });
+          return next;
         });
-        return next;
-      });
-      setSelected([]);
+        setSelected([]);
+      }
     } catch (err) {
-      setError(err.message || "Failed to load delivery customers.");
+      if (requestId === customerRequest.current) {
+        setCustomers([]);
+        setSelected([]);
+        setError(err.message || "Failed to load delivery customers.");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === customerRequest.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    Promise.all([getMonths(), getDeliveryChargePresets()])
-      .then(([monthResponse, presetResponse]) => {
-        const monthList = Array.isArray(monthResponse) ? monthResponse : [];
-        setMonths(monthList);
-        if (monthList.length) setMonthId(String(monthList[0].id));
-        setPresets(Array.isArray(presetResponse?.presets) ? presetResponse.presets : []);
+    Promise.allSettled([getMonths(), getDeliveryChargePresets()])
+      .then(([monthResult, presetResult]) => {
+        if (monthResult.status === "fulfilled") {
+          const monthList = Array.isArray(monthResult.value) ? monthResult.value : [];
+          setMonths(monthList);
+          if (monthList.length) setMonthId(String(monthList[0].id));
+        } else {
+          setError(monthResult.reason?.message || "Failed to load months.");
+        }
+        if (presetResult.status === "fulfilled") {
+          setPresets(Array.isArray(presetResult.value?.presets) ? presetResult.value.presets : []);
+        } else {
+          setError(presetResult.reason?.message || "Failed to load delivery charge presets.");
+        }
       })
-      .catch((err) => setError(err.message || "Failed to load delivery setup."));
+      .finally(() => setLoadingMonths(false));
   }, []);
 
   useEffect(() => {
@@ -505,7 +527,7 @@ export default function DeliveryWorkspace() {
         <div className="opsControlGroup">
           <label>
             Month
-            <select value={monthId} onChange={(event) => setMonthId(event.target.value)}>
+            <select disabled={loadingMonths} value={monthId} onChange={(event) => setMonthId(event.target.value)}>
               {months.map((month) => (
                 <option key={month.id} value={month.id}>{month.name} (#{month.id})</option>
               ))}
@@ -794,11 +816,11 @@ export default function DeliveryWorkspace() {
           </div>
 
           <div className="opsToolbarActions">
-            <button type="button" onClick={loadCustomers}>Refresh</button>
+            <button type="button" disabled={loading} onClick={loadCustomers}>{loading ? "Loading..." : "Refresh"}</button>
           </div>
         </div>
 
-        {loading ? (
+        {loadingMonths || loading ? (
           <div className="opsEmpty">Loading customers…</div>
         ) : !customers.length ? (
           <div className="opsEmpty">No customers match this filter queue.</div>

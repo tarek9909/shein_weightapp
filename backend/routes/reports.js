@@ -18,7 +18,7 @@ router.get(paths("summary", true), asyncHandler(async (req, res) => {
     (SELECT COALESCE(SUM(b.value),0) FROM budget b WHERE b.user_id=m.user_id AND b.month_id=m.id) AS budget_total,
     (SELECT COALESCE(SUM(p.payment_amount),0) FROM payments p WHERE p.user_id=m.user_id AND p.month_id=m.id) AS payments_total,
     (SELECT COALESCE(SUM(c.customs_fee),0) FROM customs c WHERE c.user_id=m.user_id AND c.month_id=m.id) AS customs_total,
-    (SELECT COALESCE(SUM(l.amount),0) FROM delivery_losses l WHERE l.user_id=m.user_id AND l.month_id=m.id AND l.reversed_at IS NULL) AS losses_total,
+    (SELECT COALESCE(SUM(l.amount),0) FROM delivery_losses l WHERE l.user_id=m.user_id AND l.month_id=m.id AND l.status='confirmed' AND l.reversed_at IS NULL) AS losses_total,
     (SELECT COALESCE(SUM(oc.shein_total_weight_plus_2kg),0) FROM order_carts oc JOIN orders o ON o.id=oc.order_id WHERE o.user_id=m.user_id AND o.month_id=m.id) AS estimated_weight,
     (SELECT COALESCE(s.kg_price, 0) FROM user_settings s WHERE s.user_id=m.user_id LIMIT 1) AS kg_price,
     (SELECT COUNT(*) FROM orders o2 WHERE o2.user_id=m.user_id AND o2.month_id=m.id) AS order_count

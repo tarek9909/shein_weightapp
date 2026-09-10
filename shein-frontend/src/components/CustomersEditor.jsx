@@ -21,6 +21,7 @@ const money = (n) =>
 
 const CustomersEditor = ({ cart, onClose, canEdit }) => {
   const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [directoryCustomers, setDirectoryCustomers] = useState([]);
   const [presets, setPresets] = useState([]);
 
@@ -69,8 +70,19 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
   };
 
   const loadCustomers = async () => {
-    const data = await getCustomers(cart.id);
-    setCustomers(data || []);
+    setLoadingCustomers(true);
+    try {
+      const data = await getCustomers(cart.id);
+      setCustomers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setCustomers([]);
+      openInfo({
+        title: "Load Error",
+        message: err?.message || "Failed to load customers.",
+      });
+    } finally {
+      setLoadingCustomers(false);
+    }
   };
 
   const totalToCollect = useMemo(
@@ -179,6 +191,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (formModal.isSubmitting) return;
     const name = formModal.name.trim();
     if (!name) {
       setFormModal((prev) => ({ ...prev, error: "Customer name is required." }));
@@ -238,8 +251,15 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
       title: "Delete Customer",
       message: `Delete "${c.customer_name || "(empty name)"}"?`,
       onYes: async () => {
-        await deleteCustomer(c.id);
-        await loadCustomers();
+        try {
+          await deleteCustomer(c.id);
+          await loadCustomers();
+        } catch (err) {
+          openInfo({
+            title: "Delete Error",
+            message: err?.message || "Failed to delete customer.",
+          });
+        }
       },
     });
   };
@@ -297,7 +317,7 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
           <button
             className={canEdit ? "cuBtn" : "cuBtn cuBtnDisabled"}
             onClick={handleOpenAddForm}
-            disabled={!canEdit}
+            disabled={!canEdit || loadingCustomers}
           >
             Add Customer
           </button>
@@ -315,7 +335,12 @@ const CustomersEditor = ({ cart, onClose, canEdit }) => {
         </div>
 
         <div className="cuBody">
-          {customers.length === 0 ? (
+          {loadingCustomers ? (
+            <div className="cuEmpty">
+              <div className="cuEmptyTitle">Loading customers...</div>
+              <div className="cuEmptySub">Reading the selected cart from Node.</div>
+            </div>
+          ) : customers.length === 0 ? (
             <div className="cuEmpty">
               <div className="cuEmptyTitle">No customers</div>
               <div className="cuEmptySub">Add a customer to start tracking collection.</div>

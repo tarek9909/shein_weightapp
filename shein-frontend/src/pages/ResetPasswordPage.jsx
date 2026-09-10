@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
   const isValid = useMemo(() => {
     if (!oldPass) return false;
     if (!newPass) return false;
-    if (newPass.length < 6) return false;
+    if (newPass.length < 12) return false;
     if (newPass !== confirmPass) return false;
     return true;
   }, [oldPass, newPass, confirmPass]);
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
             className="loginInput"
             type="password"
             autoComplete="new-password"
-            placeholder="Minimum 6 characters"
+            placeholder="Minimum 12 characters"
             value={newPass}
             onChange={(e) => setNewPass(e.target.value)}
           />
