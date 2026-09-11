@@ -197,8 +197,8 @@ router.get(paths("profileLoginStatus"), requireOperations, asyncHandler(async (r
 }));
 
 router.post(paths("profileLoginFinish"), requireOperations, asyncHandler(async (req, res) => {
-  const profileKey = trim(req.body?.profile_key);
-  const sessionId = trim(req.body?.session_id);
+  const profileKey = trim(req.body?.profile_key || req.query?.profile_key);
+  const sessionId = trim(req.body?.session_id || req.query?.session_id);
   await ensureOwnedProfile(uid(req), profileKey);
   if (!sessionId) return res.status(400).json({ ok: false, error: "session_id is required" });
   const result = await callSheinProfileApi("login_finish", { session_id: sessionId, profile_key: profileKey });
@@ -208,9 +208,10 @@ router.post(paths("profileLoginFinish"), requireOperations, asyncHandler(async (
   res.json({ ok: true, login, message: "Profile login session closed." });
 }));
 
-router.delete(paths("profileLoginCancel"), requireOperations, asyncHandler(async (req, res) => {
-  const profileKey = trim(req.body?.profile_key);
-  const sessionId = trim(req.body?.session_id);
+router.all(paths("profileLoginCancel"), requireOperations, asyncHandler(async (req, res) => {
+  if (req.method !== "DELETE" && req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
+  const profileKey = trim(req.body?.profile_key || req.query?.profile_key);
+  const sessionId = trim(req.body?.session_id || req.query?.session_id);
   await ensureOwnedProfile(uid(req), profileKey);
   if (!sessionId) return res.status(400).json({ ok: false, error: "session_id is required" });
   const result = await callSheinProfileApi("login_cancel", { session_id: sessionId });
