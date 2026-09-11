@@ -10,7 +10,7 @@ WORKDIR /app/shein-frontend
 
 # Install dependencies
 COPY shein-frontend/package*.json ./
-RUN npm ci --silent
+RUN npm ci
 
 # Build production bundle
 COPY shein-frontend/ ./
@@ -28,7 +28,7 @@ ENV HOST=0.0.0.0
 
 # Install production backend dependencies
 COPY backend/package*.json ./backend/
-RUN npm ci --prefix backend --omit=dev --silent
+RUN npm ci --prefix backend --omit=dev
 
 # Copy backend application source
 COPY backend/ ./backend/
