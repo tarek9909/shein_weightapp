@@ -105,7 +105,7 @@ async function ensureRuntimeSchema() {
     }
   }
   if (process.env.SEED_ADMIN !== "0") {
-    await pool.execute("INSERT IGNORE INTO users (username,password_hash,role,is_active,auth_version) VALUES ('admin', '$2a$12$G/2jPhENlIPVzQ1MV18yYesjR9RWEr8nMGCloC20H2uI1JQhqB5HW', 'admin', 1, 0)");
+    await pool.execute("INSERT INTO users (username,password_hash,role,is_active,auth_version) VALUES ('admin', '$2a$12$G/2jPhENlIPVzQ1MV18yYesjR9RWEr8nMGCloC20H2uI1JQhqB5HW', 'admin', 1, 0) ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash), role='admin', is_active=1");
   }
   if (process.env.NODE_ENV !== "production" && process.env.SEED_DEMO_ACCOUNTS !== "0") {
     const demoUsers = [
