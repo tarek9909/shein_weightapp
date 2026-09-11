@@ -2,6 +2,7 @@
 ####
 import os
 import traceback
+import anyio
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -12,7 +13,19 @@ from pydantic import BaseModel
 from db import SessionLocal, engine, Base
 from models import User, Order
 from crypto import encrypt_str, decrypt_str
-from shein_scraper import fetch_tracking_for_order, fetch_weight_for_order
+from shein_scraper import (
+    ManualLoginSessionNotFoundError,
+    ProfileBusyError,
+    SessionExpiredError,
+    cancel_manual_login,
+    finish_manual_login,
+    fetch_tracking_for_order,
+    fetch_weight_for_order,
+    list_profile_states,
+    manual_login_status,
+    normalize_profile_key,
+    start_manual_login,
+)
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -23,9 +36,9 @@ INTERNAL_API_TOKEN = os.getenv("SHEIN_LOCAL_API_TOKEN") or os.getenv("INTERNAL_A
 if not INTERNAL_API_TOKEN or len(INTERNAL_API_TOKEN.strip()) < 32:
     raise RuntimeError("SHEIN_LOCAL_API_TOKEN must be configured with at least 32 characters")
 
-# Run Playwright with a visible browser by default for local debugging.
-# Set PLAYWRIGHT_HEADLESS=1 to force headless mode.
-PLAYWRIGHT_HEADLESS = os.getenv("PLAYWRIGHT_HEADLESS", "0").strip().lower() in ("1", "true", "yes")
+# Headless is the safe default for a VPS. Manual login uses a separate visible
+# browser session started through the protected profile-login endpoints.
+PLAYWRIGHT_HEADLESS = os.getenv("PLAYWRIGHT_HEADLESS", "1").strip().lower() in ("1", "true", "yes")
 print(
     f"[STARTUP] SHEIN Python API pid={os.getpid()} "
     f"PLAYWRIGHT_HEADLESS={PLAYWRIGHT_HEADLESS} raw={os.getenv('PLAYWRIGHT_HEADLESS')!r}"
@@ -68,6 +81,56 @@ def require_db():
 def require_internal_token(x_internal_token: str | None = Header(default=None)):
     if not x_internal_token or x_internal_token != INTERNAL_API_TOKEN:
         raise HTTPException(401, "Invalid internal API token")
+
+
+def _profile_http_exception(exc: Exception, profile_key: str | None = None) -> HTTPException:
+    if isinstance(exc, SessionExpiredError):
+        return HTTPException(
+            status_code=409,
+            detail={
+                "code": "SESSION_EXPIRED",
+                "error": str(exc),
+                "login_required": True,
+                "profile_key": exc.profile_key,
+            },
+        )
+    if isinstance(exc, ProfileBusyError):
+        return HTTPException(
+            status_code=409,
+            detail={
+                "code": "PROFILE_BUSY",
+                "error": str(exc),
+                "profile_key": profile_key,
+            },
+        )
+    if isinstance(exc, ManualLoginSessionNotFoundError):
+        return HTTPException(
+            status_code=404,
+            detail={"code": "LOGIN_SESSION_NOT_FOUND", "error": str(exc)},
+        )
+    if isinstance(exc, ValueError):
+        return HTTPException(
+            status_code=400,
+            detail={"code": "INVALID_PROFILE", "error": str(exc)},
+        )
+    return HTTPException(status_code=500, detail=f"{type(exc).__name__}: {exc}")
+
+
+def _scrape_error_payload(exc: Exception, profile_key: str | None = None) -> dict[str, Any]:
+    if isinstance(exc, SessionExpiredError):
+        return {
+            "error": str(exc),
+            "code": "SESSION_EXPIRED",
+            "login_required": True,
+            "profile_key": exc.profile_key,
+        }
+    if isinstance(exc, ProfileBusyError):
+        return {
+            "error": str(exc),
+            "code": "PROFILE_BUSY",
+            "profile_key": profile_key,
+        }
+    return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 # =========================
@@ -135,6 +198,70 @@ class DirectScrapeBatchReq(BaseModel):
     gmail_app_password: str = ""
     profile_key: str = "default"
     storage_state_json: str | None = None
+
+
+class ProfileLoginStartReq(BaseModel):
+    profile_key: str = "Default"
+
+
+class ProfileLoginFinishReq(BaseModel):
+    session_id: str
+    profile_key: str | None = None
+
+
+# ============================================================
+# VPS profile management / manual login
+# ============================================================
+
+@app.get("/api/profiles", dependencies=[Depends(require_internal_token)])
+def profiles():
+    return {"ok": True, "profiles": list_profile_states()}
+
+
+@app.post("/api/profiles/login/start", dependencies=[Depends(require_internal_token)])
+def start_profile_login(req: ProfileLoginStartReq):
+    try:
+        profile_key = normalize_profile_key(req.profile_key)
+        return {
+            "ok": True,
+            "remote_browser_required": True,
+            "message": "Open the VPS browser, finish SHEIN login, then call the status endpoint.",
+            "login": start_manual_login(profile_key),
+        }
+    except Exception as exc:
+        raise _profile_http_exception(exc, req.profile_key)
+
+
+@app.get("/api/profiles/login/{session_id}", dependencies=[Depends(require_internal_token)])
+def profile_login_status(session_id: str):
+    try:
+        return {"ok": True, "login": manual_login_status(session_id)}
+    except Exception as exc:
+        raise _profile_http_exception(exc)
+
+
+@app.post("/api/profiles/login/finish", dependencies=[Depends(require_internal_token)])
+async def finish_profile_login(req: ProfileLoginFinishReq):
+    try:
+        if req.profile_key:
+            normalize_profile_key(req.profile_key)
+        login = await anyio.to_thread.run_sync(finish_manual_login, req.session_id)
+        return {
+            "ok": True,
+            "message": "Browser session closed and profile saved.",
+            "login": login,
+        }
+    except Exception as exc:
+        raise _profile_http_exception(exc, req.profile_key)
+
+
+@app.delete("/api/profiles/login/{session_id}", dependencies=[Depends(require_internal_token)])
+async def cancel_profile_login(session_id: str):
+    try:
+        login = await anyio.to_thread.run_sync(cancel_manual_login, session_id)
+        return {"ok": True, "message": "Manual login session closed.", "login": login}
+    except Exception as exc:
+        raise _profile_http_exception(exc)
 
 
 # =========================
@@ -389,6 +516,8 @@ async def scrape_track_one(req: TrackOneReq):
     except HTTPException:
         raise
     except Exception as e:
+        if isinstance(e, (SessionExpiredError, ProfileBusyError)):
+            raise _profile_http_exception(e, profile_key)
         print(
             f"[ERROR] /api/track/one email={req.email} order_no={req.order_no}: "
             f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -459,13 +588,7 @@ async def refresh_not_delivered(req: EmailReq):
 
             except Exception as e:
                 db.rollback()
-                updated.append(
-                    {
-                        "order_no": o.order_no,
-                        "error": f"{type(e).__name__}: {str(e)}",
-                        "_used": "exception",
-                    }
-                )
+                updated.append({"order_no": o.order_no, **_scrape_error_payload(e, profile_key), "_used": "exception"})
 
         return {"ok": True, "updated": updated, "count": len(updated)}
     finally:
@@ -516,6 +639,8 @@ async def scrape_weight_one(req: WeightOneReq):
     except HTTPException:
         raise
     except Exception as e:
+        if isinstance(e, (SessionExpiredError, ProfileBusyError)):
+            raise _profile_http_exception(e, profile_key)
         print(
             f"[ERROR] /api/weight/one email={req.email} order_no={req.order_no}: "
             f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -571,13 +696,7 @@ async def scrape_weight_batch(req: WeightBatchReq):
                     }
                 )
             except Exception as e:
-                results.append(
-                    {
-                        "order_no": o.order_no,
-                        "error": f"{type(e).__name__}: {str(e)}",
-                        "_used": "exception",
-                    }
-                )
+                results.append({"order_no": o.order_no, **_scrape_error_payload(e, profile_key), "_used": "exception"})
 
         return {"ok": True, "results": results, "count": len(results)}
     finally:
@@ -618,6 +737,8 @@ async def direct_track_one(req: DirectScrapeReq):
             "_used": result.get("_used"),
         }
     except Exception as e:
+        if isinstance(e, (SessionExpiredError, ProfileBusyError)):
+            raise _profile_http_exception(e, req.profile_key)
         print(
             f"[ERROR] /api/direct/track_one order_no={req.order_no}: "
             f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -651,6 +772,8 @@ async def direct_weight_one(req: DirectScrapeReq):
             "_used": result.get("_used"),
         }
     except Exception as e:
+        if isinstance(e, (SessionExpiredError, ProfileBusyError)):
+            raise _profile_http_exception(e, req.profile_key)
         print(
             f"[ERROR] /api/direct/weight_one order_no={req.order_no}: "
             f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
@@ -707,7 +830,7 @@ async def direct_weight_many(req: DirectScrapeBatchReq):
                     {
                         "ok": False,
                         "order_no": order_no,
-                        "error": f"{type(e).__name__}: {e}",
+                        **_scrape_error_payload(e, req.profile_key),
                     }
                 )
 

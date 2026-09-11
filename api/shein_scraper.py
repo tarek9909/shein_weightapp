@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import threading
 import time
+import uuid
+from functools import wraps
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
@@ -19,6 +21,7 @@ from gmail import get_latest_shein_code
 PROFILES_DIR = os.getenv("SHEIN_PLAYWRIGHT_PROFILES_DIR", "profiles")
 PLAYWRIGHT_BROWSER_CHANNEL = os.getenv("SHEIN_PLAYWRIGHT_CHANNEL", "chrome").strip() or None
 DEFAULT_BASE_URL = "https://ar.shein.com"
+PROFILE_LOCK_TIMEOUT_SECONDS = float(os.getenv("SHEIN_PROFILE_LOCK_TIMEOUT_SECONDS", "5"))
 # Chrome protects authenticated cookies against copying into another user-data
 # directory. Keep syncing opt-in; a dedicated profile must be logged into once
 # through normal Chrome, then Playwright can reuse that same directory.
@@ -30,11 +33,248 @@ NORMAL_CHROME_PROFILE_ENABLED = os.getenv("SHEIN_NORMAL_CHROME_PROFILE", "1").st
 NORMAL_CHROME_TIMEOUT_SECONDS = int(os.getenv("SHEIN_NORMAL_CHROME_TIMEOUT_SECONDS", "75"))
 _PROFILE_SYNC_LOCKS: dict[str, threading.Lock] = {}
 _PROFILE_SYNC_LOCKS_GUARD = threading.Lock()
+_PROFILE_RUNTIME_LOCKS: dict[str, threading.Lock] = {}
+_PROFILE_RUNTIME_LOCKS_GUARD = threading.Lock()
+_MANUAL_LOGIN_SESSIONS: dict[str, "ManualLoginSession"] = {}
+_MANUAL_LOGIN_SESSIONS_GUARD = threading.Lock()
+
+
+class ProfileBusyError(RuntimeError):
+    """The selected browser profile is already being used by another job."""
+
+
+class SessionExpiredError(RuntimeError):
+    """The selected profile is no longer logged into SHEIN."""
+
+    def __init__(self, profile_key: str):
+        self.profile_key = profile_key
+        super().__init__(f"SHEIN login required for profile {profile_key}.")
+
+
+class ManualLoginSessionNotFoundError(RuntimeError):
+    """A requested manual-login session does not exist."""
+
+
+def normalize_profile_key(profile_key: str | None) -> str:
+    value = (profile_key or "Default").strip()
+    if not value:
+        value = "Default"
+    if value.lower() == "default":
+        return "Default"
+    if len(value) > 64 or value in {".", ".."} or "/" in value or "\\" in value:
+        raise ValueError("Invalid profile_key")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._ -]*", value):
+        raise ValueError("Invalid profile_key")
+    return value
 
 
 def _profile_sync_lock(profile_key: str) -> threading.Lock:
     with _PROFILE_SYNC_LOCKS_GUARD:
         return _PROFILE_SYNC_LOCKS.setdefault(profile_key, threading.Lock())
+
+
+def _profile_runtime_lock(profile_key: str) -> threading.Lock:
+    with _PROFILE_RUNTIME_LOCKS_GUARD:
+        return _PROFILE_RUNTIME_LOCKS.setdefault(profile_key, threading.Lock())
+
+
+class _ProfileRuntimeLock:
+    def __init__(self, profile_key: str):
+        self.profile_key = normalize_profile_key(profile_key)
+        self.lock = _profile_runtime_lock(self.profile_key)
+        self.acquired = False
+
+    def __enter__(self):
+        self.acquired = self.lock.acquire(timeout=PROFILE_LOCK_TIMEOUT_SECONDS)
+        if not self.acquired:
+            raise ProfileBusyError(
+                f"Profile {self.profile_key} is busy. Try again after its current browser job finishes."
+            )
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self.acquired:
+            self.lock.release()
+
+
+def _profile_runtime_locked(func):
+    @wraps(func)
+    def wrapped(profile_key, *args, **kwargs):
+        with _ProfileRuntimeLock(profile_key):
+            return func(profile_key, *args, **kwargs)
+
+    return wrapped
+
+
+class ManualLoginSession:
+    """Keeps a visible persistent browser open while the user logs in remotely."""
+
+    def __init__(self, profile_key: str, base_url: str):
+        self.session_id = uuid.uuid4().hex
+        self.profile_key = normalize_profile_key(profile_key)
+        self.base_url = base_url.rstrip("/")
+        self.status = "starting"
+        self.error: Optional[str] = None
+        self.page_url = ""
+        self.started_at = time.time()
+        self.finished_at: Optional[float] = None
+        self._stop = threading.Event()
+        self._done = threading.Event()
+        self._runtime_lock = _profile_runtime_lock(self.profile_key)
+        self._lock_acquired = False
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"shein-manual-login-{self.profile_key}",
+            daemon=True,
+        )
+
+    def start(self) -> None:
+        if not self._runtime_lock.acquire(blocking=False):
+            raise ProfileBusyError(
+                f"Profile {self.profile_key} is busy. Finish its current browser job first."
+            )
+        self._lock_acquired = True
+        self._thread.start()
+
+    def _run(self) -> None:
+        context = None
+        try:
+            profile_path, chrome_profile_directory = _prepare_browser_profile(self.profile_key)
+            with sync_playwright() as playwright:
+                self.status = "opening"
+                context = _launch_shein_browser(
+                    playwright,
+                    profile_path,
+                    headless=False,
+                    chrome_profile_directory=chrome_profile_directory,
+                )
+                page = context.pages[0] if context.pages else context.new_page()
+                page.goto(f"{self.base_url}/user/login", wait_until="domcontentloaded")
+                self.status = "login_required"
+
+                while not self._stop.wait(0.5):
+                    try:
+                        if page.is_closed():
+                            self.error = "The remote login browser was closed."
+                            self.status = "closed"
+                            break
+                        self.page_url = page.url
+                        self.status = "logged_in" if "login" not in self.page_url.lower() else "login_required"
+                    except Exception as exc:
+                        self.error = f"{type(exc).__name__}: {exc}"
+                        self.status = "error"
+                        break
+
+                if self.status not in {"error", "closed"}:
+                    self.status = "finished" if self.status == "logged_in" else "login_required"
+        except Exception as exc:
+            self.error = f"{type(exc).__name__}: {exc}"
+            self.status = "error"
+        finally:
+            if context is not None:
+                try:
+                    context.close()
+                except Exception:
+                    pass
+            self.finished_at = time.time()
+            if self._lock_acquired:
+                self._runtime_lock.release()
+                self._lock_acquired = False
+            self._done.set()
+
+    def stop(self, timeout: float = 30) -> dict[str, Any]:
+        self._stop.set()
+        self._done.wait(timeout=timeout)
+        return self.snapshot()
+
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "session_id": self.session_id,
+            "profile_key": self.profile_key,
+            "status": self.status,
+            "logged_in": self.status in {"logged_in", "finished"},
+            "page_url": self.page_url,
+            "error": self.error,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+        }
+
+
+def _get_manual_login_session(session_id: str) -> ManualLoginSession:
+    with _MANUAL_LOGIN_SESSIONS_GUARD:
+        session = _MANUAL_LOGIN_SESSIONS.get(session_id)
+    if session is None:
+        raise ManualLoginSessionNotFoundError("Manual login session not found or already expired.")
+    return session
+
+
+def start_manual_login(profile_key: str, base_url: str = DEFAULT_BASE_URL) -> dict[str, Any]:
+    session = ManualLoginSession(profile_key, base_url)
+    with _MANUAL_LOGIN_SESSIONS_GUARD:
+        for active in _MANUAL_LOGIN_SESSIONS.values():
+            if active.profile_key == session.profile_key and not active._done.is_set():
+                raise ProfileBusyError(f"Profile {session.profile_key} already has a login session.")
+        _MANUAL_LOGIN_SESSIONS[session.session_id] = session
+    try:
+        session.start()
+    except Exception:
+        with _MANUAL_LOGIN_SESSIONS_GUARD:
+            _MANUAL_LOGIN_SESSIONS.pop(session.session_id, None)
+        raise
+    return session.snapshot()
+
+
+def manual_login_status(session_id: str) -> dict[str, Any]:
+    return _get_manual_login_session(session_id).snapshot()
+
+
+def finish_manual_login(session_id: str) -> dict[str, Any]:
+    session = _get_manual_login_session(session_id)
+    snapshot = session.stop()
+    with _MANUAL_LOGIN_SESSIONS_GUARD:
+        _MANUAL_LOGIN_SESSIONS.pop(session_id, None)
+    return snapshot
+
+
+def cancel_manual_login(session_id: str) -> dict[str, Any]:
+    return finish_manual_login(session_id)
+
+
+def list_profile_states() -> list[dict[str, Any]]:
+    root = Path(PROFILES_DIR)
+    profiles: dict[str, dict[str, Any]] = {}
+    if root.is_dir():
+        for child in root.iterdir():
+            if child.is_dir():
+                try:
+                    key = normalize_profile_key(child.name)
+                except ValueError:
+                    continue
+                profiles[key] = {
+                    "profile_key": key,
+                    "profile_exists": True,
+                    "status": "saved_profile",
+                    "session_active": False,
+                }
+    with _MANUAL_LOGIN_SESSIONS_GUARD:
+        sessions = list(_MANUAL_LOGIN_SESSIONS.values())
+    for session in sessions:
+        current = profiles.setdefault(
+            session.profile_key,
+            {
+                "profile_key": session.profile_key,
+                "profile_exists": Path(PROFILES_DIR, session.profile_key).is_dir(),
+            },
+        )
+        current.update(
+            {
+                "status": session.status,
+                "session_active": not session._done.is_set(),
+                "session_id": session.session_id,
+                "logged_in": session.status in {"logged_in", "finished"},
+            }
+        )
+    return sorted(profiles.values(), key=lambda item: item["profile_key"].lower())
 
 
 def _chrome_user_data_dir() -> Path:
@@ -243,7 +483,7 @@ def _copy_chrome_profile(
 
 
 def _prepare_browser_profile(profile_key: str) -> tuple[str, Optional[str]]:
-    profile_key = (profile_key or "default").strip()
+    profile_key = normalize_profile_key(profile_key)
     profile_path = Path(PROFILES_DIR) / profile_key
     source = _source_chrome_profile(profile_key)
 
@@ -695,6 +935,9 @@ def ensure_logged_in(page: Page, base_url: str, acc: dict, fetch_url: Optional[s
     if "login" not in page.url.lower():
         return
 
+    if not (acc.get("shein_email") or "").strip() or not (acc.get("shein_password") or "").strip():
+        raise SessionExpiredError(acc.get("profile_key") or "Default")
+
     # Step 1: email
     email_input = page.locator("input#continue-alias-input").first
     try:
@@ -1032,6 +1275,7 @@ class _DumpedHtmlPage:
         return self._html
 
 
+@_profile_runtime_locked
 def _fetch_weight_sync(
     profile_key: str,
     storage_state: Any,
@@ -1058,6 +1302,7 @@ def _fetch_weight_sync(
         "shein_password": shein_password,
         "gmail_email": gmail_email,
         "gmail_app_password": gmail_app_password,
+        "profile_key": profile_key,
     }
     target_track_url = f"{base_url}/orders/track?billno={order_no}"
 
@@ -1104,6 +1349,7 @@ async def fetch_weight_for_order(
 # =========================
 # Runner (persistent profile) — TRACK ONLY
 # =========================
+@_profile_runtime_locked
 def _fetch_tracking_sync(
     profile_key: str,
     storage_state: Any,
@@ -1130,6 +1376,7 @@ def _fetch_tracking_sync(
         "shein_password": shein_password,
         "gmail_email": gmail_email,
         "gmail_app_password": gmail_app_password,
+        "profile_key": profile_key,
     }
     target_track_url = f"{base_url}/orders/track?billno={order_no}"
 
