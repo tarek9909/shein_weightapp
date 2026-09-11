@@ -34,6 +34,14 @@ const money = (n) =>
     maximumFractionDigits: 2,
   });
 
+const customerAmount = (customer) => {
+  const storedFinal = Number(customer?.final_amount_to_collect);
+  if (customer?.final_amount_to_collect !== null && customer?.final_amount_to_collect !== undefined && Number.isFinite(storedFinal)) return storedFinal;
+  const base = Number(customer?.base_amount_to_collect ?? customer?.usd_to_collect ?? 0);
+  const adjustment = Number(customer?.delivery_adjustment ?? 0);
+  return base + (Number.isFinite(adjustment) ? adjustment : 0);
+};
+
 function isAuthErrorPayload(payload) {
   const msg = String(payload?.error || payload?.message || "").toLowerCase();
   return (
@@ -389,7 +397,7 @@ export default function Dashboard() {
         {
           customer_id: id,
           customer_name: customer?.customer_name || "",
-          amount: Number(customer?.usd_to_collect || 0),
+          amount: customerAmount(customer),
           delivery_charge: 0,
           order_name: customer?.order_name || "",
           cart_order_number: customer?.cart_order_number || "",
@@ -1790,7 +1798,7 @@ export default function Dashboard() {
                             disabled={readOnly}
                           />
                           <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
-                          <span className="dashCustomerCol">${money(c.usd_to_collect)}</span>
+                          <span className="dashCustomerCol">${money(customerAmount(c))}</span>
                           <span className="dashCustomerCol">{c.cart_order_number || "-"}</span>
                           <span className="dashCustomerCol">{c.order_name || "-"}</span>
                         </label>

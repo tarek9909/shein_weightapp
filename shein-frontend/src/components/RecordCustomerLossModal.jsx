@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { addLoss, addLosses } from "../api/lossesApi";
 
+const customerTargetAmount = (customer) => {
+  const finalAmount = customer?.final_amount_to_collect ?? customer?.final_amount;
+  if (finalAmount !== null && finalAmount !== undefined && Number.isFinite(Number(finalAmount))) return Number(finalAmount);
+  const base = customer?.base_amount_to_collect ?? customer?.base_amount;
+  if (base !== null && base !== undefined && Number.isFinite(Number(base))) {
+    const adjustment = Number(customer?.delivery_adjustment ?? 0);
+    return Number(base) + (Number.isFinite(adjustment) ? adjustment : 0);
+  }
+  return Number(customer?.usd_to_collect || 0);
+};
+
 const LOSS_TYPES = [
   { value: "package not added / missing", label: "Package Not Added / Missing Cargo" },
   { value: "out of stock item", label: "Out of Stock Item" },
@@ -36,8 +47,8 @@ export default function RecordCustomerLossModal({
   const [lossType, setLossType] = useState(initialType);
   const [bulkAmountMode, setBulkAmountMode] = useState("individual");
   const [amount, setAmount] = useState(
-    !isBulk && single?.usd_to_collect != null
-      ? String(Number(single.usd_to_collect || single.final_amount || 0).toFixed(2))
+    !isBulk && (single?.usd_to_collect != null || single?.final_amount_to_collect != null || single?.final_amount != null || single?.base_amount_to_collect != null || single?.base_amount != null)
+      ? String(customerTargetAmount(single).toFixed(2))
       : ""
   );
   const [description, setDescription] = useState("");
@@ -48,7 +59,7 @@ export default function RecordCustomerLossModal({
 
   const totalCalculatedLoss = isBulk
     ? (bulkAmountMode === "individual"
-        ? targetList.reduce((sum, c) => sum + Number(c.usd_to_collect || c.final_amount || c.base_amount || 0), 0)
+        ? targetList.reduce((sum, c) => sum + customerTargetAmount(c), 0)
         : (parseFloat(amount) || 0) * targetList.length)
     : (parseFloat(amount) || 0);
 
@@ -68,7 +79,7 @@ export default function RecordCustomerLossModal({
         }
         const payloadRows = targetList.map((item, index) => {
           const itemAmt = bulkAmountMode === "individual"
-            ? Number(item.usd_to_collect || item.final_amount || item.base_amount || 0)
+            ? customerTargetAmount(item)
             : parseFloat(amount);
           if (!Number.isFinite(itemAmt) || itemAmt <= 0) {
             throw new Error(`Customer ${item.customer_name || `#${index + 1}`} does not have a positive loss amount.`);
@@ -213,14 +224,14 @@ export default function RecordCustomerLossModal({
             <div style={{ maxHeight: "80px", overflowY: "auto", color: "#1e293b", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
               {targetList.map((c, i) => (
                 <span key={i} style={{ display: "inline-block", background: "#e2e8f0", padding: "2px 8px", borderRadius: "5px", margin: "2px 4px 2px 0", fontWeight: 600 }}>
-                  {c.customer_name || `Customer #${c.customer_id || c.id}`} (${Number(c.usd_to_collect || c.final_amount || 0).toFixed(2)})
+                  {c.customer_name || `Customer #${c.customer_id || c.id}`} (${customerTargetAmount(c).toFixed(2)})
                 </span>
               ))}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.35rem" }}>
               <span style={{ color: "#64748b", fontWeight: 600 }}>Total Customer Value:</span>
               <span style={{ color: "#0284c7", fontWeight: 800 }}>
-                ${targetList.reduce((sum, c) => sum + Number(c.usd_to_collect || c.final_amount || c.base_amount || 0), 0).toFixed(2)}
+                ${targetList.reduce((sum, c) => sum + customerTargetAmount(c), 0).toFixed(2)}
               </span>
             </div>
           </div>
@@ -245,11 +256,11 @@ export default function RecordCustomerLossModal({
                 <span style={{ color: "#334155", fontWeight: 600 }}>{single.order_name}</span>
               </div>
             )}
-            {(single.usd_to_collect !== undefined || single.final_amount !== undefined) && (
+            {(single.usd_to_collect !== undefined || single.final_amount_to_collect !== undefined || single.final_amount !== undefined || single.base_amount_to_collect !== undefined || single.base_amount !== undefined) && (
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#64748b", fontWeight: 600 }}>Target to Collect:</span>
                 <span style={{ color: "#0284c7", fontWeight: 800 }}>
-                  ${Number(single.usd_to_collect ?? single.final_amount ?? 0).toFixed(2)}
+                  ${customerTargetAmount(single).toFixed(2)}
                 </span>
               </div>
             )}
@@ -367,10 +378,10 @@ export default function RecordCustomerLossModal({
                 <label style={{ fontSize: "0.85rem", fontWeight: 750, color: "#334155" }}>
                   Loss Amount ($ USD) *
                 </label>
-                {(single?.usd_to_collect != null || single?.final_amount != null) && (
+                {(single?.usd_to_collect != null || single?.final_amount_to_collect != null || single?.final_amount != null || single?.base_amount_to_collect != null || single?.base_amount != null) && (
                   <button
                     type="button"
-                    onClick={() => setAmount(String(Number(single.usd_to_collect || single.final_amount || 0).toFixed(2)))}
+                    onClick={() => setAmount(String(customerTargetAmount(single).toFixed(2)))}
                     style={{
                       background: "#e0f2fe",
                       border: "1px solid #7dd3fc",
@@ -382,7 +393,7 @@ export default function RecordCustomerLossModal({
                       cursor: "pointer",
                     }}
                   >
-                    Use Full Target (${Number(single.usd_to_collect || single.final_amount || 0).toFixed(2)})
+                      Use Full Target (${customerTargetAmount(single).toFixed(2)})
                   </button>
                 )}
               </div>

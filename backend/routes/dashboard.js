@@ -99,14 +99,14 @@ router.get(paths("getSummary", true), asyncHandler(async (req, res) => {
     pool,
     `SELECT COUNT(*) AS customer_count,
             SUM(received_at IS NOT NULL) AS received_count,
-            SUM(received_at IS NOT NULL AND delivery_assignment_status='unassigned' AND collection_status='pending') AS ready_count,
-            SUM(delivery_assignment_status='assigned' AND collection_status='pending') AS assigned_count,
-            SUM(collection_status='collected' OR payment_status='paid') AS collected_count,
-            SUM(received_at IS NOT NULL AND collection_status='pending' AND payment_status='unpaid') AS uncollected_count,
+            SUM(received_at IS NOT NULL AND delivery_assignment_status='unassigned' AND collection_status='pending' AND payment_status='unpaid' AND COALESCE(status,'') NOT IN ('paid','done') AND COALESCE(delivery_status,'') NOT IN ('paid','done')) AS ready_count,
+            SUM(delivery_assignment_status='assigned' AND collection_status='pending' AND payment_status='unpaid') AS assigned_count,
+            SUM(collection_status='collected' OR payment_status='paid' OR status='paid' OR delivery_status='paid') AS collected_count,
+            SUM(received_at IS NOT NULL AND collection_status='pending' AND payment_status='unpaid' AND COALESCE(status,'') NOT IN ('paid','done') AND COALESCE(delivery_status,'') NOT IN ('paid','done')) AS uncollected_count,
             COALESCE(SUM(CASE WHEN received_at IS NOT NULL THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS received_total,
             COALESCE(SUM(CASE WHEN delivery_assignment_status='assigned' THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS assigned_total,
-            COALESCE(SUM(CASE WHEN collection_status='collected' OR payment_status='paid' THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS collected_total,
-            COALESCE(SUM(CASE WHEN received_at IS NOT NULL AND collection_status='pending' AND payment_status='unpaid' THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS uncollected_total
+            COALESCE(SUM(CASE WHEN collection_status='collected' OR payment_status='paid' OR status='paid' OR delivery_status='paid' THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS collected_total,
+            COALESCE(SUM(CASE WHEN received_at IS NOT NULL AND collection_status='pending' AND payment_status='unpaid' AND COALESCE(status,'') NOT IN ('paid','done') AND COALESCE(delivery_status,'') NOT IN ('paid','done') THEN COALESCE(final_amount_to_collect, base_amount_to_collect, usd_to_collect) ELSE 0 END), 0) AS uncollected_total
      FROM cart_customers cc
      JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=cc.user_id
      JOIN orders o ON o.id=oc.order_id AND o.user_id=oc.user_id

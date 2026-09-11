@@ -67,6 +67,22 @@ async function main() {
     createdMonthId = Number(addMonth.body?.id || 0);
     if (!createdMonthId) throw new Error("Operations month creation did not return an id");
 
+    const smokeOrder = await request(NODE_BASE, "/orders/addOrder", {
+      method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
+      body: JSON.stringify({ month_id: createdMonthId, order_name: "smoke-order", order_details: "10", amount_to_collect: 10 }),
+    });
+    assertStatus(smokeOrder, 200, "Smoke order creation");
+    const smokeCart = await request(NODE_BASE, "/ordersDetails/addCart", {
+      method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: smokeOrder.body?.id, cart_order_number: "smoke-cart", cart_price: 10 }),
+    });
+    assertStatus(smokeCart, 200, "Smoke cart creation");
+    const smokeCustomer = await request(NODE_BASE, "/ordersDetails/addCustomer", {
+      method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
+      body: JSON.stringify({ cart_id: smokeCart.body?.id, customer_name: "smoke-customer", usd_to_collect: 10, delivery_charge_usd: 0 }),
+    });
+    assertStatus(smokeCustomer, 200, "Smoke customer creation");
+
     const otherUserMonths = await request(NODE_BASE, "/month/getMonths", { headers: auth(operationsToken2) });
     assertStatus(otherUserMonths, 200, "Second-user month listing");
     if (Array.isArray(otherUserMonths.body) && otherUserMonths.body.some((month) => Number(month.id) === createdMonthId)) {

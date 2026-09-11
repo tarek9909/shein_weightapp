@@ -162,7 +162,7 @@ def main() -> int:
             print(f"Started {name} (PID {process.pid})")
             if name in {"Node backend", "API server", "Frontend"}:
                 url = {"Node backend": "http://127.0.0.1:8081/ready", "API server": "http://127.0.0.1:8000/ping", "Frontend": "http://127.0.0.1:3000"}[str(name)]
-                if not wait_ready(url, process, check_process=name != "Frontend"):
+                if not wait_ready(url, process, check_process=True):
                     failures.append(f"{name}: process did not become ready")
         except FileNotFoundError as exc:
             failures.append(f"{name}: command not found: {exc.filename}")
@@ -179,6 +179,10 @@ def main() -> int:
             print(f"- {failure}")
         for pid in started.values():
             subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
+        try:
+            PID_FILE.unlink(missing_ok=True)
+        except OSError:
+            pass
         return 1
 
     if args.hidden:

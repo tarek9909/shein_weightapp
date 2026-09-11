@@ -2,6 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getOrderCustomersDetail, collectCustomerPayment, putProfitAside } from "../api/ordersApi";
 import RecordCustomerLossModal from "./RecordCustomerLossModal";
 
+const customerFinalAmount = (customer) => {
+  const storedFinal = Number(customer?.final_amount_to_collect);
+  if (customer?.final_amount_to_collect !== null && customer?.final_amount_to_collect !== undefined && Number.isFinite(storedFinal)) return Math.round(storedFinal * 100) / 100;
+  const base = Number(customer?.base_amount_to_collect ?? customer?.usd_to_collect ?? 0);
+  const adjustment = Number(customer?.delivery_adjustment ?? 0);
+  return Math.round((base + (Number.isFinite(adjustment) ? adjustment : 0)) * 100) / 100;
+};
+
 export default function OrderCollectionModal({
   order,
   onClose,
@@ -45,11 +53,11 @@ export default function OrderCollectionModal({
     setError(null);
     setSuccessMsg(null);
     try {
-      const amount = overrideAmount !== null ? overrideAmount : customer.usd_to_collect;
+      const amount = overrideAmount !== null ? overrideAmount : customerFinalAmount(customer);
       const res = await collectCustomerPayment({
         customer_id: cid,
         amount: Number(amount),
-        delivery_charge: Number(customer.delivery_charge_usd || 0),
+        delivery_charge: 0,
         note: `Direct collection for ${customer.customer_name}`,
       });
       if (res.success || res.ok) {
@@ -101,13 +109,11 @@ export default function OrderCollectionModal({
   // Calculations
   const targetBudget = Number(orderData.amount_to_collect || 0) > 0
     ? Number(orderData.amount_to_collect)
-    : customers.reduce((s, c) => s + Number(c.usd_to_collect || 0), 0);
+    : customers.reduce((s, c) => s + customerFinalAmount(c), 0);
 
   const collectedTotal = customers.reduce((s, c) => {
     const isPaid = c.is_collected || c.collection_status === "collected" || c.payment_status === "paid";
-    const grossAmount = Number(c.usd_to_collect || 0);
-    const deliveryCharge = Number(c.delivery_charge_usd || 0);
-    return isPaid ? s + Math.max(0, grossAmount - deliveryCharge) : s;
+    return isPaid ? s + customerFinalAmount(c) : s;
   }, 0);
 
   const progressPercent = targetBudget > 0
@@ -656,7 +662,7 @@ export default function OrderCollectionModal({
                             color: isPaid ? "#166534" : "#0284c7",
                           }}
                         >
-                          ${Number(c.usd_to_collect || 0).toFixed(2)}
+                          ${customerFinalAmount(c).toFixed(2)}
                         </div>
                       </div>
 
@@ -692,7 +698,7 @@ export default function OrderCollectionModal({
                               boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
                             }}
                           >
-                            {isActing ? "Collecting..." : `Collect $${Number(c.usd_to_collect || 0).toFixed(2)}`}
+                            {isActing ? "Collecting..." : `Collect $${customerFinalAmount(c).toFixed(2)}`}
                           </button>
                         )}
 

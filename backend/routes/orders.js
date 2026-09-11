@@ -3,6 +3,7 @@ const { pool, withTransaction } = require("../config/db");
 const { requireAuth, requireWriteAccess } = require("../middleware/auth");
 const { asyncHandler, paths, int, number, finite, trim, execute, rows, first, placeholders, uniquePositiveInts } = require("../lib/helpers");
 const { appendActivity } = require("../lib/activity");
+const { customerFinalAmount, customerIsCollected } = require("../lib/customerAmounts");
 
 const router = express.Router();
 router.use(requireAuth, requireWriteAccess);
@@ -28,13 +29,13 @@ router.get(paths("getOrders", true), asyncHandler(async (req, res) => {
       WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
     ), 0) AS cart_customers_count,
     COALESCE((
-      SELECT SUM(cc.usd_to_collect)
+      SELECT SUM(COALESCE(cc.final_amount_to_collect, cc.base_amount_to_collect, cc.usd_to_collect))
       FROM cart_customers cc
       JOIN order_carts oc2 ON cc.cart_id=oc2.id AND oc2.user_id=cc.user_id
       WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
     ), 0) AS customers_collect_sum,
     COALESCE((
-      SELECT SUM(CASE WHEN cc.collection_status='collected' OR cc.payment_status='paid' OR cc.status='paid' OR cc.delivery_status='paid' THEN cc.usd_to_collect ELSE 0 END)
+      SELECT SUM(CASE WHEN cc.collection_status='collected' OR cc.payment_status='paid' OR cc.status='paid' OR cc.delivery_status='paid' THEN COALESCE(cc.final_amount_to_collect, cc.base_amount_to_collect, cc.usd_to_collect) ELSE 0 END)
       FROM cart_customers cc
       JOIN order_carts oc2 ON cc.cart_id=oc2.id AND oc2.user_id=cc.user_id
       WHERE oc2.order_id=o.id AND oc2.user_id=o.user_id
@@ -70,6 +71,7 @@ router.get([...paths("getOrderCustomers", true), "/:id/orderCustomers"], asyncHa
   if (!order) return res.status(404).json({ success: false, error: "Order not found" });
 
   const customers = await rows(pool, `SELECT cc.id AS customer_id, cc.customer_name, cc.usd_to_collect, cc.delivery_charge_usd,
+    cc.base_amount_to_collect, cc.delivery_adjustment, cc.final_amount_to_collect,
     cc.delivery_number, cc.status, cc.delivery_status, cc.collection_status, cc.payment_status,
     cc.collected_at, cc.received_at, cc.cart_id, oc.cart_order_number,
     o.id AS order_id, o.order_name, o.month_id,
@@ -93,7 +95,7 @@ router.get([...paths("getOrderCustomers", true), "/:id/orderCustomers"], asyncHa
       profit_put_aside_at: order.profit_put_aside_at || null,
     },
     customers: customers.map((c) => {
-      const isCollected = c.collection_status === 'collected' || c.payment_status === 'paid' || c.status === 'paid' || c.delivery_status === 'paid';
+      const isCollected = customerIsCollected(c);
       return {
         ...c,
         customer_id: Number(c.customer_id),
@@ -102,6 +104,10 @@ router.get([...paths("getOrderCustomers", true), "/:id/orderCustomers"], asyncHa
         month_id: Number(c.month_id),
         usd_to_collect: Number(c.usd_to_collect || 0),
         delivery_charge_usd: Number(c.delivery_charge_usd || 0),
+        base_amount_to_collect: c.base_amount_to_collect == null ? null : Number(c.base_amount_to_collect),
+        delivery_adjustment: Number(c.delivery_adjustment || 0),
+        final_amount_to_collect: c.final_amount_to_collect == null ? null : Number(c.final_amount_to_collect),
+        final_amount: customerFinalAmount(c),
         losses_sum: Number(c.losses_sum || 0),
         is_collected: isCollected,
       };
@@ -180,33 +186,36 @@ router.post(paths("collectCustomerPayment"), asyncHandler(async (req, res) => {
   const db = await pool.getConnection();
   try {
     await db.beginTransaction();
-    const customer = await first(db, `SELECT cc.id AS customer_id, cc.customer_name, cc.usd_to_collect, cc.delivery_charge_usd, cc.status, cc.delivery_status, cc.collection_status, cc.payment_status, cc.collection_payment_id, oc.id AS cart_id, oc.cart_order_number, o.id AS order_id, o.order_name, o.month_id
+    const customer = await first(db, `SELECT cc.id AS customer_id, cc.customer_name, cc.usd_to_collect, cc.delivery_charge_usd, cc.base_amount_to_collect, cc.delivery_adjustment, cc.final_amount_to_collect, cc.status, cc.delivery_status, cc.collection_status, cc.payment_status, cc.collection_payment_id, oc.id AS cart_id, oc.cart_order_number, o.id AS order_id, o.order_name, o.month_id
       FROM cart_customers cc
       JOIN order_carts oc ON oc.id=cc.cart_id AND oc.user_id=cc.user_id
       JOIN orders o ON oc.order_id=o.id AND o.user_id=oc.user_id
       WHERE cc.id=? AND cc.user_id=? LIMIT 1 FOR UPDATE`, [customerId, userId(req)]);
     if (!customer) throw new Error("Customer not found");
 
-    const alreadyCollected = customer.collection_status === "collected" || customer.payment_status === "paid" || customer.status === "paid" || customer.delivery_status === "paid";
+    const alreadyCollected = customerIsCollected(customer);
     if (alreadyCollected) {
       await db.commit();
       return res.json({ success: true, message: "Customer payment already collected", customer_id: customerId, idempotent: true });
     }
 
-    const rawAmount = req.body?.amount !== undefined ? number(req.body?.amount) : Number(customer.usd_to_collect || 0);
-    const rawCharge = req.body?.delivery_charge !== undefined ? number(req.body?.delivery_charge) : Number(customer.delivery_charge_usd || 0);
+    const hasCanonicalAmount = customer.base_amount_to_collect != null || customer.final_amount_to_collect != null;
+    const rawAmount = req.body?.amount !== undefined ? number(req.body?.amount) : (hasCanonicalAmount ? customerFinalAmount(customer) : Number(customer.usd_to_collect || 0));
+    const rawCharge = req.body?.delivery_charge !== undefined ? number(req.body?.delivery_charge) : 0;
     if (!finite(rawAmount) || rawAmount < 0 || !finite(rawCharge) || rawCharge < 0 || rawCharge > rawAmount) {
       throw new Error("Amount and delivery charge must be valid non-negative numbers with charge <= amount");
     }
-    const net = Math.round((rawAmount - rawCharge) * 100) / 100;
+    const baseAmount = hasCanonicalAmount ? Number(customer.base_amount_to_collect ?? customer.usd_to_collect ?? 0) : rawAmount;
+    const adjustment = hasCanonicalAmount ? Number(customer.delivery_adjustment || 0) : -rawCharge;
+    const net = hasCanonicalAmount ? Math.round(Number(rawAmount) * 100) / 100 : Math.round((rawAmount - rawCharge) * 100) / 100;
     const note = trim(req.body?.note) || `Direct collection for ${customer.customer_name} (${customer.order_name})`;
 
-    const payment = await execute(db, `INSERT INTO payments (user_id, month_id, payment_amount, payment_type, original_amount, delivery_charge, customer_count, customer_ids_json, note) VALUES (?, ?, ?, 'customers', ?, ?, 1, ?, ?)`, [userId(req), customer.month_id, net, rawAmount, rawCharge, JSON.stringify([customerId]), note]);
+    const payment = await execute(db, `INSERT INTO payments (user_id, month_id, payment_amount, payment_type, original_amount, delivery_charge, customer_count, customer_ids_json, note) VALUES (?, ?, ?, 'customers', ?, ?, 1, ?, ?)`, [userId(req), customer.month_id, net, baseAmount, adjustment, JSON.stringify([customerId]), note]);
     const paymentId = Number(payment.insertId);
 
-    await execute(db, `INSERT INTO payment_customer_items (payment_id, customer_id, customer_name_snapshot, amount, delivery_charge, user_id, order_id, order_name_snapshot, cart_id, cart_order_number_snapshot, base_amount, delivery_adjustment, final_amount, collected_at, collection_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`, [paymentId, customerId, customer.customer_name, rawAmount, rawCharge, userId(req), customer.order_id, customer.order_name, customer.cart_id, customer.cart_order_number, rawAmount, 0, net, `order-collection:${customerId}:${paymentId}`]);
+    await execute(db, `INSERT INTO payment_customer_items (payment_id, customer_id, customer_name_snapshot, amount, delivery_charge, user_id, order_id, order_name_snapshot, cart_id, cart_order_number_snapshot, base_amount, delivery_adjustment, final_amount, collected_at, collection_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`, [paymentId, customerId, customer.customer_name, baseAmount, adjustment, userId(req), customer.order_id, customer.order_name, customer.cart_id, customer.cart_order_number, baseAmount, adjustment, net, `order-collection:${customerId}:${paymentId}`]);
 
-    await execute(db, `UPDATE cart_customers SET collection_status='collected', payment_status='paid', status='paid', delivery_status='paid', usd_to_collect=?, delivery_charge_usd=?, collection_payment_id=?, collected_at=NOW() WHERE id=? AND user_id=?`, [rawAmount, rawCharge, paymentId, customerId, userId(req)]);
+    await execute(db, `UPDATE cart_customers SET collection_status='collected', payment_status='paid', delivery_assignment_status='collected', status='paid', delivery_status='paid', collection_payment_id=?, collected_at=NOW() WHERE id=? AND user_id=?`, [paymentId, customerId, userId(req)]);
 
     await appendActivity(db, userId(req), Number(customer.month_id), "customer", customerId, "customer_collected", { collection_status: customer.collection_status, payment_status: customer.payment_status }, { collection_status: "collected", payment_status: "paid", payment_id: paymentId, final_amount: net });
 
@@ -234,7 +243,7 @@ router.post(paths("putProfitAside"), asyncHandler(async (req, res) => {
   }
 
   const amount = number(req.body?.amount);
-  if (!finite(amount)) return res.status(400).json({ success: false, error: "A valid numeric amount is required" });
+  if (!finite(amount) || amount < 0) return res.status(400).json({ success: false, error: "A valid non-negative numeric amount is required" });
 
   await execute(pool, "UPDATE orders SET profit_put_aside=?, profit_put_aside_at=NOW() WHERE id=? AND user_id=?", [amount, orderId, userId(req)]);
   await appendActivity(pool, userId(req), Number(order.month_id), "order", orderId, "profit_put_aside", { profit_put_aside: order.profit_put_aside }, { profit_put_aside: amount, profit_put_aside_at: new Date().toISOString() });

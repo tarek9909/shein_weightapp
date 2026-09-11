@@ -7,6 +7,7 @@ process.env.CREDENTIAL_ENCRYPTION_KEY = "test-encryption-key-with-more-than-32-c
 const { number, finite, paths } = require("../lib/helpers");
 const { seal, open } = require("../lib/secretBox");
 const { createToken } = require("../middleware/auth");
+const { customerBaseAmount, customerFinalAmount, customerIsCollected } = require("../lib/customerAmounts");
 
 test("numeric parsing rejects invalid input instead of converting it to zero", () => {
   assert.equal(number("12.50"), 12.5);
@@ -33,4 +34,12 @@ test("tokens carry an authentication version and a bounded expiry", () => {
   assert.equal(payload.auth_version, 3);
   assert.ok(payload.exp > Math.floor(Date.now() / 1000));
   assert.ok(payload.exp <= Math.floor(Date.now() / 1000) + 8 * 60 * 60 + 5);
+});
+
+test("customer accounting uses the stored final amount and legacy paid state", () => {
+  assert.equal(customerBaseAmount({ base_amount_to_collect: "100.00", usd_to_collect: 90 }), 100);
+  assert.equal(customerFinalAmount({ base_amount_to_collect: "100.00", delivery_adjustment: "-7.50" }), 92.5);
+  assert.equal(customerFinalAmount({ base_amount_to_collect: 100, final_amount_to_collect: "105.25" }), 105.25);
+  assert.equal(customerIsCollected({ status: "paid", collection_status: "pending" }), true);
+  assert.equal(customerIsCollected({ status: "confirmed", collection_status: "pending" }), false);
 });

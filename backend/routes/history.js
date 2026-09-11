@@ -2,6 +2,7 @@ const express = require("express");
 const { pool } = require("../config/db");
 const { requireAuth } = require("../middleware/auth");
 const { asyncHandler, paths, int, trim, first, rows, jsonDecode } = require("../lib/helpers");
+const { customerFinalAmount, customerIsCollected } = require("../lib/customerAmounts");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -24,14 +25,14 @@ router.get(paths("getHistory", true), asyncHandler(async (req, res) => {
     carts = cartRows.map((c) => ({ cart_id: Number(c.cart_id), order_id: Number(c.order_id), cart_order_number: c.cart_order_number, cart_price: Number(c.cart_price || 0), collected_total: 0, customers: [] }));
     const cartIds = carts.map((c) => c.cart_id);
     if (cartIds.length) {
-      const customers = await rows(pool, `SELECT id,cart_id,customer_name,usd_to_collect,delivery_number,status,delivery_status FROM cart_customers WHERE cart_id IN (${cartIds.map(() => "?").join(",")}) AND user_id=? ORDER BY id DESC`, [...cartIds, uid(req)]);
+      const customers = await rows(pool, `SELECT id,cart_id,customer_name,usd_to_collect,base_amount_to_collect,delivery_adjustment,final_amount_to_collect,delivery_number,status,delivery_status,collection_status,payment_status FROM cart_customers WHERE cart_id IN (${cartIds.map(() => "?").join(",")}) AND user_id=? ORDER BY id DESC`, [...cartIds, uid(req)]);
       const cartIndex = new Map(carts.map((c, i) => [c.cart_id, i]));
       for (const row of customers) {
-        const customer = { id: Number(row.id), customer_name: row.customer_name, usd_to_collect: Number(row.usd_to_collect || 0), delivery_number: row.delivery_number == null ? null : Number(row.delivery_number), status: row.status, delivery_status: row.delivery_status };
+        const customer = { id: Number(row.id), customer_name: row.customer_name, usd_to_collect: Number(row.usd_to_collect || 0), base_amount_to_collect: row.base_amount_to_collect == null ? null : Number(row.base_amount_to_collect), delivery_adjustment: Number(row.delivery_adjustment || 0), final_amount_to_collect: row.final_amount_to_collect == null ? null : Number(row.final_amount_to_collect), delivery_number: row.delivery_number == null ? null : Number(row.delivery_number), status: row.status, delivery_status: row.delivery_status, collection_status: row.collection_status, payment_status: row.payment_status, is_collected: customerIsCollected(row) };
         const index = cartIndex.get(Number(row.cart_id));
         if (index == null) continue;
         carts[index].customers.push(customer);
-        carts[index].collected_total += customer.usd_to_collect;
+        if (customer.is_collected) carts[index].collected_total += customerFinalAmount(row);
       }
     }
   }
