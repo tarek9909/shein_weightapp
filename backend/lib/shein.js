@@ -14,6 +14,15 @@ function localApiBase() {
   return String(process.env.SHEIN_LOCAL_API_BASE_URL || "http://127.0.0.1:8000").trim().replace(/\/$/, "");
 }
 
+function remoteBrowserUrl() {
+  return String(process.env.SHEIN_REMOTE_BROWSER_URL || "").trim();
+}
+
+function profileApiTimeoutMs() {
+  const value = Number(process.env.SHEIN_PROFILE_API_TIMEOUT_MS || 10000);
+  return Number.isFinite(value) && value >= 1000 ? value : 10000;
+}
+
 async function callSheinScraper(action, payload) {
   const routes = { track_one: "/api/direct/track_one", weight_one: "/api/direct/weight_one", weight_many: "/api/direct/weight_many" };
   if (!routes[action]) return { ok: false, error: `Unsupported scraper action: ${action}`, status: 400 };
@@ -38,7 +47,20 @@ async function callSheinScraper(action, payload) {
         body: JSON.stringify(payload), signal: controller.signal,
       });
       const data = await response.json().catch(() => null);
-      if (!data || !response.ok || !data.ok) { observeScraper(action, Date.now() - started, false); return { ok: false, error: data?.error || data?.detail || "Local scraper API request failed", data, status: response.status || 500 }; }
+      const detail = data?.detail;
+      const detailError = typeof detail === "object" ? detail?.error : detail;
+      if (!data || !response.ok || !data.ok) {
+        observeScraper(action, Date.now() - started, false);
+        return {
+          ok: false,
+          error: data?.error || detailError || "Local scraper API request failed",
+          code: data?.code || detail?.code,
+          login_required: Boolean(data?.login_required || detail?.login_required),
+          profile_key: data?.profile_key || detail?.profile_key,
+          data,
+          status: response.status || 500,
+        };
+      }
       observeScraper(action, Date.now() - started, true);
       return { ok: true, data, status: response.status };
     } finally { clearTimeout(timer); }
@@ -48,8 +70,67 @@ async function callSheinScraper(action, payload) {
   }
 }
 
+async function callSheinProfileApi(action, payload = {}) {
+  const routes = {
+    list: { method: "GET", path: "/api/profiles" },
+    login_start: { method: "POST", path: "/api/profiles/login/start" },
+    login_status: { method: "GET", path: "/api/profiles/login" },
+    login_finish: { method: "POST", path: "/api/profiles/login/finish" },
+    login_cancel: { method: "DELETE", path: "/api/profiles/login" },
+  };
+  const route = routes[action];
+  if (!route) return { ok: false, error: `Unsupported profile action: ${action}`, status: 400 };
+
+  const base = localApiBase();
+  const token = String(process.env.SHEIN_LOCAL_API_TOKEN || process.env.INTERNAL_API_TOKEN || "").trim();
+  if (token.length < 32) return { ok: false, error: "SHEIN_LOCAL_API_TOKEN is not configured", status: 503 };
+
+  let path = route.path;
+  const options = {
+    method: route.method,
+    headers: { Accept: "application/json", "X-Internal-Token": token },
+  };
+  if (action === "login_status" || action === "login_cancel") {
+    const sessionId = encodeURIComponent(String(payload.session_id || ""));
+    if (!sessionId) return { ok: false, error: "session_id is required", status: 400 };
+    path = `${path}/${sessionId}`;
+  }
+  if (route.method !== "GET") {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(payload);
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), profileApiTimeoutMs());
+  options.signal = controller.signal;
+  try {
+    const response = await fetch(`${base}${path}`, options);
+    const data = await response.json().catch(() => null);
+    const detail = data?.detail;
+    const detailError = typeof detail === "object" ? detail?.error : detail;
+    if (!response.ok || !data?.ok) {
+      return {
+        ok: false,
+        error: data?.error || detailError || "Python profile API request failed",
+        code: data?.code || detail?.code,
+        login_required: Boolean(data?.login_required || detail?.login_required),
+        profile_key: data?.profile_key || detail?.profile_key,
+        data,
+        status: response.status || 500,
+      };
+    }
+    return { ok: true, data, status: response.status };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.name === "AbortError" ? "Python profile API request timed out" : error.message,
+      status: 503,
+    };
+  } finally { clearTimeout(timer); }
+}
+
 function defaultProfileKey(userId, apiEmail, selected) {
   return selected || `user_${userId}_${apiEmail.replace(/[^a-z0-9_]+/gi, "_")}`;
 }
 
-module.exports = { normEmail, callSheinScraper, defaultProfileKey };
+module.exports = { normEmail, callSheinScraper, callSheinProfileApi, defaultProfileKey, remoteBrowserUrl };

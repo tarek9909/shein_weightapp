@@ -35,6 +35,11 @@ const isChromeProfileKey = (value) => value === "Default" || /^Profile \d+$/.tes
 const ensureMonth = async (db, userId, monthId) => Boolean(await first(db, "SELECT id FROM month WHERE id=? AND user_id=? LIMIT 1", [monthId, userId]));
 const ensureOrder = async (db, userId, orderId) => Boolean(await first(db, "SELECT id FROM orders WHERE id=? AND user_id=? LIMIT 1", [orderId, userId]));
 const ensureCart = async (db, userId, cartId) => Boolean(await first(db, "SELECT id FROM order_carts WHERE id=? AND user_id=? LIMIT 1", [cartId, userId]));
+const ensureProfileOwned = async (userId, profileKey) => {
+  if (!isChromeProfileKey(profileKey)) return false;
+  const owner = await first(pool, "SELECT user_id FROM shein_accounts WHERE profile_key=? LIMIT 1", [profileKey]);
+  return Boolean(owner && Number(owner.user_id) === Number(userId));
+};
 const hasColumn = async (db, table, column) => Boolean(await first(db, "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=? LIMIT 1", [table, column]));
 
 // Carts
@@ -57,6 +62,7 @@ router.post(paths("addCart"), asyncHandler(async (req, res) => {
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 403, "Invalid order for this user");
   const profileKey = trim(req.body?.chrome_profile_key);
   if (profileKey && !isChromeProfileKey(profileKey)) return okError(res, 400, "chrome_profile_key must be a valid Chrome profile");
+  if (profileKey && !(await ensureProfileOwned(uid(req), profileKey))) return okError(res, 403, "Chrome profile is not assigned to this user");
   const result = await execute(pool, `INSERT INTO order_carts (order_id, cart_order_number, cart_price, user_id, shein_email, shein_order_no, chrome_profile_key) VALUES (?, ?, ?, ?, ?, ?, ?)`, [orderId, cartNumber, price, uid(req), email, orderNo, profileKey || null]);
   res.json({ success: true, id: Number(result.insertId) });
 }));
@@ -69,6 +75,7 @@ router.post(paths("updateCart"), asyncHandler(async (req, res) => {
   const value = (key) => Object.prototype.hasOwnProperty.call(req.body || {}, key) ? (req.body[key] === null ? null : String(req.body[key])) : (existing[key] ?? null);
   const profileKey = value("chrome_profile_key");
   if (profileKey && !isChromeProfileKey(profileKey)) return okError(res, 400, "chrome_profile_key must be a valid Chrome profile");
+  if (profileKey && !(await ensureProfileOwned(uid(req), profileKey))) return okError(res, 403, "Chrome profile is not assigned to this user");
   const deliveredValue = req.body?.shein_delivered;
   if (Object.prototype.hasOwnProperty.call(req.body || {}, "shein_delivered") && ![true, false, 0, 1, "0", "1", "true", "false"].includes(deliveredValue)) return okError(res, 400, "shein_delivered must be a boolean");
   const delivered = Object.prototype.hasOwnProperty.call(req.body || {}, "shein_delivered") ? (deliveredValue === true || deliveredValue === 1 || deliveredValue === "1" || deliveredValue === "true" ? 1 : 0) : Number(existing.shein_delivered || 0);
@@ -246,6 +253,17 @@ function scraperPayload(orderNo, profileKey) {
     profile_key: trim(profileKey),
   };
 }
+
+function scraperFailure(res, label, result) {
+  const status = result?.login_required ? 409 : 502;
+  return res.status(status).json({
+    ok: false,
+    error: `${label}: ${result?.error || "SHEIN scraper request failed"}`,
+    code: result?.code || "SHEIN_SCRAPER_FAILED",
+    login_required: Boolean(result?.login_required),
+    profile_key: result?.profile_key,
+  });
+}
 function sheinSplitFields(...records) {
   const trackingNumbers = [];
   const packageRefs = [];
@@ -314,12 +332,13 @@ router.post(paths("refreshCartShein"), asyncHandler(async (req, res) => {
   const profileKey = requested || trim(cart.chrome_profile_key);
   if (!orderNo) return okError(res, 400, "Cart missing SHEIN order number", "ok");
   if (!profileKey || !isChromeProfileKey(profileKey)) return okError(res, 400, "A valid Chrome profile is required", "ok");
+  if (!(await ensureProfileOwned(uid(req), profileKey))) return okError(res, 403, "Chrome profile is not assigned to this user", "ok");
 
   const payload = scraperPayload(orderNo, profileKey);
   const track = await callSheinScraper("track_one", payload);
-  if (!track.ok) return res.status(502).json({ ok: false, error: `Track failed: ${track.error}` });
+  if (!track.ok) return scraperFailure(res, "Track failed", track);
   const weight = await callSheinScraper("weight_one", payload);
-  if (!weight.ok) return res.status(502).json({ ok: false, error: `Weight failed: ${weight.error}` });
+  if (!weight.ok) return scraperFailure(res, "Weight failed", weight);
 
   const trackData = track.data || {};
   const weightData = weight.data || {};
@@ -354,6 +373,7 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
   if (orderId <= 0) return okError(res, 400, "Order id is required", "ok");
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
   if (requestedProfile && !isChromeProfileKey(requestedProfile)) return okError(res, 400, "A valid Chrome profile is required", "ok");
+  if (requestedProfile && !(await ensureProfileOwned(uid(req), requestedProfile))) return okError(res, 403, "Chrome profile is not assigned to this user", "ok");
 
   const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_delivered,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC", [orderId, uid(req)]);
   let updated = 0;
@@ -367,6 +387,11 @@ router.post(paths("refreshOrderSheinTrack"), asyncHandler(async (req, res) => {
       skipped++;
       if (!profileKey || !isChromeProfileKey(profileKey)) errors.push(`Cart ${cart.id}: A valid Chrome profile is required`);
       else errors.push(`Cart ${cart.id}: SHEIN order number is required`);
+      continue;
+    }
+    if (!(await ensureProfileOwned(uid(req), profileKey))) {
+      skipped++;
+      errors.push(`Cart ${cart.id}: Chrome profile is not assigned to this user`);
       continue;
     }
     const result = await callSheinScraper("track_one", scraperPayload(orderNo, profileKey));
@@ -398,6 +423,7 @@ router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
   if (orderId <= 0) return okError(res, 400, "Order id is required", "ok");
   if (!(await ensureOrder(pool, uid(req), orderId))) return okError(res, 404, "Order not found", "ok");
   if (requestedProfile && !isChromeProfileKey(requestedProfile)) return okError(res, 400, "A valid Chrome profile is required", "ok");
+  if (requestedProfile && !(await ensureProfileOwned(uid(req), requestedProfile))) return okError(res, 403, "Chrome profile is not assigned to this user", "ok");
 
   const carts = await rows(pool, "SELECT id,chrome_profile_key,shein_order_no,shein_tracking_no FROM order_carts WHERE order_id=? AND user_id=? ORDER BY id DESC", [orderId, uid(req)]);
   const groups = new Map();
@@ -415,6 +441,11 @@ router.post(paths("refreshOrderSheinWeight"), asyncHandler(async (req, res) => {
       skipped++;
       if (!profileKey || !isChromeProfileKey(profileKey)) errors.push(`Cart ${cart.id}: A valid Chrome profile is required`);
       else errors.push(`Cart ${cart.id}: SHEIN order number is required`);
+      continue;
+    }
+    if (!(await ensureProfileOwned(uid(req), profileKey))) {
+      skipped++;
+      errors.push(`Cart ${cart.id}: Chrome profile is not assigned to this user`);
       continue;
     }
     if (!groups.has(profileKey)) groups.set(profileKey, { profileKey, orders: new Map() });

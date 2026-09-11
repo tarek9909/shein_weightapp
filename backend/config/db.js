@@ -70,6 +70,14 @@ async function ensureRuntimeSchema() {
   await addColumnIfMissing("shein_accounts", "shein_password_enc", "TEXT NULL");
   await addColumnIfMissing("shein_accounts", "gmail_app_password_enc", "TEXT NULL");
   await addColumnIfMissing("shein_accounts", "storage_state_enc", "MEDIUMTEXT NULL");
+  await addColumnIfMissing("shein_accounts", "profile_key", "VARCHAR(100) NULL");
+  await pool.query(`CREATE TABLE IF NOT EXISTS shein_profile_reservations (
+    profile_key VARCHAR(100) NOT NULL PRIMARY KEY,
+    user_id INT NULL,
+    account_email VARCHAR(255) NULL,
+    reserved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB`);
+  await ensureSheinProfileAssignments();
   assertSecretConfig();
   const legacyColumns = ["shein_password", "gmail_app_password", "cookies_json"];
   const availableLegacyColumns = [];
@@ -109,6 +117,45 @@ async function ensureRuntimeSchema() {
     for (const [username, passwordHash, role] of demoUsers) {
       await pool.execute("INSERT IGNORE INTO users (username,password_hash,role,owner_user_id,is_active,auth_version) SELECT ?,?,?,id,1,0 FROM users WHERE username='admin' LIMIT 1", [username, passwordHash, role]);
     }
+  }
+}
+
+async function ensureSheinProfileAssignments() {
+  const [accounts] = await pool.query("SELECT id,profile_key FROM shein_accounts ORDER BY id ASC");
+  const [reservations] = await pool.query("SELECT profile_key FROM shein_profile_reservations");
+  const used = new Set();
+  for (const reservation of reservations) {
+    const profile = String(reservation.profile_key || "").trim();
+    if (profile) used.add(profile.toLowerCase());
+  }
+  let nextIndex = 0;
+  const allocate = () => {
+    while (true) {
+      const candidate = nextIndex === 0 ? "Default" : `Profile ${nextIndex}`;
+      nextIndex += 1;
+      if (!used.has(candidate.toLowerCase())) return candidate;
+    }
+  };
+
+  for (const account of accounts) {
+    const stored = String(account.profile_key || "");
+    const original = stored.trim();
+    let profile = original.toLowerCase() === "default"
+      ? "Default"
+      : (/^profile \d+$/i.test(original) ? `Profile ${Number(original.slice(8))}` : original);
+    if (!profile || used.has(profile.toLowerCase())) profile = allocate();
+    used.add(profile.toLowerCase());
+    if (profile !== stored) {
+      await pool.execute("UPDATE shein_accounts SET profile_key=? WHERE id=?", [profile, account.id]);
+      console.log(`[SHEIN] Assigned browser profile ${profile} to account ${account.id}`);
+    }
+  }
+
+  const [indexes] = await pool.query(
+    "SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shein_accounts' AND INDEX_NAME='uq_shein_accounts_profile_key' LIMIT 1",
+  );
+  if (!indexes[0]) {
+    await pool.query("ALTER TABLE shein_accounts ADD UNIQUE KEY uq_shein_accounts_profile_key (profile_key)");
   }
 }
 

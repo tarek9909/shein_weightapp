@@ -19,7 +19,7 @@ from playwright.sync_api import sync_playwright, Page, TimeoutError
 from gmail import get_latest_shein_code
 
 PROFILES_DIR = os.getenv("SHEIN_PLAYWRIGHT_PROFILES_DIR", "profiles")
-PLAYWRIGHT_BROWSER_CHANNEL = os.getenv("SHEIN_PLAYWRIGHT_CHANNEL", "chrome").strip() or None
+PLAYWRIGHT_BROWSER_CHANNEL = os.getenv("SHEIN_PLAYWRIGHT_CHANNEL", "chromium").strip() or None
 DEFAULT_BASE_URL = "https://ar.shein.com"
 PROFILE_LOCK_TIMEOUT_SECONDS = float(os.getenv("SHEIN_PROFILE_LOCK_TIMEOUT_SECONDS", "5"))
 # Chrome protects authenticated cookies against copying into another user-data
@@ -530,6 +530,14 @@ def _launch_shein_browser(
     headless: bool,
     chrome_profile_directory: Optional[str] = None,
 ):
+    args = []
+    if chrome_profile_directory:
+        args.append(f"--profile-directory={chrome_profile_directory}")
+    if os.name != "nt":
+        for flag in ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]:
+            if flag not in args:
+                args.append(flag)
+
     launch_options = {
         "headless": headless,
         "locale": "ar",
@@ -537,8 +545,8 @@ def _launch_shein_browser(
     }
     if PLAYWRIGHT_BROWSER_CHANNEL:
         launch_options["channel"] = PLAYWRIGHT_BROWSER_CHANNEL
-    if chrome_profile_directory:
-        launch_options["args"] = [f"--profile-directory={chrome_profile_directory}"]
+    if args:
+        launch_options["args"] = args
 
     return playwright.chromium.launch_persistent_context(profile_path, **launch_options)
 

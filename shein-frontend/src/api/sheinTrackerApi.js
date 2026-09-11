@@ -24,6 +24,29 @@ export const deleteSheinUserByOwner = (email) =>
     body: JSON.stringify({ email }),
   });
 
+export const startSheinProfileLogin = (profileKey) =>
+  apiFetch(`${BASE_URL}/sheinAccounts/profileLoginStart`, {
+    method: "POST",
+    body: JSON.stringify({ profile_key: profileKey }),
+  });
+
+export const getSheinProfileLoginStatus = (profileKey, sessionId) =>
+  apiFetch(
+    `${BASE_URL}/sheinAccounts/profileLoginStatus?profile_key=${encodeURIComponent(profileKey)}&session_id=${encodeURIComponent(sessionId)}`,
+  );
+
+export const finishSheinProfileLogin = (profileKey, sessionId) =>
+  apiFetch(`${BASE_URL}/sheinAccounts/profileLoginFinish`, {
+    method: "POST",
+    body: JSON.stringify({ profile_key: profileKey, session_id: sessionId }),
+  });
+
+export const cancelSheinProfileLogin = (profileKey, sessionId) =>
+  apiFetch(`${BASE_URL}/sheinAccounts/profileLoginCancel`, {
+    method: "DELETE",
+    body: JSON.stringify({ profile_key: profileKey, session_id: sessionId }),
+  });
+
 // Legacy exports kept for compatibility
 export const deleteSheinUser = deleteSheinUserByOwner;
 

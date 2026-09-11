@@ -4,6 +4,7 @@ import os
 import traceback
 import anyio
 from pathlib import Path
+from typing import Any
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -244,7 +245,13 @@ def profile_login_status(session_id: str):
 async def finish_profile_login(req: ProfileLoginFinishReq):
     try:
         if req.profile_key:
-            normalize_profile_key(req.profile_key)
+            expected_profile_key = normalize_profile_key(req.profile_key)
+        else:
+            expected_profile_key = None
+        if expected_profile_key:
+            current = await anyio.to_thread.run_sync(manual_login_status, req.session_id)
+            if current.get("profile_key") != expected_profile_key:
+                raise ValueError("Profile session mismatch")
         login = await anyio.to_thread.run_sync(finish_manual_login, req.session_id)
         return {
             "ok": True,
