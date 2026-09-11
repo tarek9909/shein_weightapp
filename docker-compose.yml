@@ -1,0 +1,108 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # MySQL Database Service
+  # ----------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: shein-mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-mysql}
+      MYSQL_DATABASE: ${DB_NAME:-shein}
+    volumes:
+      - shein_mysql_data:/var/lib/mysql
+      - ./shein_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "${DB_HOST_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - shein-network
+
+  # ----------------------------------------------------------------------------
+  # Python Scraper API Service (Playwright Headless)
+  # ----------------------------------------------------------------------------
+  scraper:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: shein-scraper
+    restart: unless-stopped
+    environment:
+      DB_URL: mysql+pymysql://root:${DB_PASSWORD:-mysql}@mysql:3306/${DB_NAME:-shein}
+      APP_SECRET: ${APP_SECRET:-super_secure_app_secret_key_1234567890_32chars}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
+      SHEIN_LOCAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
+      PLAYWRIGHT_HEADLESS: "1"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - shein-network
+
+  # ----------------------------------------------------------------------------
+  # Fullstack Node.js Backend & React Application Service
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shein-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8081
+      HOST: "0.0.0.0"
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-shein}
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-mysql}
+      JWT_SECRET: ${JWT_SECRET:-super_secure_jwt_secret_key_1234567890_32chars}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-super_secure_encryption_key_1234567890_32}
+      SHEIN_LOCAL_API_BASE_URL: http://scraper:8000
+      SHEIN_LOCAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
+      ALLOWED_ORIGINS: "*"
+      SEED_ADMIN: "1"
+      SEED_DEMO_ACCOUNTS: "0"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      scraper:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    networks:
+      - shein-network
+
+  # ----------------------------------------------------------------------------
+  # Nginx Gateway & Reverse Proxy (HTTP & HTTPS)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: shein-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - shein-network
+
+volumes:
+  shein_mysql_data:
+    driver: local
+
+networks:
+  shein-network:
+    driver: bridge

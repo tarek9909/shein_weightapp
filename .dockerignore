@@ -1,0 +1,17 @@
+node_modules
+*/node_modules
+*/*/node_modules
+.git
+.gitignore
+.env
+.env.local
+*.log
+service-logs
+.venv
+api/.venv
+__pycache__
+*/__pycache__
+*/*/__pycache__
+ampps
+.DS_Store
+Thumbs.db

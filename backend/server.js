@@ -1,8 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+const frontendBuildPath = path.resolve(__dirname, "..", "shein-frontend", "build");
+const hasFrontendBuild = fs.existsSync(frontendBuildPath);
 
 const authRoutes = require("./routes/auth");
 const customerRoutes = require("./routes/customers");
@@ -37,7 +41,20 @@ app.use((_req, res, next) => {
 });
 const allowedOrigins = new Set(String(process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000").split(",").map((value) => value.trim()).filter(Boolean));
 const corsOptions = {
-  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin)) return callback(null, true);
+    try {
+      const parsedOrigin = new URL(origin);
+      for (const allowed of allowedOrigins) {
+        if (allowed === "*") return callback(null, true);
+        try {
+          const parsedAllowed = new URL(allowed);
+          if (parsedAllowed.hostname === parsedOrigin.hostname) return callback(null, true);
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return callback(null, false);
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
   exposedHeaders: ["X-Request-Id"],
@@ -46,6 +63,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+if (hasFrontendBuild) {
+  app.use(express.static(frontendBuildPath, { maxAge: "1d" }));
+}
 // A few existing frontend helpers concatenate a trailing slash with another
 // slash. Normalize that request spelling before dispatching Node routes.
 app.use((req, _res, next) => {
@@ -65,7 +86,7 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.get(["/", "/health"], (_req, res) => res.json({ ok: true, service: "shein-backend-node" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "shein-backend-node" }));
 app.get(["/ready", "/healthz"], async (_req, res) => {
   try {
     await checkDatabase();
@@ -75,6 +96,18 @@ app.get(["/ready", "/healthz"], async (_req, res) => {
   }
 });
 app.get("/metrics", (_req, res) => res.json({ ok: true, metrics: metricsSnapshot() }));
+
+// If React build exists, serve index.html for browser page navigation
+if (hasFrontendBuild) {
+  app.use((req, res, next) => {
+    if (req.method !== "GET") return next();
+    const accept = String(req.headers.accept || "");
+    if (accept.includes("text/html") || req.path === "/") {
+      return res.sendFile(path.join(frontendBuildPath, "index.html"));
+    }
+    next();
+  });
+}
 
 app.use("/auth", authRoutes);
 app.use("/customers", customerRoutes);
@@ -109,7 +142,8 @@ app.use((error, req, res, next) => {
 });
 
 const port = Number(process.env.PORT || 8081);
-const host = String(process.env.HOST || "127.0.0.1").trim();
+const defaultHost = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
+const host = String(process.env.HOST || defaultHost).trim();
 
 async function startServer() {
   assertAuthConfig();

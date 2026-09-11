@@ -1,426 +1,1352 @@
-.userAccountsPage {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 24px 0 48px;
-  color: #0f172a;
+/* ==========================================================================
+   USER ACCOUNTS & GOVERNANCE - ULTRA-PREMIUM EXECUTIVE WHITE-SLATE DESIGN
+   ========================================================================== */
+
+:root {
+  --ua-bg: #f8fafc;
+  --ua-surface: #ffffff;
+  --ua-border: #e2e8f0;
+  --ua-border-hover: #cbd5e1;
+  --ua-text-main: #0f172a;
+  --ua-text-muted: #64748b;
+  --ua-text-light: #94a3b8;
+  
+  --ua-primary: #4f46e5;
+  --ua-primary-hover: #4338ca;
+  --ua-primary-light: #eef2ff;
+
+  --ua-admin: #7c3aed;
+  --ua-admin-light: #f5f3ff;
+  --ua-admin-border: #ddd6fe;
+
+  --ua-ops: #059669;
+  --ua-ops-light: #ecfdf5;
+  --ua-ops-border: #a7f3d0;
+
+  --ua-dash: #2563eb;
+  --ua-dash-light: #eff6ff;
+  --ua-dash-border: #bfdbfe;
+
+  --ua-danger: #e11d48;
+  --ua-danger-light: #fff1f2;
+  --ua-danger-border: #fecdd3;
+
+  --ua-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --ua-shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.02);
+  --ua-shadow-lg: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.03);
 }
 
+/* Page Container */
+.userAccountsPage {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(20px, 2.5vw, 36px) clamp(16px, 2vw, 32px) 60px;
+  color: var(--ua-text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  animation: uaFadeIn 0.25s ease-out;
+}
+
+@keyframes uaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Header Section
+   -------------------------------------------------------------------------- */
 .userAccountsHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 8px 0 22px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ua-border);
   margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.userAccountsHeaderLeft {
+  flex: 1 1 500px;
 }
 
 .userAccountsEyebrow {
-  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ua-primary);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1.3px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
   margin-bottom: 8px;
 }
 
-.userAccountsHeader h1,
-.userAccountsCard h2,
-.userAccountsCard p {
+.userAccountsEyebrowDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ua-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.userAccountsTitle {
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: 800;
+  color: var(--ua-text-main);
+  letter-spacing: -0.8px;
+  margin: 0 0 6px 0;
+  line-height: 1.15;
+}
+
+.userAccountsSubtitle {
+  color: var(--ua-text-muted);
+  font-size: 13.5px;
   margin: 0;
+  line-height: 1.5;
+  max-width: 650px;
 }
 
-.userAccountsHeader h1 {
-  font-size: clamp(26px, 3vw, 34px);
-  letter-spacing: -0.7px;
+.userAccountsHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.userAccountsHeader p,
-.userAccountsCardHeading p {
-  color: #64748b;
-  font-size: 13px;
-  margin-top: 7px;
-}
-
-.userAccountsSecurityNote {
+.userAccountsRefreshBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 12px;
-  border: 1px solid #bbf7d0;
+  padding: 9px 15px;
+  background: var(--ua-surface);
+  border: 1px solid var(--ua-border);
+  border-radius: 10px;
+  color: var(--ua-text-main);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--ua-shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.userAccountsRefreshBtn:hover:not(:disabled) {
+  border-color: var(--ua-border-hover);
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.userAccountsRefreshBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.refreshIcon.isSpinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.userAccountsSecurityBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
   border-radius: 999px;
-  background: #f0fdf4;
-  color: #166534;
+  background: #ecfdf5;
+  border: 1px solid var(--ua-ops-border);
+  color: #065f46;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
-.userAccountsSecurityIcon {
+/* --------------------------------------------------------------------------
+   KPI Stats Strip
+   -------------------------------------------------------------------------- */
+.userAccountsStatsStrip {
   display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #16a34a;
-  color: white;
-  font-size: 11px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
+.statCard {
+  background: var(--ua-surface);
+  border: 1px solid var(--ua-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--ua-shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.statCard:hover {
+  border-color: var(--ua-border-hover);
+  box-shadow: var(--ua-shadow-md);
+  transform: translateY(-2px);
+}
+
+.statCardIconWrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statTotal .statCardIconWrap { background: #f1f5f9; color: #475569; }
+.statAdmin .statCardIconWrap { background: var(--ua-admin-light); color: var(--ua-admin); }
+.statOps .statCardIconWrap { background: var(--ua-ops-light); color: var(--ua-ops); }
+.statDash .statCardIconWrap { background: var(--ua-dash-light); color: var(--ua-dash); }
+.statActive .statCardIconWrap { background: #f0fdf4; color: #16a34a; }
+
+.activePulseIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+  animation: pulseGreen 2s infinite;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+.statCardInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.statCardLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ua-text-muted);
+  margin-bottom: 2px;
+}
+
+.statCardValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ua-text-main);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+/* --------------------------------------------------------------------------
+   Notice Banner (Alert Toast)
+   -------------------------------------------------------------------------- */
+.userAccountsNoticeBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  animation: slideInDown 0.2s ease-out;
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.userAccountsNoticeBanner.is-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.userAccountsNoticeBanner.is-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.noticeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.noticeText {
+  flex: 1;
+}
+
+.noticeCloseBtn {
+  background: transparent;
+  border: 0;
+  color: currentColor;
+  font-size: 20px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.noticeCloseBtn:hover {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Master Two-Column Layout
+   -------------------------------------------------------------------------- */
 .userAccountsLayout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.82fr) minmax(480px, 1.18fr);
-  gap: 20px;
+  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
 }
 
 .userAccountsCard {
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 4px 12px -1px rgba(15, 23, 42, 0.05);
+  background: var(--ua-surface);
+  border: 1px solid var(--ua-border);
+  border-radius: 18px;
+  box-shadow: var(--ua-shadow-sm);
   overflow: hidden;
+  transition: border-color 0.2s;
 }
 
-.userAccountsCreateCard {
-  padding: 22px;
+.userAccountsCard:hover {
+  border-color: #cbd5e1;
 }
 
-.userAccountsListCard {
-  min-height: 405px;
-}
-
-.userAccountsCardHeading {
+.cardHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 22px;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--ua-border);
+  background: #fafbfc;
 }
 
-.userAccountsCardHeading h2 {
+.cardTitle {
   font-size: 17px;
-  letter-spacing: -0.2px;
+  font-weight: 800;
+  color: var(--ua-text-main);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
 }
 
-.userAccountsStep,
-.userAccountsCount {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
+.cardSubtitle {
+  font-size: 12.5px;
+  color: var(--ua-text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.stepBadge,
+.countBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
-.userAccountsCount {
-  border-radius: 50%;
+.stepBadge {
+  background: var(--ua-primary-light);
+  color: var(--ua-primary);
+}
+
+.countBadge {
   background: #0f172a;
-  color: white;
-  font-size: 13px;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 0 10px;
+  width: auto;
+  min-width: 28px;
+  height: 26px;
+  font-size: 12px;
 }
 
-.userAccountsForm {
+/* --------------------------------------------------------------------------
+   Left Column: Form Controls & Role Cards
+   -------------------------------------------------------------------------- */
+.userAccountsCreateCard .userAccountsForm {
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 18px;
 }
 
-.userAccountsLabel {
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fieldLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #475569;
   border: 0;
   padding: 0;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.65px;
-  text-transform: uppercase;
-}
-
-.userAccountsInput {
-  width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 11px 12px;
-  background: #f8fafc;
-  color: #0f172a;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
-}
-
-.userAccountsInput:focus {
-  border-color: #2563eb;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.userAccountsTypeFieldset {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  min-width: 0;
-  border: 0;
-  padding: 8px 0 0;
   margin: 0;
 }
 
-.userAccountsTypeGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.fieldRequirement {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ua-text-light);
+}
+
+.fieldRequirement.isMet {
+  color: #059669;
+  font-weight: 700;
+}
+
+.inputWithIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ua-text-light);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 11px 14px 11px 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: #f8fafc;
+  color: var(--ua-text-main);
+  font-size: 13.5px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.fieldInput.passwordField {
+  padding-right: 40px;
+}
+
+.fieldInput:focus {
+  border-color: var(--ua-primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.togglePasswordBtn {
+  position: absolute;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: var(--ua-text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.togglePasswordBtn:hover {
+  background: #f1f5f9;
+  color: var(--ua-text-main);
+}
+
+/* Role Selection Cards */
+.roleSelectionFieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
   gap: 9px;
 }
 
-.userAccountsType {
+.roleCardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.roleOptionCard {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  min-height: 90px;
-  padding: 11px;
-  border: 1px solid #e2e8f0;
-  border-radius: 11px;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1.5px solid var(--ua-border);
+  border-radius: 13px;
   background: #f8fafc;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: all 0.18s ease;
+  user-select: none;
 }
 
-.userAccountsType:hover,
-.userAccountsType.isSelected {
-  border-color: #93c5fd;
-  background: #eff6ff;
+.roleOptionCard:hover {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  transform: translateY(-1px);
 }
 
-.userAccountsType input {
+.roleOptionCard.isSelected {
+  border-color: var(--ua-primary);
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+}
+
+.roleOptionCard.isSelected.role-admin {
+  border-color: var(--ua-admin);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.09);
+}
+
+.roleOptionCard.isSelected.role-operations {
+  border-color: var(--ua-ops);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.09);
+}
+
+.srOnlyRadio {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-.userAccountsRadio {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
+.roleOptionRadioCircle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
   margin-top: 2px;
-  border: 1px solid #94a3b8;
-  border-radius: 50%;
-  background: white;
-}
-
-.userAccountsType.isSelected .userAccountsRadio {
-  border: 4px solid #2563eb;
-}
-
-.userAccountsType strong,
-.userAccountsType small {
-  display: block;
-}
-
-.userAccountsType strong {
-  font-size: 12px;
-}
-
-.userAccountsType small {
-  margin-top: 5px;
-  color: #64748b;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.userAccountsSelectedHint {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 7px 0 4px;
-  color: #475569;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.userAccountsHintDot {
-  width: 6px;
-  height: 6px;
-  flex: 0 0 auto;
-  margin-top: 5px;
-  border-radius: 50%;
-  background: #2563eb;
-}
-
-.userAccountsNotice {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 10px 11px;
-  border-radius: 9px;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.userAccountsNotice.is-error {
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.userAccountsNotice.is-success {
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
-}
-
-.userAccountsPrimaryButton {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 5px;
-  border: 1px solid #1d4ed8;
-  border-radius: 10px;
-  padding: 11px 14px;
-  background: #2563eb;
-  color: white;
-  cursor: pointer;
-  font-size: 13px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.roleOptionCard.isSelected .roleOptionRadioCircle {
+  border-color: var(--ua-primary);
+}
+
+.roleOptionCard.isSelected.role-admin .roleOptionRadioCircle {
+  border-color: var(--ua-admin);
+}
+
+.roleOptionCard.isSelected.role-operations .roleOptionRadioCircle {
+  border-color: var(--ua-ops);
+}
+
+.roleOptionRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ua-primary);
+}
+
+.roleOptionCard.role-admin .roleOptionRadioDot {
+  background: var(--ua-admin);
+}
+
+.roleOptionCard.role-operations .roleOptionRadioDot {
+  background: var(--ua-ops);
+}
+
+.roleOptionContent {
+  flex: 1;
+}
+
+.roleOptionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.roleOptionTitle {
+  font-size: 13.5px;
   font-weight: 800;
+  color: var(--ua-text-main);
 }
 
-.userAccountsPrimaryButton:hover:not(:disabled) {
-  background: #1d4ed8;
+.roleOptionBadge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
 }
 
-.userAccountsPrimaryButton:disabled {
-  cursor: wait;
-  opacity: 0.65;
+.badge-admin {
+  background: var(--ua-admin-light);
+  color: var(--ua-admin);
+  border: 1px solid var(--ua-admin-border);
 }
 
-.userAccountsPrimaryButton span {
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 12px;
+.badge-operations {
+  background: var(--ua-ops-light);
+  color: var(--ua-ops);
+  border: 1px solid var(--ua-ops-border);
 }
 
-.userAccountsTableWrap {
+.badge-dashboard {
+  background: var(--ua-dash-light);
+  color: var(--ua-dash);
+  border: 1px solid var(--ua-dash-border);
+}
+
+.roleOptionDesc {
+  font-size: 11.5px;
+  color: var(--ua-text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.roleSummaryBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 11px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.roleSummaryIcon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.roleSummaryText strong {
+  color: var(--ua-text-main);
+}
+
+/* Primary Submit Button */
+.primarySubmitBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 18px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid #0f172a;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  transition: all 0.18s ease;
+  margin-top: 4px;
+}
+
+.primarySubmitBtn:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+}
+
+.primarySubmitBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.primarySubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSpinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Right Column: Directory Toolbar & Filters
+   -------------------------------------------------------------------------- */
+.directoryToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--ua-border);
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  max-width: 380px;
+}
+
+.searchBox svg {
+  position: absolute;
+  left: 11px;
+  color: var(--ua-text-light);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 30px 8px 34px;
+  border: 1px solid var(--ua-border);
+  border-radius: 9px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: var(--ua-text-main);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.searchInput:focus {
+  border-color: var(--ua-primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.searchClearBtn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--ua-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.filterPills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterPill {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #f1f5f9;
+  color: var(--ua-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filterPill:hover {
+  background: #e2e8f0;
+  color: var(--ua-text-main);
+}
+
+.filterPill.isActive {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Table & Interactive Rows
+   -------------------------------------------------------------------------- */
+.tableResponsiveWrapper {
   overflow-x: auto;
-  border-top: 1px solid #e2e8f0;
+  width: 100%;
 }
 
 .userAccountsTable {
   width: 100%;
-  min-width: 460px;
+  min-width: 650px;
   border-collapse: collapse;
   text-align: left;
 }
 
-.userAccountsTable th,
-.userAccountsTable td {
-  padding: 14px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #64748b;
-  font-size: 12px;
+.userAccountsTable th {
+  padding: 13px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--ua-border);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.65px;
+  color: var(--ua-text-muted);
   white-space: nowrap;
 }
 
-.userAccountsTable th {
-  background: #f8fafc;
-  color: #94a3b8;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.65px;
-  text-transform: uppercase;
+.userAccountsTable th.thActions {
+  text-align: right;
+  padding-right: 22px;
 }
 
-.userAccountsTable td:first-child {
+.userAccountsTable td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: var(--ua-text-muted);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.userAccountsTable tbody tr {
+  transition: background 0.15s ease;
+}
+
+.userAccountsTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.userAccountsTable tbody tr.isRowDisabled {
+  opacity: 0.65;
+  background: #fafbfc;
+}
+
+/* User Identity Cell */
+.userIdentityCell {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.userAvatar.userRole-admin {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: var(--ua-admin);
+}
+
+.userAvatar.userRole-operations {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: var(--ua-ops);
+}
+
+.userAvatar.userRole-dashboard {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: var(--ua-dash);
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-weight: 800;
+  color: var(--ua-text-main);
+  font-size: 13.5px;
+  letter-spacing: -0.2px;
+}
+
+.userIdTag {
+  font-size: 11px;
+  color: var(--ua-text-light);
+  font-weight: 600;
+}
+
+/* Custom Role Select Dropdown */
+.roleSelectWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.customRoleSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 26px 6px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.customRoleSelect.userRole-admin {
+  background: var(--ua-admin-light);
+  color: var(--ua-admin);
+  border-color: var(--ua-admin-border);
+}
+
+.customRoleSelect.userRole-operations {
+  background: var(--ua-ops-light);
+  color: var(--ua-ops);
+  border-color: var(--ua-ops-border);
+}
+
+.customRoleSelect.userRole-dashboard {
+  background: var(--ua-dash-light);
+  color: var(--ua-dash);
+  border-color: var(--ua-dash-border);
+}
+
+.customRoleSelect:hover {
+  filter: brightness(0.96);
+}
+
+.customRoleSelect:focus {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.selectChevron {
+  position: absolute;
+  right: 9px;
+  font-size: 10px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Status Pill */
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.statusPill.isActive {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.statusPill.isInactive {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Workspace Scope Badge */
+.workspaceScopeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border: 1px solid var(--ua-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.createdDateText {
+  font-size: 12px;
+  color: var(--ua-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Action Buttons
+   -------------------------------------------------------------------------- */
+.actionButtonGroup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: #ffffff;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+/* Password button */
+.btnResetPassword {
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.btnResetPassword:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
   color: #0f172a;
 }
 
-.userAccountsTable tbody tr:last-child td {
-  border-bottom: 0;
+/* Disable button */
+.btnDisable {
+  border-color: #fecaca;
+  background: #fff5f5;
+  color: #dc2626;
 }
 
-.userAccountsAvatar {
-  display: grid;
-  place-items: center;
-  width: 27px;
-  height: 27px;
-  border-radius: 8px;
-  background: #e0e7ff;
-  color: #4338ca;
-  font-size: 11px;
-  font-weight: 800;
+.btnDisable:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
-.userAccountsRoleBadge {
-  display: inline-flex;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 10px;
-  font-weight: 800;
+/* Enable button */
+.btnEnable {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
-.userAccountsRoleBadge.role-operations {
-  background: #ecfdf5;
-  color: #047857;
+.btnEnable:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
 }
 
-.userAccountsRoleBadge.role-admin {
-  background: #f1f5f9;
-  color: #475569;
+/* Delete button */
+.btnDelete {
+  padding: 6px 8px;
+  border-color: #f1f5f9;
+  background: #ffffff;
+  color: #94a3b8;
 }
 
-.userAccountsEmpty {
+.btnDelete:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* Directory Empty State */
+.directoryEmptyState {
   display: flex;
-  min-height: 310px;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  gap: 6px;
-  padding: 24px;
-  color: #94a3b8;
-  font-size: 12px;
+  padding: 56px 24px;
   text-align: center;
+  color: var(--ua-text-muted);
 }
 
-.userAccountsEmpty strong {
+.emptyStateIcon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+.loadSpinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--ua-primary);
+  border-radius: 50%;
+  margin-bottom: 14px;
+}
+
+.directoryEmptyState strong {
+  font-size: 15px;
+  color: var(--ua-text-main);
+  margin-bottom: 5px;
+}
+
+.directoryEmptyState p {
+  font-size: 13px;
+  margin: 0;
+  max-width: 320px;
+}
+
+/* --------------------------------------------------------------------------
+   Modal Overlays & Dialogs (Password Reset / Delete Confirmation)
+   -------------------------------------------------------------------------- */
+.userAccountsModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modalFade 0.18s ease-out;
+}
+
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.userAccountsModalBox {
+  background: #ffffff;
+  border: 1px solid var(--ua-border);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 45px -8px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  animation: modalZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalZoom {
+  from { transform: scale(0.96) translateY(6px); }
+  to { transform: scale(1) translateY(0); }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--ua-border);
+  background: #fafbfc;
+  position: relative;
+}
+
+.modalHeaderIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.keyModalIcon {
+  background: var(--ua-primary-light);
+  color: var(--ua-primary);
+}
+
+.dangerModalIcon {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ua-text-main);
+  margin: 0 0 3px 0;
+}
+
+.modalSubtitle {
+  font-size: 12.5px;
+  color: var(--ua-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--ua-text-muted);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modalCloseBtn:hover {
+  background: #f1f5f9;
+  color: var(--ua-text-main);
+}
+
+.modalBody {
+  padding: 22px;
+}
+
+.modalNotice {
+  margin-top: 12px;
+  margin-bottom: 0;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+
+.modalNoticeWarningText {
+  font-size: 13px;
+  color: var(--ua-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px;
+  background: #f8fafc;
+  border-top: 1px solid var(--ua-border);
+}
+
+.modalSecondaryBtn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--ua-border);
   color: #475569;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.userAccountsEmptyIcon {
-  margin-bottom: 4px;
-  color: #2563eb;
-  font-size: 34px;
+.modalSecondaryBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: var(--ua-text-main);
 }
 
-@media (max-width: 900px) {
-  .userAccountsHeader {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+.modalPrimaryBtn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: var(--ua-primary);
+  border: 1px solid var(--ua-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  transition: all 0.15s ease;
+}
 
+.modalPrimaryBtn:hover:not(:disabled) {
+  background: var(--ua-primary-hover);
+}
+
+.modalPrimaryBtn:disabled,
+.modalDangerBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.modalDangerBtn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: #dc2626;
+  border: 1px solid #dc2626;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+  transition: all 0.15s ease;
+}
+
+.modalDangerBtn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adaptations
+   -------------------------------------------------------------------------- */
+@media (max-width: 1080px) {
   .userAccountsLayout {
     grid-template-columns: 1fr;
   }
+  
+  .userAccountsCreateCard {
+    max-width: 600px;
+  }
 }
 
-@media (max-width: 520px) {
-  .userAccountsCreateCard {
-    padding: 16px;
+@media (max-width: 768px) {
+  .userAccountsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 
-  .userAccountsTypeGrid {
-    grid-template-columns: 1fr;
+  .userAccountsHeaderRight {
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .userAccountsTable th,
-  .userAccountsTable td {
-    padding: 12px 14px;
+  .directoryToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchBox {
+    max-width: 100%;
+  }
+
+  .filterPills {
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 }

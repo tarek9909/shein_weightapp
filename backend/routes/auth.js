@@ -63,7 +63,7 @@ router.post(paths("register"), requireAuth, requireAdmin, asyncHandler(async (re
   const passwordIssue = passwordError(password);
   if (passwordIssue) return res.status(400).json({ ok: false, error: passwordIssue });
   if (!/^[A-Za-z0-9_.-]{3,100}$/.test(username)) return res.status(400).json({ ok: false, error: "Username must be 3-100 characters and use only letters, numbers, dot, underscore, or hyphen" });
-  if (!["dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "Account type must be dashboard or operations" });
+  if (!["admin", "dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "Account type must be admin, dashboard or operations" });
   const hash = await bcrypt.hash(password, 12);
   try {
     const result = await execute(pool, "INSERT INTO users (username, password_hash, role, owner_user_id, is_active, auth_version) VALUES (?, ?, ?, ?, 1, 0)", [username, hash, role, Number(req.user.user_id)]);
@@ -88,7 +88,7 @@ router.post(paths("users"), requireAuth, requireAdmin, asyncHandler(async (req, 
   if (!/^[A-Za-z0-9_.-]{3,100}$/.test(username)) return res.status(400).json({ ok: false, error: "Username must be 3-100 characters and use only letters, numbers, dot, underscore, or hyphen" });
   const passwordIssue = passwordError(password);
   if (passwordIssue) return res.status(400).json({ ok: false, error: passwordIssue });
-  if (!["dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "Account type must be dashboard or operations" });
+  if (!["admin", "dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "Account type must be admin, dashboard or operations" });
   const hash = await bcrypt.hash(password, 12);
   try {
     const result = await execute(pool, "INSERT INTO users (username, password_hash, role, owner_user_id, is_active, auth_version) VALUES (?, ?, ?, ?, 1, 0)", [username, hash, role, Number(req.user.user_id)]);
@@ -108,7 +108,7 @@ async function ownedAccount(req, id) {
 router.post(paths("updateUser"), requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   const id = Number(req.body?.id || 0);
   const role = trim(req.body?.role).toLowerCase();
-  if (!Number.isSafeInteger(id) || id <= 0 || !["dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "id and a valid account type are required" });
+  if (!Number.isSafeInteger(id) || id <= 0 || !["admin", "dashboard", "operations"].includes(role)) return res.status(400).json({ ok: false, error: "id and a valid account type are required" });
   const target = await ownedAccount(req, id);
   if (!target) return res.status(404).json({ ok: false, error: "Managed account not found" });
   await execute(pool, "UPDATE users SET role=?, auth_version=auth_version+1 WHERE id=? AND owner_user_id=?", [role, id, Number(req.user.user_id)]);

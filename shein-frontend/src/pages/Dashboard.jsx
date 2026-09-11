@@ -821,9 +821,9 @@ export default function Dashboard() {
     };
   }, [orders, customs, payments, kgPrice, serverSummary]);
 
-  const netOutflow = totals.totalOrders + totals.totalCustoms - totals.totalPayments;
+  const netOutflow = totals.totalOrders + totals.totalCustoms + totals.totalLosses - totals.totalPayments;
   const remainingBudget = totalBudget > 0 ? (totalBudget - netOutflow) : -netOutflow;
-  const actualCash = totalBudget + totals.totalPayments - totals.totalOrders - totals.totalCustoms;
+  const actualCash = totalBudget + totals.totalPayments - totals.totalOrders - totals.totalCustoms - totals.totalLosses;
 
   return (
     <div className={`dashPage dashTopSpacer${readOnly ? " dashReadOnly" : ""}`}>
@@ -1786,24 +1786,33 @@ export default function Dashboard() {
                       <div>Cart</div>
                       <div>Order</div>
                     </div>
-                    {paymentCustomerOptions.map((c) => {
-                      const cid = Number(c.customer_id);
-                      const checked = selectedPaymentCustomers.some((x) => Number(x.customer_id) === cid);
-                      return (
-                        <label key={cid} className="dashCustomerOption">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => togglePaymentCustomer(c)}
-                            disabled={readOnly}
-                          />
-                          <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
-                          <span className="dashCustomerCol">${money(customerAmount(c))}</span>
-                          <span className="dashCustomerCol">{c.cart_order_number || "-"}</span>
-                          <span className="dashCustomerCol">{c.order_name || "-"}</span>
-                        </label>
-                      );
-                    })}
+                    {paymentCustomerOptions.length === 0 ? (
+                      <div style={{ padding: "20px 16px", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
+                        No unpaid customer balances found in this month.
+                        <div style={{ marginTop: "5px", fontSize: "12px", color: "#94a3b8" }}>
+                          To record a direct or manual payment amount, switch to the <strong>Manual Entry</strong> tab above.
+                        </div>
+                      </div>
+                    ) : (
+                      paymentCustomerOptions.map((c) => {
+                        const cid = Number(c.customer_id);
+                        const checked = selectedPaymentCustomers.some((x) => Number(x.customer_id) === cid);
+                        return (
+                          <label key={cid} className="dashCustomerOption">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => togglePaymentCustomer(c)}
+                              disabled={readOnly}
+                            />
+                            <span className="dashCustomerCol">{c.customer_name || "(empty)"}</span>
+                            <span className="dashCustomerCol">${money(customerAmount(c))}</span>
+                            <span className="dashCustomerCol">{c.cart_order_number || "-"}</span>
+                            <span className="dashCustomerCol">{c.order_name || "-"}</span>
+                          </label>
+                        );
+                      })
+                    )}
                   </div>
 
                   {selectedPaymentCustomers.length > 0 ? (
@@ -1863,8 +1872,16 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <button className="dashBtn" onClick={handleAddPayment} disabled={readOnly}>
-                    Confirm Add Customer Payment
+                  <button
+                    className="dashBtn"
+                    onClick={handleAddPayment}
+                    disabled={readOnly || selectedPaymentCustomers.length === 0}
+                    style={selectedPaymentCustomers.length === 0 ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+                    title={selectedPaymentCustomers.length === 0 ? "Select at least one customer above to confirm" : ""}
+                  >
+                    {selectedPaymentCustomers.length === 0
+                      ? "Select at least 1 customer above to confirm"
+                      : `Confirm Add Customer Payment (${selectedPaymentCustomers.length} selected - $${money(selectedCustomersNetTotal)})`}
                   </button>
                 </div>
               )}

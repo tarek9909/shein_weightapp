@@ -6,7 +6,10 @@ function buildBrowserApiOrigin() {
     return DEFAULT_API_ORIGIN;
   }
 
-  const { protocol, hostname } = window.location;
+  const { protocol, hostname, port } = window.location;
+  if (port === FALLBACK_API_PORT || port === "" || port === "80" || port === "443") {
+    return window.location.origin;
+  }
   return `${protocol}//${hostname}:${FALLBACK_API_PORT}`;
 }
 

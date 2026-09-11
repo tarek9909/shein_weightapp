@@ -130,9 +130,9 @@ router.get(paths("getSummary", true), asyncHandler(async (req, res) => {
   const estimatedProfitAfterLosses = Math.round((estimatedProfit - lossTotal + Number.EPSILON) * 100) / 100;
   const realizedNetProfit = Math.round((paymentsTotal - orderCostTotal - customsTotal - lossTotal + Number.EPSILON) * 100) / 100;
 
-  const netOutflow = Math.round((orderCostTotal + customsTotal - paymentsTotal + Number.EPSILON) * 100) / 100;
+  const netOutflow = Math.round((orderCostTotal + customsTotal + lossTotal - paymentsTotal + Number.EPSILON) * 100) / 100;
   const remainingBudget = Math.round((budgetTotal - netOutflow + Number.EPSILON) * 100) / 100;
-  const actualCash = Math.round((budgetTotal + paymentsTotal - orderCostTotal - customsTotal + Number.EPSILON) * 100) / 100;
+  const actualCash = Math.round((budgetTotal + paymentsTotal - orderCostTotal - customsTotal - lossTotal + Number.EPSILON) * 100) / 100;
 
   const summary = {
     // Budget & Rates
