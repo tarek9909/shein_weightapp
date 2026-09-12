@@ -74,7 +74,7 @@ async function ensureOwnedProfile(userId, profileKey) {
 
 router.get(paths("getAccounts", true), asyncHandler(async (req, res) => {
   await assignMissingProfiles(uid(req));
-  const users = await rows(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,created_at,updated_at, (shein_password_enc IS NOT NULL) AS has_shein_password, (gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password, (storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE user_id=? ORDER BY id DESC", [uid(req)]);
+  const users = await rows(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,profile_name,created_at,updated_at, (shein_password_enc IS NOT NULL) AS has_shein_password, (gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password, (storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE user_id=? ORDER BY id DESC", [uid(req)]);
   let profiles = [];
   const local = process.env.LOCALAPPDATA;
   if (local) {
@@ -97,8 +97,16 @@ router.get(paths("getAccounts", true), asyncHandler(async (req, res) => {
     if (!merged.has(profile.profile_key)) merged.set(profile.profile_key, { ...profile, source: "local" });
   }
   for (const user of users) {
-    if (user.profile_key && !merged.has(user.profile_key)) {
-      merged.set(user.profile_key, { profile_key: user.profile_key, name: user.profile_key, source: "account" });
+    if (user.profile_key) {
+      const current = merged.get(user.profile_key) || {};
+      const customName = trim(user.profile_name);
+      merged.set(user.profile_key, {
+        ...current,
+        profile_key: user.profile_key,
+        name: customName || current.name || user.profile_key,
+        profile_name: customName,
+        source: current.source || "account",
+      });
     }
   }
   res.json({
@@ -117,19 +125,20 @@ router.get(paths("getAccountDetail", true), requireOperations, asyncHandler(asyn
   const email = normEmail(req.query.email);
   if (id <= 0 && !email) return res.status(400).json({ ok: false, error: "id or email is required" });
   const row = id > 0
-    ? await first(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,(shein_password_enc IS NOT NULL) AS has_shein_password,(gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password,(storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE id=? AND user_id=? LIMIT 1", [id, uid(req)])
-    : await first(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,(shein_password_enc IS NOT NULL) AS has_shein_password,(gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password,(storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE api_email=? AND user_id=? LIMIT 1", [email, uid(req)]);
+    ? await first(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,profile_name,(shein_password_enc IS NOT NULL) AS has_shein_password,(gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password,(storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE id=? AND user_id=? LIMIT 1", [id, uid(req)])
+    : await first(pool, "SELECT id,api_email AS email,shein_email,gmail_email,profile_key,profile_name,(shein_password_enc IS NOT NULL) AS has_shein_password,(gmail_app_password_enc IS NOT NULL) AS has_gmail_app_password,(storage_state_enc IS NOT NULL) AS has_storage_state FROM shein_accounts WHERE api_email=? AND user_id=? LIMIT 1", [email, uid(req)]);
   if (!row) return res.status(404).json({ ok: false, error: "Account not found" });
   res.json({ ok: true, user: row });
 }));
 
 router.post(paths("saveAccount", true), requireOperations, asyncHandler(async (req, res) => {
   const d = req.body || {};
-  const api = normEmail(d.email), shein = normEmail(d.shein_email), gmail = normEmail(d.gmail_email);
+  const api = normEmail(d.email), shein = normEmail(d.shein_email || d.email), gmail = normEmail(d.gmail_email || d.shein_email || d.email);
   const password = String(d.shein_password || "");
   const appPassword = String(d.gmail_app_password || "").replace(/ /g, "");
   const cookies = d.cookies_json == null ? "" : String(d.cookies_json);
   let profile = d.profile_key == null ? "" : trim(d.profile_key);
+  const profileName = trim(d.profile_name);
   const id = int(d.id);
   if (!api || !shein) return res.status(400).json({ ok: false, error: "API and SHEIN emails are required" });
   try {
@@ -138,8 +147,8 @@ router.post(paths("saveAccount", true), requireOperations, asyncHandler(async (r
       if (!existing) return res.status(404).json({ ok: false, error: "Account not found" });
       if (!profile || profile.toLowerCase() === "auto") profile = trim(existing.profile_key) || await nextProfileKey();
       if (profile !== trim(existing.profile_key)) await ensureProfileAvailable(profile, id);
-      const fields = [api, shein, gmail, profile];
-      let sql = "UPDATE shein_accounts SET api_email=?,shein_email=?,gmail_email=?,profile_key=?";
+      const fields = [api, shein, gmail, profile, profileName];
+      let sql = "UPDATE shein_accounts SET api_email=?,shein_email=?,gmail_email=?,profile_key=?,profile_name=?";
       if (password) { sql += ",shein_password_enc=?"; fields.push(seal(password)); }
       if (appPassword) { sql += ",gmail_app_password_enc=?"; fields.push(seal(appPassword)); }
       if (cookies) { sql += ",storage_state_enc=?"; fields.push(seal(cookies)); }
@@ -152,7 +161,7 @@ router.post(paths("saveAccount", true), requireOperations, asyncHandler(async (r
     if ((!profile || profile.toLowerCase() === "auto") && existingByEmail?.profile_key) profile = trim(existingByEmail.profile_key);
     if (!profile || profile.toLowerCase() === "auto") profile = await nextProfileKey();
     await ensureProfileAvailable(profile, existingByEmail?.id || 0);
-    await execute(pool, "INSERT INTO shein_accounts (user_id,api_email,shein_email,gmail_email,profile_key,shein_password_enc,gmail_app_password_enc,storage_state_enc) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE shein_email=VALUES(shein_email),gmail_email=VALUES(gmail_email),profile_key=VALUES(profile_key),shein_password_enc=VALUES(shein_password_enc),gmail_app_password_enc=VALUES(gmail_app_password_enc),storage_state_enc=VALUES(storage_state_enc)", [uid(req), api, shein, gmail, profile, seal(password), seal(appPassword), cookies ? seal(cookies) : null]);
+    await execute(pool, "INSERT INTO shein_accounts (user_id,api_email,shein_email,gmail_email,profile_key,profile_name,shein_password_enc,gmail_app_password_enc,storage_state_enc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE shein_email=VALUES(shein_email),gmail_email=VALUES(gmail_email),profile_key=VALUES(profile_key),profile_name=VALUES(profile_name),shein_password_enc=VALUES(shein_password_enc),gmail_app_password_enc=VALUES(gmail_app_password_enc),storage_state_enc=VALUES(storage_state_enc)", [uid(req), api, shein, gmail, profile, profileName, seal(password), seal(appPassword), cookies ? seal(cookies) : null]);
     res.status(201).json({ ok: true, message: "Saved", profile_key: profile });
   } catch (e) {
     if (e.code === "ER_DUP_ENTRY") return res.status(409).json({ ok: false, error: "Account already exists" });

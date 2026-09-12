@@ -16,14 +16,16 @@ import "../orders.css";
 const emptyForm = {
   id: null,
   email: "",
-  shein_email: "",
+  profile_name: "",
   profile_key: "auto",
 };
 
 const accountPayload = (value) => ({
   ...value,
-  // Manual VPS login uses one email for both SHEIN and Gmail-related fields.
-  gmail_email: value.shein_email,
+  // The API, SHEIN, and Gmail fields all use the same account email.
+  email: value.email,
+  shein_email: value.email,
+  gmail_email: value.email,
   shein_password: "",
   gmail_app_password: "",
 });
@@ -93,8 +95,8 @@ export default function SheinAccountsPage() {
 
   const saveAccount = async () => {
     if (saving) return;
-    if (!form.email || !form.shein_email) {
-      openInfo("Missing Data", "API email and SHEIN email are required.");
+    if (!form.email) {
+      openInfo("Missing Data", "Account email is required.");
       return;
     }
 
@@ -118,8 +120,8 @@ export default function SheinAccountsPage() {
       const u = data?.user || {};
       setEditForm({
         id: u.id,
-        email: u.email || email,
-        shein_email: u.shein_email || u.gmail_email || "",
+        email: u.email || u.shein_email || u.gmail_email || email,
+        profile_name: u.profile_name || "",
         profile_key: u.profile_key || "auto",
       });
       setEditOpen(true);
@@ -130,8 +132,8 @@ export default function SheinAccountsPage() {
 
   const saveEdit = async () => {
     if (saving) return;
-    if (!editForm.email || !editForm.shein_email) {
-      openInfo("Missing Data", "API email and SHEIN email are required.");
+    if (!editForm.email) {
+      openInfo("Missing Data", "Account email is required.");
       return;
     }
     setSaving(true);
@@ -297,10 +299,10 @@ export default function SheinAccountsPage() {
         <div className="ordCard">
           <div className="ordCardHead"><div className="ordCardTitle">Add SHEIN Account</div></div>
           <div className="ordCardBody" style={{ display: "grid", gap: 8 }}>
-            <input className="loginInput" placeholder="Associated API email or ID" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
-            <input className="loginInput" placeholder="SHEIN / Gmail email" value={form.shein_email} onChange={(e) => setForm((p) => ({ ...p, shein_email: e.target.value }))} />
+            <input className="loginInput" placeholder="Account email (API / SHEIN / Gmail)" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+            <input className="loginInput" placeholder="Profile name (for example: Cargo Account 1)" value={form.profile_name} onChange={(e) => setForm((p) => ({ ...p, profile_name: e.target.value }))} />
             {profileDropdown(form.profile_key, (e) => setForm((p) => ({ ...p, profile_key: e.target.value })))}
-            <div className="ordSub">The same email is saved for SHEIN and Gmail. Log in manually through the VPS browser.</div>
+            <div className="ordSub">The email is saved for API, SHEIN, and Gmail. Log in manually through the VPS browser.</div>
             <button className="ordBtn" disabled={saving} onClick={saveAccount}>{saving ? "Saving..." : "Add Account"}</button>
           </div>
         </div>
@@ -312,11 +314,12 @@ export default function SheinAccountsPage() {
               const profileKey = account.profile_key || "Default";
               const session = profileSessions[profileKey];
               const status = profileStatus(profileKey);
+              const profileName = account.profile_name || profileKey;
               return (
                 <div key={account.id || account.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                   <div>
                     <div className="ordSub" style={{ wordBreak: "break-all" }}>{account.email}</div>
-                    <div className="ordSub">Profile: {profileKey} — {status}</div>
+                    <div className="ordSub">Profile: {profileName} ({profileKey}) — {status}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {session?.session_id ? (
@@ -345,7 +348,7 @@ export default function SheinAccountsPage() {
             <div className="cmHead"><div className="cmTitle">Edit SHEIN Account</div><button className="cmX" onClick={() => setEditOpen(false)} aria-label="Close">X</button></div>
             <div className="cmBody" style={{ display: "grid", gap: 8 }}>
               <input className="cmInput" value={editForm.email} disabled />
-              <input className="cmInput" placeholder="SHEIN / Gmail email" value={editForm.shein_email} onChange={(e) => setEditForm((p) => ({ ...p, shein_email: e.target.value }))} />
+              <input className="cmInput" placeholder="Profile name (for example: Cargo Account 1)" value={editForm.profile_name} onChange={(e) => setEditForm((p) => ({ ...p, profile_name: e.target.value }))} />
               {profileDropdown(editForm.profile_key, (e) => setEditForm((p) => ({ ...p, profile_key: e.target.value })))}
             </div>
             <div className="cmFooter"><button className="cmBtnSoft" onClick={() => setEditOpen(false)}>Cancel</button><button className="cmBtn" disabled={saving} onClick={saveEdit}>{saving ? "Saving..." : "Save"}</button></div>
