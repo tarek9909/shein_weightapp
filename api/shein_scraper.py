@@ -148,6 +148,7 @@ class ManualLoginSession:
                     profile_path,
                     headless=False,
                     chrome_profile_directory=chrome_profile_directory,
+                    manual=True,
                 )
                 page = context.pages[0] if context.pages else context.new_page()
                 page.goto(f"{self.base_url}/user/login", wait_until="domcontentloaded")
@@ -537,6 +538,7 @@ def _launch_shein_browser(
     profile_path: str,
     headless: bool,
     chrome_profile_directory: Optional[str] = None,
+    manual: bool = False,
 ):
     args = []
     if chrome_profile_directory:
@@ -553,6 +555,11 @@ def _launch_shein_browser(
     }
     if PLAYWRIGHT_BROWSER_CHANNEL:
         launch_options["channel"] = PLAYWRIGHT_BROWSER_CHANNEL
+    if manual:
+        # Manual OAuth login runs in the visible VPS browser. Do not add
+        # Playwright's automation banner to that session; scraping remains
+        # unchanged and still uses the normal headless path.
+        launch_options["ignore_default_args"] = ["--enable-automation"]
     if args:
         launch_options["args"] = args
 
