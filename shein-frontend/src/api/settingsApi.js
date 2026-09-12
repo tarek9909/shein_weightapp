@@ -10,3 +10,11 @@ export const saveKgPrice = (kg_price) =>
     method: "POST",
     body: JSON.stringify({ kg_price }),
   });
+
+export const getVncCredentials = () => apiFetch(`${BASE_URL}/getVncCredentials`);
+
+export const updateVncCredentials = ({ username, password }) =>
+  apiFetch(`${BASE_URL}/updateVncCredentials`, {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });

@@ -139,8 +139,52 @@ async function callSheinProfileApi(action, payload = {}) {
   } finally { clearTimeout(timer); }
 }
 
+async function callSheinRemoteBrowserApi(action, payload = {}) {
+  const routes = {
+    get_vnc_credentials: { method: "GET", path: "/api/remote-browser/credentials" },
+    update_vnc_credentials: { method: "PUT", path: "/api/remote-browser/credentials" },
+  };
+  const route = routes[action];
+  if (!route) return { ok: false, error: `Unsupported remote browser action: ${action}`, status: 400 };
+
+  const base = localApiBase();
+  const token = String(process.env.SHEIN_LOCAL_API_TOKEN || process.env.INTERNAL_API_TOKEN || "").trim();
+  if (token.length < 32) return { ok: false, error: "SHEIN_LOCAL_API_TOKEN is not configured", status: 503 };
+
+  const options = { method: route.method, headers: { Accept: "application/json", "X-Internal-Token": token } };
+  if (route.method !== "GET") {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(payload);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), profileApiTimeoutMs());
+  options.signal = controller.signal;
+  try {
+    const response = await fetch(`${base}${route.path}`, options);
+    const data = await response.json().catch(() => null);
+    const detail = data?.detail;
+    const detailError = typeof detail === "object" ? detail?.error : detail;
+    if (!response.ok || !data?.ok) {
+      return {
+        ok: false,
+        error: data?.error || detailError || "Python remote browser API request failed",
+        code: data?.code || detail?.code,
+        data,
+        status: response.status || 500,
+      };
+    }
+    return { ok: true, data, status: response.status };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.name === "AbortError" ? "Python remote browser API request timed out" : error.message,
+      status: 503,
+    };
+  } finally { clearTimeout(timer); }
+}
+
 function defaultProfileKey(userId, apiEmail, selected) {
   return selected || `user_${userId}_${apiEmail.replace(/[^a-z0-9_]+/gi, "_")}`;
 }
 
-module.exports = { normEmail, callSheinScraper, callSheinProfileApi, defaultProfileKey, remoteBrowserUrl };
+module.exports = { normEmail, callSheinScraper, callSheinProfileApi, callSheinRemoteBrowserApi, defaultProfileKey, remoteBrowserUrl };

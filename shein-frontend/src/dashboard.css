@@ -140,6 +140,50 @@
   flex-wrap: wrap;
 }
 
+.dashVncSettings {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-md);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.dashVncSettingsHead h2 {
+  margin: 2px 0 3px;
+  color: var(--dash-text-main);
+  font-size: 16px;
+}
+
+.dashVncSettingsHead p {
+  color: var(--dash-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dashVncEyebrow {
+  color: var(--dash-text-subtle);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.dashVncSettingsForm {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.45fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.dashVncSettingsForm label {
+  display: grid;
+  gap: 6px;
+  color: var(--dash-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .dashMonthControl {
   display: flex;
   flex-direction: column;
@@ -1189,6 +1233,10 @@
 
   .dashAddMonth .dashBtn {
     flex-shrink: 0;
+  }
+
+  .dashVncSettingsForm {
+    grid-template-columns: 1fr;
   }
 
   /* Horizontal swipeable tab bar */

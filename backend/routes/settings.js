@@ -1,7 +1,9 @@
 const express = require("express");
 const { pool } = require("../config/db");
-const { requireAuth, requireWriteAccess } = require("../middleware/auth");
+const { requireAuth, requireAdmin, requireWriteAccess } = require("../middleware/auth");
 const { asyncHandler, paths, int, number, finite, trim, execute, rows, first } = require("../lib/helpers");
+const { callSheinRemoteBrowserApi } = require("../lib/shein");
+const { appendSecurityAudit } = require("../lib/activity");
 const router = express.Router(); router.use(requireAuth, requireWriteAccess);
 const uid = (req) => Number(req.user.user_id);
 
@@ -13,6 +15,21 @@ router.post(paths("saveKgPrice"), asyncHandler(async (req, res) => {
   const price = number(req.body?.kg_price); if (!finite(req.body?.kg_price) || price < 0) return res.status(400).json({ success: false, error: "kg_price must be >= 0" });
   await execute(pool, "INSERT INTO user_settings (user_id, kg_price) VALUES (?, ?) ON DUPLICATE KEY UPDATE kg_price=VALUES(kg_price)", [uid(req), price]);
   res.json({ success: true, kg_price: price });
+}));
+router.get(paths("getVncCredentials"), requireAdmin, asyncHandler(async (_req, res) => {
+  const result = await callSheinRemoteBrowserApi("get_vnc_credentials");
+  if (!result.ok) return res.status(result.status || 503).json({ ok: false, error: result.error });
+  res.json({ ok: true, username: result.data?.username || "admin" });
+}));
+router.post(paths("updateVncCredentials"), requireAdmin, asyncHandler(async (req, res) => {
+  const username = trim(req.body?.username);
+  const password = String(req.body?.password || "");
+  if (!/^[A-Za-z0-9._-]{1,64}$/.test(username)) return res.status(400).json({ ok: false, error: "VNC username must use only letters, numbers, dot, underscore, or hyphen" });
+  if (password.length < 8 || /[\r\n]/.test(password)) return res.status(400).json({ ok: false, error: "VNC password must be at least 8 characters and cannot contain line breaks" });
+  const result = await callSheinRemoteBrowserApi("update_vnc_credentials", { username, password });
+  if (!result.ok) return res.status(result.status || 503).json({ ok: false, error: result.error });
+  await appendSecurityAudit(pool, req.user.user_id, req.user.user_id, "vnc_credentials_updated", req.ip, { username });
+  res.json({ ok: true, username: result.data?.username || username });
 }));
 router.get(paths("getDeliveryChargePresets"), asyncHandler(async (req, res) => {
   const data = await rows(pool, "SELECT id, label, adjustment_amount, active, sort_order FROM delivery_charge_presets WHERE user_id=? ORDER BY sort_order ASC, id ASC", [uid(req)]);

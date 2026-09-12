@@ -21,7 +21,7 @@ import {
 } from "../api/customsApi";
 import { getDashboardSummary } from "../api/dashboardApi";
 import { getBudgets, addBudget, updateBudget, deleteBudget } from "../api/budgetApi";
-import { getKgPrice, saveKgPrice } from "../api/settingsApi";
+import { getKgPrice, saveKgPrice, getVncCredentials, updateVncCredentials } from "../api/settingsApi";
 
 import { CustomModal } from "../components/CustomModal";
 import { isAuthenticated, clearAuthSession, getUser } from "../utils/auth";
@@ -74,7 +74,9 @@ function normalizeArrayResponse(res) {
 
 export default function Dashboard() {
   const nav = useNavigate();
-  const readOnly = getUser()?.role === "dashboard";
+  const currentUser = getUser();
+  const readOnly = currentUser?.role === "dashboard";
+  const isAdmin = currentUser?.role === "admin";
 
   const [activeView, setActiveView] = useState("overview");
   const [months, setMonths] = useState([]);
@@ -108,6 +110,9 @@ export default function Dashboard() {
   const [newBudgetValue, setNewBudgetValue] = useState("");
   const [newBudgetDesc, setNewBudgetDesc] = useState("");
   const [kgPrice, setKgPrice] = useState("0");
+  const [vncUsername, setVncUsername] = useState("admin");
+  const [vncPassword, setVncPassword] = useState("");
+  const [savingVncCredentials, setSavingVncCredentials] = useState(false);
   const [loadingMonthData, setLoadingMonthData] = useState(false);
   const monthDataRequest = useRef(0);
 
@@ -176,6 +181,30 @@ export default function Dashboard() {
     }
   };
 
+  const handleSaveVncCredentials = async () => {
+    if (!isAdmin || savingVncCredentials) return;
+    const username = String(vncUsername || "").trim();
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(username)) {
+      openError("VNC username must use only letters, numbers, dot, underscore, or hyphen.", "Remote Browser");
+      return;
+    }
+    if (vncPassword.length < 8 || /[\r\n]/.test(vncPassword)) {
+      openError("Enter a new VNC password with at least 8 characters and no line breaks.", "Remote Browser");
+      return;
+    }
+    setSavingVncCredentials(true);
+    try {
+      const result = await updateVncCredentials({ username, password: vncPassword });
+      setVncUsername(result?.username || username);
+      setVncPassword("");
+      openError("Remote browser credentials updated. Refresh noVNC and sign in again with the new credentials.", "Remote Browser");
+    } catch (err) {
+      openError(err?.message || "Failed to update remote browser credentials.", "Remote Browser");
+    } finally {
+      setSavingVncCredentials(false);
+    }
+  };
+
   const ensureAuth = () => {
     if (!isAuthenticated()) {
       clearAuthSession();
@@ -223,6 +252,13 @@ export default function Dashboard() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    getVncCredentials()
+      .then((result) => setVncUsername(result?.username || "admin"))
+      .catch(() => {});
+  }, [isAdmin]);
 
   // load month data
   useEffect(() => {
@@ -871,6 +907,31 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {isAdmin && (
+        <section className="dashVncSettings">
+          <div className="dashVncSettingsHead">
+            <div>
+              <div className="dashVncEyebrow">REMOTE ACCESS</div>
+              <h2>VPS Browser Credentials</h2>
+              <p>Change the username and password used by the noVNC browser. This does not change SSH access.</p>
+            </div>
+          </div>
+          <div className="dashVncSettingsForm">
+            <label>
+              Username
+              <input className="dashInput" value={vncUsername} onChange={(e) => setVncUsername(e.target.value)} autoComplete="username" />
+            </label>
+            <label>
+              New password
+              <input className="dashInput" type="password" value={vncPassword} onChange={(e) => setVncPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
+            </label>
+            <button className="dashBtn" type="button" onClick={handleSaveVncCredentials} disabled={savingVncCredentials}>
+              {savingVncCredentials ? "Saving..." : "Save VNC Credentials"}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Top Level Navigation Switcher */}
       <div className="dashNavTabs">

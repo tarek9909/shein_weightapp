@@ -28,6 +28,7 @@ from shein_scraper import (
     normalize_profile_key,
     start_manual_login,
 )
+from remote_browser import get_vnc_username, update_vnc_credentials
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -216,6 +217,11 @@ class ProfileLoginFinishReq(BaseModel):
     profile_key: str | None = None
 
 
+class VncCredentialsReq(BaseModel):
+    username: str
+    password: str
+
+
 # ============================================================
 # VPS profile management / manual login
 # ============================================================
@@ -275,6 +281,22 @@ async def cancel_profile_login(session_id: str):
         return {"ok": True, "message": "Manual login session closed.", "login": login}
     except Exception as exc:
         raise _profile_http_exception(exc)
+
+
+@app.get("/api/remote-browser/credentials", dependencies=[Depends(require_internal_token)])
+def remote_browser_credentials():
+    return {"ok": True, "username": get_vnc_username()}
+
+
+@app.put("/api/remote-browser/credentials", dependencies=[Depends(require_internal_token)])
+def update_remote_browser_credentials(req: VncCredentialsReq):
+    try:
+        username = update_vnc_credentials(req.username, req.password)
+        return {"ok": True, "username": username, "message": "Remote browser credentials updated."}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"{type(exc).__name__}: {exc}") from exc
 
 
 # =========================

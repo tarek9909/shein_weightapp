@@ -739,14 +739,25 @@ const OrdersPage = () => {
         >
           <div
             className="modalCard"
-            style={{ maxWidth: "480px" }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modalHeader">
-              <h3 className="modalTitle">
-                {orderModalMode === "add" ? "Create New Order" : `Edit ${editingOrder?.order_name || "Order"}`}
-              </h3>
+              <div className="modalHeaderMain">
+                <div className={`modalHeaderIcon ${orderModalMode === "add" ? "iconAdd" : "iconEdit"}`}>
+                  {orderModalMode === "add" ? "📦" : "✏️"}
+                </div>
+                <div className="modalTitleWrap">
+                  <h3 className="modalTitle">
+                    {orderModalMode === "add" ? "Create New Order" : `Edit ${editingOrder?.order_name || "Order"}`}
+                  </h3>
+                  <p className="modalSubtitle">
+                    {orderModalMode === "add"
+                      ? "Set order identity, purchase cost & assign customers"
+                      : "Update order financial metrics and details"}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 className="modalClose"
@@ -758,16 +769,16 @@ const OrdersPage = () => {
             </div>
 
             <form onSubmit={handleSaveOrder}>
-              <div className="modalBody" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div className="modalBody">
                 {formError && (
-                  <div style={{ color: "#ef4444", fontSize: "13px", padding: "8px 12px", background: "rgba(239, 68, 68, 0.1)", borderRadius: "6px" }}>
-                    {formError}
+                  <div style={{ color: "#b91c1c", fontSize: "13px", padding: "10px 14px", background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: "10px", fontWeight: 600 }}>
+                    ⚠️ {formError}
                   </div>
                 )}
 
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
-                    ORDER NAME / NUMBER *
+                <div className="modalField">
+                  <label className="modalLabel">
+                    <span>Order Name / Number <span className="modalLabelReq">*</span></span>
                   </label>
                   <input
                     type="text"
@@ -780,66 +791,134 @@ const OrdersPage = () => {
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
-                    ORDER AMOUNT / GOODS COST ($) *
+                <div className="modalField">
+                  <label className="modalLabel">
+                    <span>Goods Cost (SHEIN) <span className="modalLabelReq">*</span></span>
+                    <span className="modalLabelHint">Total item cost paid</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="modalInput"
-                    placeholder="0.00"
-                    value={orderForm.order_details}
-                    onChange={(e) => setOrderForm({ ...orderForm, order_details: e.target.value })}
-                    required
-                  />
+                  <div className="modalInputGroup">
+                    <span className="modalInputPrefix">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="modalInput"
+                      placeholder="0.00"
+                      value={orderForm.order_details}
+                      onChange={(e) => setOrderForm({ ...orderForm, order_details: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px", color: "var(--muted, #64748b)" }}>
-                    EXPECTED REVENUE TO COLLECT ($) *
+                <div className="modalField">
+                  <label className="modalLabel">
+                    <span>Expected Revenue to Collect <span className="modalLabelReq">*</span></span>
+                    <span className="modalLabelHint">Target collection amount</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="modalInput"
-                    placeholder="0.00"
-                    value={orderForm.amount_to_collect}
-                    onChange={(e) => setOrderForm({ ...orderForm, amount_to_collect: e.target.value })}
-                    required
-                  />
+                  <div className="modalInputGroup">
+                    <span className="modalInputPrefix">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="modalInput"
+                      placeholder="0.00"
+                      value={orderForm.amount_to_collect}
+                      onChange={(e) => setOrderForm({ ...orderForm, amount_to_collect: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
+
+                {Boolean(orderForm.order_details || orderForm.amount_to_collect) && (() => {
+                  const cost = parseFloat(orderForm.order_details) || 0;
+                  const revenue = parseFloat(orderForm.amount_to_collect) || 0;
+                  const profit = revenue - cost;
+                  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : null;
+                  return (
+                    <div className={`ordProfitCard ${profit >= 0 ? "isPositive" : "isNegative"}`}>
+                      <div className="ordProfitCardInfo">
+                        <span className="ordProfitBadgeIcon">{profit >= 0 ? "📈" : "📉"}</span>
+                        <div>
+                          <div className="ordProfitCardTitle">
+                            {profit >= 0 ? "Estimated Net Profit" : "Projected Deficit"}
+                          </div>
+                          <div className="ordProfitCardSub">
+                            Revenue (${revenue.toFixed(2)}) − Cost (${cost.toFixed(2)})
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ordProfitCardValueWrap">
+                        <div className="ordProfitCardValue">
+                          {profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`}
+                        </div>
+                        {margin !== null && (
+                          <span className="ordProfitCardMargin">
+                            {margin}% margin
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {orderModalMode === "add" && (
                   <div className="ordCustomerPicker">
                     <div className="ordCustomerPickerHead">
-                      <div>
-                        <label className="ordCustomerPickerLabel">ASSIGN CUSTOMERS (OPTIONAL)</label>
-                        <div className="ordCustomerPickerHint">
+                      <div className="ordCustomerPickerTitleWrap">
+                        <label className="ordCustomerPickerLabel">Assign Customers</label>
+                        <span className={`ordCustomerBadge ${orderForm.customer_ids.length > 0 ? "hasSelection" : ""}`}>
                           {orderForm.customer_ids.length} selected
-                        </div>
+                        </span>
                       </div>
-                      <input
-                        className="ordCustomerSearch"
-                        value={customerSearch}
-                        onChange={(event) => setCustomerSearch(event.target.value)}
-                        placeholder="Search customers"
-                        aria-label="Search customers"
-                      />
+                      <div className="ordCustomerSearchWrap">
+                        <svg className="ordCustomerSearchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          className="ordCustomerSearch"
+                          value={customerSearch}
+                          onChange={(event) => setCustomerSearch(event.target.value)}
+                          placeholder="Search customer by name..."
+                          aria-label="Search customers"
+                        />
+                        {customerSearch && (
+                          <button
+                            type="button"
+                            className="ordCustomerSearchClear"
+                            onClick={() => setCustomerSearch("")}
+                            aria-label="Clear search"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
+
                     {customersLoading ? (
-                      <div className="ordCustomerEmpty">Loading customers...</div>
+                      <div className="ordCustomerEmpty">
+                        <span className="ordCustomerEmptyIcon">⏳</span>
+                        <span>Loading customer directory...</span>
+                      </div>
                     ) : filteredDirectoryCustomers.length === 0 ? (
                       <div className="ordCustomerEmpty">
-                        {directoryCustomers.length ? "No customers match your search." : "Add customers from the Customers page first."}
+                        <span className="ordCustomerEmptyIcon">👥</span>
+                        <span>
+                          {directoryCustomers.length
+                            ? "No customers match your search."
+                            : "No customers yet. Add customers from the Customers page first."}
+                        </span>
                       </div>
                     ) : (
                       <div className="ordCustomerOptions">
                         {filteredDirectoryCustomers.map((customer) => {
                           const id = Number(customer.id);
                           const selected = orderForm.customer_ids.includes(id);
+                          const nameParts = (customer.customer_name || "C").trim().split(/\s+/);
+                          const initials = nameParts.length === 1
+                            ? nameParts[0].slice(0, 2).toUpperCase()
+                            : (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
                           return (
                             <label key={id} className={`ordCustomerOption${selected ? " isSelected" : ""}`}>
                               <input
@@ -847,6 +926,7 @@ const OrdersPage = () => {
                                 checked={selected}
                                 onChange={() => toggleOrderCustomer(id)}
                               />
+                              <div className="ordCustomerAvatar">{initials}</div>
                               <span>
                                 <strong>{customer.customer_name}</strong>
                                 {customer.phone ? <small>{customer.phone}</small> : null}
@@ -860,7 +940,7 @@ const OrdersPage = () => {
                 )}
               </div>
 
-              <div className="modalFooter" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <div className="modalFooter">
                 <button
                   type="button"
                   className="modalBtn modalBtnCancel"

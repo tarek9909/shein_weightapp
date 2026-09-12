@@ -45,9 +45,13 @@ services:
       SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS: ${SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS:-1800}
       SHEIN_ENABLE_REMOTE_BROWSER: ${SHEIN_ENABLE_REMOTE_BROWSER:-1}
       SHEIN_VNC_PASSWORD: ${SHEIN_VNC_PASSWORD:?SHEIN_VNC_PASSWORD must be set}
+      SHEIN_VNC_PASSWORD_FILE: /run/vnc-data/password
+      SHEIN_VNC_BASIC_AUTH_FILE: /run/vnc-auth/.htpasswd
       DISPLAY: :99
     volumes:
       - shein_profiles:/app/profiles
+      - shein_vnc_data:/run/vnc-data
+      - ${SHEIN_VNC_BASIC_AUTH_HOST_FILE:-./.runtime/shein_vnc_passwd}:/run/vnc-auth/.htpasswd
     ports:
       - "127.0.0.1:${BROWSER_PORT:-6080}:6080"
     healthcheck:
@@ -120,6 +124,8 @@ volumes:
   shein_mysql_data:
     driver: local
   shein_profiles:
+    driver: local
+  shein_vnc_data:
     driver: local
 
 networks:
