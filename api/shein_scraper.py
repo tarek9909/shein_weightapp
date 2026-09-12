@@ -533,6 +533,43 @@ def _prepare_browser_profile(profile_key: str) -> tuple[str, Optional[str]]:
     return str(profile_path), profile_key
 
 
+def _chrome_process_uses_profile(profile_path: Path) -> bool:
+    """Return whether a live Chromium process owns this profile directory."""
+    if os.name == "nt":
+        return False
+    target = str(profile_path.resolve())
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return False
+    for proc_dir in proc_root.iterdir():
+        if not proc_dir.name.isdigit():
+            continue
+        try:
+            command_line = (proc_dir / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", "ignore")
+        except (OSError, UnicodeError):
+            continue
+        if "chrome" in command_line.lower() and f"--user-data-dir={target}" in command_line:
+            return True
+    return False
+
+
+def _clear_stale_chrome_locks(profile_path: Path) -> None:
+    """Remove Chromium singleton locks only after confirming no live owner."""
+    if not profile_path.is_dir():
+        return
+    if _chrome_process_uses_profile(profile_path):
+        raise ProfileBusyError(f"Profile {profile_path.name} is already open in Chromium.")
+    for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        lock_path = profile_path / name
+        if not (lock_path.exists() or lock_path.is_symlink()):
+            continue
+        try:
+            lock_path.unlink()
+            print(f"[PROFILE] Removed stale Chromium lock {lock_path}.")
+        except OSError as exc:
+            raise RuntimeError(f"Could not clear stale Chromium lock {lock_path}: {exc}") from exc
+
+
 def _launch_shein_browser(
     playwright,
     profile_path: str,
@@ -540,6 +577,7 @@ def _launch_shein_browser(
     chrome_profile_directory: Optional[str] = None,
     manual: bool = False,
 ):
+    _clear_stale_chrome_locks(Path(profile_path))
     args = []
     if chrome_profile_directory:
         args.append(f"--profile-directory={chrome_profile_directory}")
