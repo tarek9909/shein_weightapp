@@ -10,6 +10,7 @@ SHEIN_PLAYWRIGHT_PROFILES_DIR=/app/profiles
 SHEIN_PROFILE_LOCK_TIMEOUT_SECONDS=5
 SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS=1800
 SHEIN_ENABLE_REMOTE_BROWSER=1
+SHEIN_VNC_PASSWORD=choose_a_strong_vnc_password
 ```
 
 Mount `/app/profiles` to persistent VPS storage. The Python API exposes these
@@ -34,7 +35,8 @@ keeps the profile key unique in the database. Deleted account profile names are
 reserved while their browser data remains on disk, preventing cookie reuse by a
 future account.
 
-The Docker image starts Xvfb, x11vnc, and noVNC automatically. It keeps the
+The Docker image starts Xvfb, x11vnc, and noVNC automatically. It requires a
+VNC password and keeps the
 viewer bound to the VPS loopback by default (`BROWSER_PORT=6080`), so publish
 it only through an authenticated HTTPS reverse proxy, VPN, or SSH tunnel. Do
 not expose the Python API, internal token, or noVNC without authentication and
@@ -47,7 +49,10 @@ sudo apt update
 sudo apt install -y xvfb x11vnc novnc websockify
 Xvfb :99 -screen 0 1280x800x24 &
 export DISPLAY=:99
-x11vnc -display :99 -localhost -forever -shared -rfbport 5900 &
+export SHEIN_VNC_PASSWORD='choose-a-strong-password'
+mkdir -p ~/.vnc
+x11vnc -storepasswd "$SHEIN_VNC_PASSWORD" ~/.vnc/passwd
+x11vnc -display :99 -localhost -forever -shared -rfbport 5900 -rfbauth ~/.vnc/passwd &
 websockify --web=/usr/share/novnc/ 6080 127.0.0.1:5900 &
 ```
 

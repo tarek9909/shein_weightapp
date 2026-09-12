@@ -5,7 +5,7 @@ const INVALID_SECRETS = new Set(["", "CHANGE_THIS_SECRET_123", "change-me", "rep
 
 function secret() {
   const value = String(process.env.JWT_SECRET || process.env.AUTH_SECRET || "").trim();
-  if (INVALID_SECRETS.has(value) || value.length < 32 || /change[_ -]?this|default|replace-me/i.test(value)) throw new Error("JWT_SECRET must be configured with a strong, non-default value");
+  if (INVALID_SECRETS.has(value) || value.length < 32 || /change|default|replace|your[_ -]?|<|>/i.test(value)) throw new Error("JWT_SECRET must be configured with a strong, non-default value");
   return value;
 }
 

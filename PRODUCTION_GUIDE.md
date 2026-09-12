@@ -16,13 +16,14 @@ The application consists of three primary components:
 
 ## 2. Default Initial Credentials
 
-Fresh installations automatically seed the master administrator account on startup:
+Fresh installations seed the master administrator account on startup:
 * **Username:** `admin`
-* **Password:** `AdminPassword!123`
+* **Password:** the value configured in `SEED_ADMIN_PASSWORD`
 * **Role:** `Administrator` (Full access to create/manage users, reset passwords, and oversee all workspaces)
 
 > [!IMPORTANT]
-> Immediately log in and change the master password via **User Accounts** or **Reset Password** in the navigation menu.
+> Set `SEED_ADMIN_PASSWORD` before the first production boot. Immediately log
+> in and change the master password via **User Accounts** or **Reset Password**.
 
 ---
 
@@ -59,7 +60,8 @@ Docker provides an isolated, zero-dependency deployment that brings up MySQL, th
    ```
 
 5. **Access the application:**
-   - Web application: `http://<your-server-ip>` (Port 80 via Nginx)
+   - Web application: `http://127.0.0.1:8088` through the Compose gateway, or
+     your public host-level Nginx URL
    - Direct Backend API: `http://<your-server-ip>:8081`
 
 ---
@@ -112,7 +114,7 @@ sudo npm install -g pm2
 
 6. **Configure Nginx:**
    ```bash
-   sudo cp nginx.conf /etc/nginx/sites-available/shein.conf
+   sudo cp nginx.native.conf /etc/nginx/sites-available/shein.conf
    sudo ln -s /etc/nginx/sites-available/shein.conf /etc/nginx/sites-enabled/
    sudo nginx -t
    sudo systemctl reload nginx

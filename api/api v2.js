@@ -717,7 +717,7 @@ async function ensureLoggedIn(page, baseUrl, acc, fetchUrl = null, headless = fa
     console.log("[DEBUG] SHEIN verification dialog detected, checking Gmail...");
 
     const code = await getLatestSheinCode(acc.gmailEmail, acc.gmailAppPassword, 180);
-    console.log("[DEBUG] Gmail code =", JSON.stringify(code));
+  console.log("[GMAIL] SHEIN verification code received.");
 
     if (!code) {
       await page.screenshot({ path: path.join(DEBUG_DIR, "debug_no_code_found.png"), fullPage: true });

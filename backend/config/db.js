@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const mysql = require("mysql2/promise");
+const bcrypt = require("bcryptjs");
 const { seal, assertSecretConfig } = require("../lib/secretBox");
 
 const pool = mysql.createPool({
@@ -105,7 +106,15 @@ async function ensureRuntimeSchema() {
     }
   }
   if (process.env.SEED_ADMIN !== "0") {
-    await pool.execute("INSERT INTO users (username,password_hash,role,is_active,auth_version) VALUES ('admin', '$2a$12$G/2jPhENlIPVzQ1MV18yYesjR9RWEr8nMGCloC20H2uI1JQhqB5HW', 'admin', 1, 0) ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash), role='admin', is_active=1");
+    // Seed only when the account does not exist. Never overwrite an admin's
+    // password or disabled state during a restart.
+    const seedPassword = String(process.env.SEED_ADMIN_PASSWORD || "AdminPassword!123");
+    if (seedPassword.length < 12) throw new Error("SEED_ADMIN_PASSWORD must contain at least 12 characters");
+    if (process.env.NODE_ENV === "production" && /replace|change|your[_ -]?|<|>/i.test(seedPassword)) {
+      throw new Error("SEED_ADMIN_PASSWORD must be replaced with a real production password");
+    }
+    const seedHash = await bcrypt.hash(seedPassword, 12);
+    await pool.execute("INSERT IGNORE INTO users (username,password_hash,role,is_active,auth_version) VALUES ('admin', ?, 'admin', 1, 0)", [seedHash]);
   }
   if (process.env.NODE_ENV !== "production" && process.env.SEED_DEMO_ACCOUNTS !== "0") {
     const demoUsers = [

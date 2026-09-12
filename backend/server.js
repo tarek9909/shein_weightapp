@@ -43,16 +43,6 @@ const allowedOrigins = new Set(String(process.env.ALLOWED_ORIGINS || "http://loc
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin)) return callback(null, true);
-    try {
-      const parsedOrigin = new URL(origin);
-      for (const allowed of allowedOrigins) {
-        if (allowed === "*") return callback(null, true);
-        try {
-          const parsedAllowed = new URL(allowed);
-          if (parsedAllowed.hostname === parsedOrigin.hostname) return callback(null, true);
-        } catch (_) {}
-      }
-    } catch (_) {}
     return callback(null, false);
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

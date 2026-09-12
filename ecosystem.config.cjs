@@ -1,9 +1,19 @@
+const path = require("path");
+const fs = require("fs");
+
+const projectRoot = __dirname;
+const venvPython = process.platform === "win32"
+  ? path.join(projectRoot, ".venv", "Scripts", "python.exe")
+  : path.join(projectRoot, ".venv", "bin", "python");
+const pythonExecutable = process.env.PYTHON_EXECUTABLE
+  || (fs.existsSync(venvPython) ? venvPython : (process.platform === "win32" ? "python" : "python3"));
+
 module.exports = {
   apps: [
     {
       name: "shein-node-backend",
       script: "backend/server.js",
-      cwd: __dirname,
+      cwd: projectRoot,
       instances: 1,
       exec_mode: "fork",
       autorestart: true,
@@ -21,9 +31,9 @@ module.exports = {
     },
     {
       name: "shein-scraper-api",
-      script: process.platform === "win32" ? ".venv/Scripts/python.exe" : "python3",
+      script: pythonExecutable,
       args: "-m uvicorn app:app --host 127.0.0.1 --port 8000",
-      cwd: "api",
+      cwd: path.join(projectRoot, "api"),
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

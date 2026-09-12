@@ -1,7 +1,7 @@
-fastapi
-uvicorn
-sqlalchemy
-pymysql
-python-dotenv
-cryptography
-playwright
+fastapi==0.129.0
+uvicorn==0.40.0
+sqlalchemy==2.0.46
+pymysql==1.1.2
+python-dotenv==1.2.1
+cryptography==46.0.5
+playwright==1.58.0

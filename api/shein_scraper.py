@@ -20,8 +20,9 @@ from gmail import get_latest_shein_code
 
 PROFILES_DIR = os.getenv("SHEIN_PLAYWRIGHT_PROFILES_DIR", "profiles")
 PLAYWRIGHT_BROWSER_CHANNEL = os.getenv("SHEIN_PLAYWRIGHT_CHANNEL", "chromium").strip() or None
-DEFAULT_BASE_URL = "https://ar.shein.com"
+DEFAULT_BASE_URL = os.getenv("SHEIN_BASE_URL", "https://ar.shein.com").strip().rstrip("/") or "https://ar.shein.com"
 PROFILE_LOCK_TIMEOUT_SECONDS = float(os.getenv("SHEIN_PROFILE_LOCK_TIMEOUT_SECONDS", "5"))
+MANUAL_LOGIN_TIMEOUT_SECONDS = max(60, int(os.getenv("SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS", "1800")))
 # Chrome protects authenticated cookies against copying into another user-data
 # directory. Keep syncing opt-in; a dedicated profile must be logged into once
 # through normal Chrome, then Playwright can reuse that same directory.
@@ -151,9 +152,16 @@ class ManualLoginSession:
                 page = context.pages[0] if context.pages else context.new_page()
                 page.goto(f"{self.base_url}/user/login", wait_until="domcontentloaded")
                 self.status = "login_required"
+                deadline = self.started_at + MANUAL_LOGIN_TIMEOUT_SECONDS
 
                 while not self._stop.wait(0.5):
                     try:
+                        if time.time() >= deadline:
+                            self.error = (
+                                f"Manual login session expired after {MANUAL_LOGIN_TIMEOUT_SECONDS} seconds."
+                            )
+                            self.status = "expired"
+                            break
                         if page.is_closed():
                             self.error = "The remote login browser was closed."
                             self.status = "closed"
@@ -1048,7 +1056,7 @@ def ensure_logged_in(page: Page, base_url: str, acc: dict, fetch_url: Optional[s
             timeout_sec=180,
         )
 
-        print("[DEBUG] Gmail code =", repr(code))
+        print("[GMAIL] SHEIN verification code received.")
 
         if not code:
             page.screenshot(path="debug_no_code_found.png", full_page=True)

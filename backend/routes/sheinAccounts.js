@@ -131,7 +131,7 @@ router.post(paths("saveAccount", true), requireOperations, asyncHandler(async (r
   const cookies = d.cookies_json == null ? "" : String(d.cookies_json);
   let profile = d.profile_key == null ? "" : trim(d.profile_key);
   const id = int(d.id);
-  if (!api || !shein || !gmail) return res.status(400).json({ ok: false, error: "API, SHEIN, and Gmail emails are required" });
+  if (!api || !shein) return res.status(400).json({ ok: false, error: "API and SHEIN emails are required" });
   try {
     if (id > 0) {
       const existing = await first(pool, "SELECT id,profile_key FROM shein_accounts WHERE id=? AND user_id=? LIMIT 1", [id, uid(req)]);

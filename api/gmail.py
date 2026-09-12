@@ -187,7 +187,7 @@ def get_latest_shein_code(
     Requires a Gmail App Password.
     """
     start = time.time()
-    print(f"[DEBUG] Polling Gmail for SHEIN code: {gmail_email}")
+    print("[GMAIL] Polling Gmail for a SHEIN verification code.")
 
     while time.time() - start < timeout_sec:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")

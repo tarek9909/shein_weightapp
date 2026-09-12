@@ -88,8 +88,8 @@ export default function SheinAccountsPage() {
 
   const saveAccount = async () => {
     if (saving) return;
-    if (!form.email || !form.shein_email || !form.gmail_email) {
-      openInfo("Missing Data", "API email, SHEIN email, and Gmail email are required.");
+    if (!form.email || !form.shein_email) {
+      openInfo("Missing Data", "API email and SHEIN email are required.");
       return;
     }
 
@@ -128,8 +128,8 @@ export default function SheinAccountsPage() {
 
   const saveEdit = async () => {
     if (saving) return;
-    if (!editForm.email || !editForm.shein_email || !editForm.gmail_email) {
-      openInfo("Missing Data", "API email, SHEIN email, and Gmail email are required.");
+    if (!editForm.email || !editForm.shein_email) {
+      openInfo("Missing Data", "API email and SHEIN email are required.");
       return;
     }
     setSaving(true);
@@ -298,7 +298,7 @@ export default function SheinAccountsPage() {
             <input className="loginInput" placeholder="Associated API email or ID" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             <input className="loginInput" placeholder="SHEIN email" value={form.shein_email} onChange={(e) => setForm((p) => ({ ...p, shein_email: e.target.value }))} />
             <input className="loginInput" type="password" placeholder="SHEIN password (optional)" value={form.shein_password} onChange={(e) => setForm((p) => ({ ...p, shein_password: e.target.value }))} />
-            <input className="loginInput" placeholder="Gmail email" value={form.gmail_email} onChange={(e) => setForm((p) => ({ ...p, gmail_email: e.target.value }))} />
+            <input className="loginInput" placeholder="Gmail email (optional)" value={form.gmail_email} onChange={(e) => setForm((p) => ({ ...p, gmail_email: e.target.value }))} />
             <input className="loginInput" type="password" placeholder="Gmail app password (optional)" value={form.gmail_app_password} onChange={(e) => setForm((p) => ({ ...p, gmail_app_password: e.target.value }))} />
             {profileDropdown(form.profile_key, (e) => setForm((p) => ({ ...p, profile_key: e.target.value })))}
             <div className="ordSub">Passwords are optional when you log in manually through the VPS browser.</div>
@@ -348,7 +348,7 @@ export default function SheinAccountsPage() {
               <input className="cmInput" value={editForm.email} disabled />
               <input className="cmInput" placeholder="SHEIN email" value={editForm.shein_email} onChange={(e) => setEditForm((p) => ({ ...p, shein_email: e.target.value }))} />
               <input className="cmInput" type="password" placeholder="SHEIN password (optional)" value={editForm.shein_password} onChange={(e) => setEditForm((p) => ({ ...p, shein_password: e.target.value }))} />
-              <input className="cmInput" placeholder="Gmail email" value={editForm.gmail_email} onChange={(e) => setEditForm((p) => ({ ...p, gmail_email: e.target.value }))} />
+              <input className="cmInput" placeholder="Gmail email (optional)" value={editForm.gmail_email} onChange={(e) => setEditForm((p) => ({ ...p, gmail_email: e.target.value }))} />
               <input className="cmInput" placeholder="Gmail app password (optional)" type="password" value={editForm.gmail_app_password} onChange={(e) => setEditForm((p) => ({ ...p, gmail_app_password: e.target.value }))} />
               {profileDropdown(editForm.profile_key, (e) => setEditForm((p) => ({ ...p, profile_key: e.target.value })))}
             </div>

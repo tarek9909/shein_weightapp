@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-mysql}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
       MYSQL_DATABASE: ${DB_NAME:-shein}
     volumes:
       - shein_mysql_data:/var/lib/mysql
@@ -36,15 +36,17 @@ services:
     container_name: shein-scraper
     restart: unless-stopped
     environment:
-      DB_URL: mysql+pymysql://root:${DB_PASSWORD:-mysql}@mysql:3306/${DB_NAME:-shein}
-      APP_SECRET: ${APP_SECRET:-super_secure_app_secret_key_1234567890_32chars}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
-      SHEIN_LOCAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
+      DB_URL: mysql+pymysql://root:${DB_PASSWORD:?DB_PASSWORD must be set}@mysql:3306/${DB_NAME:-shein}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN must be set}
+      SHEIN_LOCAL_API_TOKEN: ${SHEIN_LOCAL_API_TOKEN:?SHEIN_LOCAL_API_TOKEN must be set}
       PLAYWRIGHT_HEADLESS: "1"
+      SHEIN_BASE_URL: ${SHEIN_BASE_URL:-https://ar.shein.com}
       SHEIN_PLAYWRIGHT_CHANNEL: chromium
       SHEIN_PLAYWRIGHT_PROFILES_DIR: /app/profiles
       SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS: ${SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS:-1800}
       SHEIN_ENABLE_REMOTE_BROWSER: ${SHEIN_ENABLE_REMOTE_BROWSER:-1}
+      SHEIN_VNC_PASSWORD: ${SHEIN_VNC_PASSWORD:?SHEIN_VNC_PASSWORD must be set}
       DISPLAY: :99
     volumes:
       - shein_profiles:/app/profiles
@@ -79,15 +81,16 @@ services:
       DB_PORT: 3306
       DB_NAME: ${DB_NAME:-shein}
       DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-mysql}
-      JWT_SECRET: ${JWT_SECRET:-super_secure_jwt_secret_key_1234567890_32chars}
-      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-super_secure_encryption_key_1234567890_32}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?CREDENTIAL_ENCRYPTION_KEY must be set}
       SHEIN_LOCAL_API_BASE_URL: http://scraper:8000
-      SHEIN_LOCAL_API_TOKEN: ${INTERNAL_API_TOKEN:-super_secure_internal_token_1234567890_32}
+      SHEIN_LOCAL_API_TOKEN: ${SHEIN_LOCAL_API_TOKEN:?SHEIN_LOCAL_API_TOKEN must be set}
       SHEIN_PROFILE_API_TIMEOUT_MS: ${SHEIN_PROFILE_API_TIMEOUT_MS:-10000}
       SHEIN_REMOTE_BROWSER_URL: ${SHEIN_REMOTE_BROWSER_URL:-https://shein-tracker.duckdns.org/vnc/vnc.html?path=websockify&autoconnect=true&resize=scale}
-      ALLOWED_ORIGINS: "*"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS must be set}
       SEED_ADMIN: "1"
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD must be set}
       SEED_DEMO_ACCOUNTS: "0"
     depends_on:
       mysql:
@@ -106,10 +109,8 @@ services:
     image: nginx:alpine
     container_name: shein-nginx
     restart: unless-stopped
-    profiles:
-      - standalone
     ports:
-      - "127.0.0.1:8088:80"
+      - "127.0.0.1:${HTTP_HOST_PORT:-8088}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:

@@ -87,15 +87,20 @@ JWT_SECRET=unique_random_secret_at_least_32_characters
 CREDENTIAL_ENCRYPTION_KEY=unique_random_secret_at_least_32_characters
 INTERNAL_API_TOKEN=unique_random_secret_at_least_32_characters
 SHEIN_LOCAL_API_TOKEN=unique_random_secret_at_least_32_characters
+SEED_ADMIN_PASSWORD=choose_a_strong_initial_admin_password
+SHEIN_BASE_URL=https://ar.shein.com
 PLAYWRIGHT_HEADLESS=1
 SHEIN_MANUAL_LOGIN_TIMEOUT_SECONDS=1800
 SHEIN_ENABLE_REMOTE_BROWSER=1
+SHEIN_VNC_PASSWORD=choose_a_strong_vnc_password
 BROWSER_PORT=6080
-SHEIN_REMOTE_BROWSER_URL=https://browser.your-domain.com/vnc.html
+SHEIN_REMOTE_BROWSER_URL=https://browser.your-domain.com/vnc/vnc.html?path=websockify&autoconnect=true&resize=scale
 ```
 
-For Docker Compose, `INTERNAL_API_TOKEN` is used for Node-to-Python
-communication. Keep it long and private. Never commit `.env` to Git.
+For Docker Compose, `SHEIN_LOCAL_API_TOKEN` is used for Node-to-Python
+communication and `INTERNAL_API_TOKEN` is retained for compatibility. They may
+use the same random value, but both must be configured. Never commit `.env` to
+Git.
 
 The `SHEIN_REMOTE_BROWSER_URL` must be the URL that your phone can open. Do not
 set it to `http://127.0.0.1:6080`; that address exists only inside the VPS.
@@ -124,13 +129,18 @@ docker compose logs --tail=100 scraper
 docker compose logs --tail=100 mysql
 ```
 
-The web application is available through the Nginx URL, normally:
+The Compose Nginx gateway listens on `127.0.0.1:8088` by default. If you use a
+host-level Nginx or another HTTPS proxy, point it to that port. You can change
+the bind port with `HTTP_HOST_PORT`.
+
+The web application is available through the gateway, for example:
 
 ```text
-http://YOUR_SERVER_IP/
+http://127.0.0.1:8088/
 ```
 
-Change the seeded administrator password immediately after the first login.
+The initial administrator password is the value of `SEED_ADMIN_PASSWORD`.
+Set it before the first production boot and change it after the first login.
 
 ## 6. Make the VPS browser accessible from the phone
 
@@ -177,7 +187,8 @@ Repeat these steps once for every account:
 
 1. Open the application website.
 2. Open **SHEIN Accounts**.
-3. Add the API email, SHEIN email, and Gmail email.
+3. Add the API email and SHEIN email. Gmail details are optional because the
+   normal workflow uses manual login in the VPS browser.
 4. Leave the profile as **Create automatically**, or select the assigned
    profile.
 5. Click **Login on VPS**.
@@ -270,16 +281,22 @@ npm run build --prefix shein-frontend
 ```
 
 For native mode, create both `.env` and `backend/.env`, configure MySQL, and
-start Xvfb/noVNC before starting the Python API:
+start Xvfb/noVNC with a password before starting the Python API:
 
 ```bash
 Xvfb :99 -screen 0 1280x800x24 &
 export DISPLAY=:99
-x11vnc -display :99 -localhost -forever -shared -rfbport 5900 &
+export SHEIN_VNC_PASSWORD='choose-a-strong-password'
+mkdir -p ~/.vnc
+x11vnc -storepasswd "$SHEIN_VNC_PASSWORD" ~/.vnc/passwd
+x11vnc -display :99 -localhost -forever -shared -rfbport 5900 -rfbauth ~/.vnc/passwd &
 websockify --web=/usr/share/novnc/ 6080 127.0.0.1:5900 &
 pm2 start ecosystem.config.cjs
 pm2 save
 ```
+
+For native Nginx, install `nginx.native.conf`; `nginx.conf` uses Docker service
+names and is only for the Compose gateway.
 
 Native mode requires more maintenance: MySQL, PM2, Chromium, Xvfb, the
 profile directory, and the reverse proxy must all be kept running manually.

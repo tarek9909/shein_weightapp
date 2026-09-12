@@ -4,7 +4,7 @@ const DEFAULTS = new Set(["", "CHANGE_THIS_SECRET_123", "replace-me", "change-me
 
 function encryptionKey() {
   const raw = String(process.env.CREDENTIAL_ENCRYPTION_KEY || "").trim();
-  if (DEFAULTS.has(raw) || raw.length < 32) {
+  if (DEFAULTS.has(raw) || raw.length < 32 || /change|replace|default|your[_ -]?|<|>/i.test(raw)) {
     throw new Error("CREDENTIAL_ENCRYPTION_KEY must be configured with at least 32 characters");
   }
   return crypto.createHash("sha256").update(raw, "utf8").digest();

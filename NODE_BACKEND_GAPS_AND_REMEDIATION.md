@@ -34,7 +34,7 @@ The remediation goal is implemented in the current workspace:
 - The scraper bridge requires `X-Internal-Token`, uses loopback-only startup, has bounded ping/scrape timeouts, and never logs scraper payloads.
 - Startup runs the Node migration ledger and schema preflight, checks tenant integrity, verifies database readiness, and starts only services that pass readiness checks. The frontend uses one direct API-origin strategy with CORS allowlisting.
 - Automated verification is available through `backend` `check`, unit tests, and `npm run smoke`; the smoke suite exercises role denial, two-user isolation, numeric validation, credential redaction, forged-token rejection, managed-account lifecycle, Python bridge protection, and readiness. The managed-account UI also wires soft-delete/disable, re-enable, role change, and password reset actions.
-- The production frontend dependency audit is clean with `npm audit --omit=dev`; the remaining full-audit findings belong to the legacy Create React App development toolchain and require a separately planned toolchain migration. No forced audit upgrade was applied.
+- The production dependency audit is clean with `npm audit --omit=dev`; the full frontend audit currently reports 31 findings (9 low, 8 moderate, 14 high), concentrated in the legacy Create React App development toolchain. No forced audit upgrade was applied because it can break the build; the toolchain migration remains a separate maintenance task.
 
 Local seeded accounts:
 

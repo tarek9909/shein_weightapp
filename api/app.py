@@ -1,6 +1,7 @@
 # app.py
 ####
 import os
+import re
 import traceback
 import anyio
 from pathlib import Path
@@ -30,12 +31,17 @@ from shein_scraper import (
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-APP_SECRET = os.getenv("APP_SECRET")
-if not APP_SECRET or len(APP_SECRET.strip()) < 32:
-    raise RuntimeError("APP_SECRET must be configured with at least 32 characters")
-INTERNAL_API_TOKEN = os.getenv("SHEIN_LOCAL_API_TOKEN") or os.getenv("INTERNAL_API_TOKEN")
-if not INTERNAL_API_TOKEN or len(INTERNAL_API_TOKEN.strip()) < 32:
-    raise RuntimeError("SHEIN_LOCAL_API_TOKEN must be configured with at least 32 characters")
+def _required_secret(name: str, value: str | None) -> str:
+    normalized = str(value or "").strip()
+    if len(normalized) < 32 or re.search(r"change|replace|default|your[_ -]?|<|>", normalized, re.IGNORECASE):
+        raise RuntimeError(f"{name} must be configured with a strong, non-default value")
+    return normalized
+
+
+APP_SECRET = _required_secret("APP_SECRET", os.getenv("APP_SECRET"))
+INTERNAL_API_TOKEN = _required_secret(
+    "SHEIN_LOCAL_API_TOKEN", os.getenv("SHEIN_LOCAL_API_TOKEN") or os.getenv("INTERNAL_API_TOKEN")
+)
 
 # Headless is the safe default for a VPS. Manual login uses a separate visible
 # browser session started through the protected profile-login endpoints.

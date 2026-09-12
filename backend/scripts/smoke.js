@@ -48,6 +48,7 @@ async function main() {
   let smokeAdminId = 0;
   let managedUserId = 0;
   let managedToken = "";
+  let smokeSheinApiEmail = "";
 
   try {
     const dashboardWrite = await request(NODE_BASE, "/month/addMonth", {
@@ -103,6 +104,20 @@ async function main() {
     if (/shein_password|gmail_app_password|cookies_json/i.test(JSON.stringify(accounts.body))) {
       throw new Error("SHEIN account response contains a secret field");
     }
+
+    smokeSheinApiEmail = `smoke-shein-${Date.now()}@example.com`;
+    const manualOnlyAccount = await request(NODE_BASE, "/sheinAccounts/saveAccount", {
+      method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
+      body: JSON.stringify({ email: smokeSheinApiEmail, shein_email: smokeSheinApiEmail, profile_key: "auto" }),
+    });
+    assertStatus(manualOnlyAccount, 201, "Manual-only SHEIN account without Gmail");
+    const removeManualOnly = await request(NODE_BASE, "/sheinAccounts/deleteAccount", {
+      method: "POST", headers: { ...auth(operationsToken), "Content-Type": "application/json" },
+      body: JSON.stringify({ email: smokeSheinApiEmail }),
+    });
+    assertStatus(removeManualOnly, 200, "Manual-only SHEIN account cleanup");
+    await pool.execute("DELETE FROM shein_profile_reservations WHERE account_email=?", [smokeSheinApiEmail]);
+    smokeSheinApiEmail = "";
 
     const forged = jwt.sign({ user_id: 1, role: "admin" }, "CHANGE_THIS_SECRET_123", { algorithm: "HS256" });
     const oldSecret = await request(NODE_BASE, "/month/getMonths", { headers: { Authorization: `Bearer ${forged}` } });
@@ -179,6 +194,10 @@ async function main() {
     }
     if (managedUserId) await pool.execute("DELETE FROM users WHERE id=?", [managedUserId]).catch(() => {});
     if (smokeAdminId) await pool.execute("DELETE FROM users WHERE id=?", [smokeAdminId]).catch(() => {});
+    if (smokeSheinApiEmail) {
+      await pool.execute("DELETE FROM shein_accounts WHERE api_email=?", [smokeSheinApiEmail]).catch(() => {});
+      await pool.execute("DELETE FROM shein_profile_reservations WHERE account_email=?", [smokeSheinApiEmail]).catch(() => {});
+    }
     await pool.end();
   }
 }

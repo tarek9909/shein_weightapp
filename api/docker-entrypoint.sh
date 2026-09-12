@@ -2,6 +2,11 @@
 set -euo pipefail
 
 if [[ "${SHEIN_ENABLE_REMOTE_BROWSER:-1}" == "1" || "${SHEIN_ENABLE_REMOTE_BROWSER:-1}" == "true" ]]; then
+  vnc_password="${SHEIN_VNC_PASSWORD:-}"
+  if [[ ${#vnc_password} -lt 8 || "$vnc_password" =~ (replace|change|your|default) ]]; then
+    echo "[ENTRYPOINT] SHEIN_VNC_PASSWORD must be a real password of at least 8 characters when the remote browser is enabled." >&2
+    exit 1
+  fi
   display_number="${DISPLAY:-:99}"
   screen_size="${SHEIN_SCREEN_SIZE:-1280x800x24}"
   disp_id="${display_number#:}"
@@ -19,9 +24,9 @@ if [[ "${SHEIN_ENABLE_REMOTE_BROWSER:-1}" == "1" || "${SHEIN_ENABLE_REMOTE_BROWS
   done
 
   VNC_AUTH="-nopw"
-  if [[ -n "${SHEIN_VNC_PASSWORD:-}" ]]; then
+  if [[ -n "$vnc_password" ]]; then
     mkdir -p /root/.vnc
-    x11vnc -storepasswd "${SHEIN_VNC_PASSWORD}" /root/.vnc/passwd
+    x11vnc -storepasswd "$vnc_password" /root/.vnc/passwd
     VNC_AUTH="-rfbauth /root/.vnc/passwd"
   fi
 
