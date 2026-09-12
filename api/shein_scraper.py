@@ -4,6 +4,7 @@ import re
 import json
 import shutil
 import sqlite3
+import signal
 import subprocess
 import tempfile
 import threading
@@ -227,14 +228,7 @@ class ManualLoginSession:
                 except Exception:
                     pass
             if browser_process is not None:
-                try:
-                    browser_process.terminate()
-                    browser_process.wait(timeout=10)
-                except Exception:
-                    try:
-                        browser_process.kill()
-                    except Exception:
-                        pass
+                _stop_manual_browser(browser_process, profile_path)
             self.finished_at = time.time()
             if self._lock_acquired:
                 self._runtime_lock.release()
@@ -690,11 +684,39 @@ def _launch_system_manual_browser(
         env={**os.environ, "DISPLAY": os.getenv("DISPLAY", ":99")},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        start_new_session=(os.name != "nt"),
     )
     time.sleep(1)
     if browser_process.poll() is not None:
         raise RuntimeError("The normal Chrome manual-login browser exited before it opened.")
     return browser_process
+
+
+def _stop_manual_browser(browser_process, profile_path: Optional[str]) -> None:
+    """Stop Chrome and wait until all profile-owning child processes exit."""
+    try:
+        if os.name != "nt":
+            os.killpg(browser_process.pid, signal.SIGTERM)
+        else:
+            browser_process.terminate()
+        browser_process.wait(timeout=10)
+    except Exception:
+        try:
+            if os.name != "nt":
+                os.killpg(browser_process.pid, signal.SIGKILL)
+            else:
+                browser_process.kill()
+        except Exception:
+            pass
+
+    if os.name == "nt" or not profile_path:
+        return
+    profile = Path(profile_path)
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if not _chrome_process_uses_profile(profile):
+            return
+        time.sleep(0.1)
 
 
 def _verify_manual_profile(
