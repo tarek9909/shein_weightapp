@@ -28,6 +28,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: "/shein-accounts",
+    label: "SHEIN Accounts",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="2.5" />
+        <path d="M5.5 17c.8-2 2-3 3.5-3s2.7 1 3.5 3" />
+        <path d="M15 9h3M15 13h3M15 17h3" />
+      </svg>
+    ),
+  },
+  {
     path: "/customers",
     label: "Customers",
     icon: (
