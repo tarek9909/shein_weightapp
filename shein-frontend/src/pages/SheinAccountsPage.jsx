@@ -17,11 +17,16 @@ const emptyForm = {
   id: null,
   email: "",
   shein_email: "",
-  shein_password: "",
-  gmail_email: "",
-  gmail_app_password: "",
   profile_key: "auto",
 };
+
+const accountPayload = (value) => ({
+  ...value,
+  // Manual VPS login uses one email for both SHEIN and Gmail-related fields.
+  gmail_email: value.shein_email,
+  shein_password: "",
+  gmail_app_password: "",
+});
 
 const activeLoginStatuses = new Set(["starting", "opening", "login_required", "logged_in"]);
 
@@ -95,7 +100,7 @@ export default function SheinAccountsPage() {
 
     setSaving(true);
     try {
-      await registerSheinAccount(form);
+      await registerSheinAccount(accountPayload(form));
       localStorage.setItem("shein_api_email", form.email);
       setForm((prev) => ({ ...emptyForm, email: prev.email }));
       await loadAccounts();
@@ -114,10 +119,7 @@ export default function SheinAccountsPage() {
       setEditForm({
         id: u.id,
         email: u.email || email,
-        shein_email: u.shein_email || "",
-        shein_password: "",
-        gmail_email: u.gmail_email || "",
-        gmail_app_password: "",
+        shein_email: u.shein_email || u.gmail_email || "",
         profile_key: u.profile_key || "auto",
       });
       setEditOpen(true);
@@ -134,7 +136,7 @@ export default function SheinAccountsPage() {
     }
     setSaving(true);
     try {
-      await registerSheinAccount(editForm);
+      await registerSheinAccount(accountPayload(editForm));
       setEditOpen(false);
       await loadAccounts();
       openInfo("Done", "SHEIN account updated.");
@@ -296,12 +298,9 @@ export default function SheinAccountsPage() {
           <div className="ordCardHead"><div className="ordCardTitle">Add SHEIN Account</div></div>
           <div className="ordCardBody" style={{ display: "grid", gap: 8 }}>
             <input className="loginInput" placeholder="Associated API email or ID" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
-            <input className="loginInput" placeholder="SHEIN email" value={form.shein_email} onChange={(e) => setForm((p) => ({ ...p, shein_email: e.target.value }))} />
-            <input className="loginInput" type="password" placeholder="SHEIN password (optional)" value={form.shein_password} onChange={(e) => setForm((p) => ({ ...p, shein_password: e.target.value }))} />
-            <input className="loginInput" placeholder="Gmail email (optional)" value={form.gmail_email} onChange={(e) => setForm((p) => ({ ...p, gmail_email: e.target.value }))} />
-            <input className="loginInput" type="password" placeholder="Gmail app password (optional)" value={form.gmail_app_password} onChange={(e) => setForm((p) => ({ ...p, gmail_app_password: e.target.value }))} />
+            <input className="loginInput" placeholder="SHEIN / Gmail email" value={form.shein_email} onChange={(e) => setForm((p) => ({ ...p, shein_email: e.target.value }))} />
             {profileDropdown(form.profile_key, (e) => setForm((p) => ({ ...p, profile_key: e.target.value })))}
-            <div className="ordSub">Passwords are optional when you log in manually through the VPS browser.</div>
+            <div className="ordSub">The same email is saved for SHEIN and Gmail. Log in manually through the VPS browser.</div>
             <button className="ordBtn" disabled={saving} onClick={saveAccount}>{saving ? "Saving..." : "Add Account"}</button>
           </div>
         </div>
@@ -346,10 +345,7 @@ export default function SheinAccountsPage() {
             <div className="cmHead"><div className="cmTitle">Edit SHEIN Account</div><button className="cmX" onClick={() => setEditOpen(false)} aria-label="Close">X</button></div>
             <div className="cmBody" style={{ display: "grid", gap: 8 }}>
               <input className="cmInput" value={editForm.email} disabled />
-              <input className="cmInput" placeholder="SHEIN email" value={editForm.shein_email} onChange={(e) => setEditForm((p) => ({ ...p, shein_email: e.target.value }))} />
-              <input className="cmInput" type="password" placeholder="SHEIN password (optional)" value={editForm.shein_password} onChange={(e) => setEditForm((p) => ({ ...p, shein_password: e.target.value }))} />
-              <input className="cmInput" placeholder="Gmail email (optional)" value={editForm.gmail_email} onChange={(e) => setEditForm((p) => ({ ...p, gmail_email: e.target.value }))} />
-              <input className="cmInput" placeholder="Gmail app password (optional)" type="password" value={editForm.gmail_app_password} onChange={(e) => setEditForm((p) => ({ ...p, gmail_app_password: e.target.value }))} />
+              <input className="cmInput" placeholder="SHEIN / Gmail email" value={editForm.shein_email} onChange={(e) => setEditForm((p) => ({ ...p, shein_email: e.target.value }))} />
               {profileDropdown(editForm.profile_key, (e) => setEditForm((p) => ({ ...p, profile_key: e.target.value })))}
             </div>
             <div className="cmFooter"><button className="cmBtnSoft" onClick={() => setEditOpen(false)}>Cancel</button><button className="cmBtn" disabled={saving} onClick={saveEdit}>{saving ? "Saving..." : "Save"}</button></div>
