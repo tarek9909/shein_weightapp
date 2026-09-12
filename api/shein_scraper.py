@@ -9,7 +9,6 @@ import tempfile
 import threading
 import time
 import uuid
-import socket
 from functools import wraps
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -146,25 +145,44 @@ class ManualLoginSession:
         browser_process = None
         try:
             profile_path, chrome_profile_directory = _prepare_browser_profile(self.profile_key)
+            self.status = "opening"
+
+            # Google rejects OAuth from browsers exposing a remote-debugging
+            # port.  The system Chrome path is intentionally completely
+            # unmanaged while the user signs in; Finish performs verification
+            # after Chrome has been closed.  The Playwright fallback remains
+            # available for environments without system Chrome.
+            if MANUAL_BROWSER_MODE == "system" and _manual_browser_path():
+                browser_process = _launch_system_manual_browser(
+                    profile_path,
+                    chrome_profile_directory,
+                    f"{self.base_url}/user/login",
+                )
+                self.status = "login_required"
+                deadline = self.started_at + MANUAL_LOGIN_TIMEOUT_SECONDS
+                while not self._stop.wait(0.5):
+                    if time.time() >= deadline:
+                        self.error = (
+                            f"Manual login session expired after {MANUAL_LOGIN_TIMEOUT_SECONDS} seconds."
+                        )
+                        self.status = "expired"
+                        break
+                    if browser_process.poll() is not None:
+                        self.error = "The remote login browser was closed."
+                        self.status = "closed"
+                        break
+                return
+
             with sync_playwright() as playwright:
-                self.status = "opening"
-                if MANUAL_BROWSER_MODE == "system" and _manual_browser_path():
-                    context, browser_connection, browser_process = _launch_system_manual_browser(
-                        playwright,
-                        profile_path,
-                        chrome_profile_directory,
-                        f"{self.base_url}/user/login",
-                    )
-                else:
-                    context = _launch_shein_browser(
-                        playwright,
-                        profile_path,
-                        headless=False,
-                        chrome_profile_directory=chrome_profile_directory,
-                        manual=True,
-                    )
-                    page = context.pages[0] if context.pages else context.new_page()
-                    page.goto(f"{self.base_url}/user/login", wait_until="domcontentloaded")
+                context = _launch_shein_browser(
+                    playwright,
+                    profile_path,
+                    headless=False,
+                    chrome_profile_directory=chrome_profile_directory,
+                    manual=True,
+                )
+                page = context.pages[0] if context.pages else context.new_page()
+                page.goto(f"{self.base_url}/user/login", wait_until="domcontentloaded")
                 self.status = "login_required"
                 deadline = self.started_at + MANUAL_LOGIN_TIMEOUT_SECONDS
 
@@ -240,6 +258,28 @@ class ManualLoginSession:
             "finished_at": self.finished_at,
         }
 
+    def verify_saved_login(self) -> dict[str, Any]:
+        """Verify the profile after normal Chrome has been closed."""
+        if self.status in {"error", "expired"}:
+            return self.snapshot()
+        self.status = "checking"
+        try:
+            profile_path, chrome_profile_directory = _prepare_browser_profile(self.profile_key)
+            logged_in = _verify_manual_profile(
+                profile_path,
+                chrome_profile_directory,
+                self.base_url,
+            )
+            self.status = "finished" if logged_in else "login_required"
+            if logged_in:
+                self.error = None
+            else:
+                self.error = "SHEIN login was not detected. Complete the login, then press Finish again."
+        except Exception as exc:
+            self.status = "error"
+            self.error = f"{type(exc).__name__}: {exc}"
+        return self.snapshot()
+
 
 def _get_manual_login_session(session_id: str) -> ManualLoginSession:
     with _MANUAL_LOGIN_SESSIONS_GUARD:
@@ -271,14 +311,19 @@ def manual_login_status(session_id: str) -> dict[str, Any]:
 
 def finish_manual_login(session_id: str) -> dict[str, Any]:
     session = _get_manual_login_session(session_id)
-    snapshot = session.stop()
+    session.stop()
+    snapshot = session.verify_saved_login()
     with _MANUAL_LOGIN_SESSIONS_GUARD:
         _MANUAL_LOGIN_SESSIONS.pop(session_id, None)
     return snapshot
 
 
 def cancel_manual_login(session_id: str) -> dict[str, Any]:
-    return finish_manual_login(session_id)
+    session = _get_manual_login_session(session_id)
+    snapshot = session.stop()
+    with _MANUAL_LOGIN_SESSIONS_GUARD:
+        _MANUAL_LOGIN_SESSIONS.pop(session_id, None)
+    return snapshot
 
 
 def list_profile_states() -> list[dict[str, Any]]:
@@ -619,21 +664,13 @@ def _manual_pages_logged_in(urls: list[str], base_url: str) -> bool:
     return False
 
 
-def _allocate_debug_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
-
-
 def _launch_system_manual_browser(
-    playwright,
     profile_path: str,
     chrome_profile_directory: Optional[str],
     login_url: str,
 ):
-    """Launch normal Chrome for OAuth, then attach only for session tracking."""
+    """Launch an unmanaged system Chrome window for the user's OAuth login."""
     _clear_stale_chrome_locks(Path(profile_path))
-    debug_port = _allocate_debug_port()
     args = [
         _manual_browser_path() or MANUAL_BROWSER_EXECUTABLE,
         f"--user-data-dir={Path(profile_path).resolve()}",
@@ -643,9 +680,6 @@ def _launch_system_manual_browser(
         "--disable-gpu",
         "--no-sandbox",
         "--password-store=basic",
-        "--remote-debugging-address=127.0.0.1",
-        f"--remote-debugging-port={debug_port}",
-        "--remote-allow-origins=*",
         "--window-size=1280,800",
     ]
     if chrome_profile_directory:
@@ -657,25 +691,67 @@ def _launch_system_manual_browser(
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    deadline = time.time() + 20
-    last_error = None
-    while time.time() < deadline:
-        if browser_process.poll() is not None:
-            raise RuntimeError("The normal Chrome manual-login browser exited before it opened.")
+    time.sleep(1)
+    if browser_process.poll() is not None:
+        raise RuntimeError("The normal Chrome manual-login browser exited before it opened.")
+    return browser_process
+
+
+def _verify_manual_profile(
+    profile_path: str,
+    chrome_profile_directory: Optional[str],
+    base_url: str,
+) -> bool:
+    """Check SHEIN login using normal Chrome after the interactive session ends."""
+    executable = _manual_browser_path()
+    if executable:
+        _clear_stale_chrome_locks(Path(profile_path))
+        args = [
+            executable,
+            f"--user-data-dir={Path(profile_path).resolve()}",
+            "--headless=new",
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--password-store=basic",
+            "--dump-dom",
+            f"{base_url.rstrip('/')}/user/login",
+        ]
+        if chrome_profile_directory:
+            args.insert(2, f"--profile-directory={chrome_profile_directory}")
+        result = subprocess.run(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=NORMAL_CHROME_TIMEOUT_SECONDS,
+            env={**os.environ, "DISPLAY": os.getenv("DISPLAY", ":99")},
+        )
+        html = result.stdout.decode("utf-8", errors="replace").lower()
+        if not html:
+            raise RuntimeError("Normal Chrome did not return the SHEIN login page.")
+        return "continue-alias-input" not in html
+
+    profile = Path(profile_path)
+    with sync_playwright() as playwright:
+        context = _launch_shein_browser(
+            playwright,
+            str(profile),
+            headless=True,
+            chrome_profile_directory=chrome_profile_directory,
+        )
         try:
-            browser_connection = playwright.chromium.connect_over_cdp(
-                f"http://127.0.0.1:{debug_port}", timeout=2000
-            )
-            contexts = browser_connection.contexts
-            if contexts:
-                context = contexts[0]
-                if context.pages:
-                    return context, browser_connection, browser_process
-        except Exception as exc:
-            last_error = exc
-        time.sleep(0.25)
-    browser_process.terminate()
-    raise RuntimeError(f"Could not connect to the normal Chrome manual-login browser: {last_error}")
+            page = context.pages[0] if context.pages else context.new_page()
+            page.goto(f"{base_url.rstrip('/')}/user/login", wait_until="domcontentloaded")
+            try:
+                page.wait_for_load_state("load", timeout=10000)
+            except TimeoutError:
+                pass
+            return _manual_pages_logged_in([page.url], base_url)
+        finally:
+            context.close()
 
 
 def _launch_shein_browser(
