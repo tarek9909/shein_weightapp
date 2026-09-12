@@ -655,4 +655,81 @@
   border-color: #cbd5e1;
 }
 
+/* ==========================================================================
+   Mobile Responsive Adaptations (Viewport <= 640px)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .opsPage {
+    padding: 14px 12px 64px;
+  }
+
+  .opsHeader h1 {
+    font-size: 24px;
+  }
+
+  .opsModeSwitch {
+    display: flex;
+    overflow-x: auto;
+    width: 100%;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .opsModeSwitch::-webkit-scrollbar {
+    display: none;
+  }
+
+  .opsModeSwitch button {
+    flex-shrink: 0;
+    padding: 8px 14px;
+  }
+
+  .opsSelfDeliveryCard {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .opsSelfDeliveryCardHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .opsBulkQuickBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .opsTableWrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
+
+  .opsTable {
+    min-width: 700px;
+  }
+
+  .opsControlGroup input,
+  .opsControlGroup select,
+  .opsAssignmentPanel input,
+  .opsAssignmentPanel select,
+  .opsInlineForm input,
+  .opsInlineForm select {
+    font-size: 16px;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .opsAssignmentPanel button,
+  .opsInlineForm button,
+  .opsToolbar > button,
+  .opsToolbarActions button {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
 

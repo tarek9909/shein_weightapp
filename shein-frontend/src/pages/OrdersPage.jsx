@@ -408,8 +408,8 @@ const OrdersPage = () => {
         </div>
 
         <div className="ordHeaderRight">
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ flex: 1 }}>
+          <div className="ordControlsRow">
+            <div className="ordControlItem">
               <div className="ordLabel">Active Month Cycle</div>
               <div className="ordMonthWrap">
                 <MonthSelector
@@ -421,7 +421,7 @@ const OrdersPage = () => {
               </div>
             </div>
 
-            <div style={{ flex: 1 }}>
+            <div className="ordControlItem">
               <div className="ordLabel">Chrome Profile for Refresh</div>
               <div className="ordMonthWrap">
                 <CustomDropdown
@@ -438,11 +438,11 @@ const OrdersPage = () => {
               </div>
             </div>
 
-            <div style={{ alignSelf: "flex-end", display: "flex", gap: "8px" }}>
+            <div className="ordControlBtns">
               <a
                 href="/customers"
                 className="ordBtnSoft"
-                style={{ padding: "10px 14px", height: "42px", display: "inline-flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap", textDecoration: "none" }}
+                style={{ padding: "10px 14px", minHeight: "42px", display: "inline-flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap", textDecoration: "none" }}
                 title="Manage reusable customer directory"
               >
                 👥 Customers
@@ -451,7 +451,7 @@ const OrdersPage = () => {
               <button
                 type="button"
                 className="ordBtn"
-                style={{ padding: "10px 16px", height: "42px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
+                style={{ padding: "10px 16px", minHeight: "42px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
                 onClick={handleOpenAddOrder}
                 disabled={!monthId}
               >
@@ -567,14 +567,14 @@ const OrdersPage = () => {
                   </div>
 
                   {/* Budget Collection Progress Bar */}
-                  <div style={{ marginTop: "8px", marginBottom: "8px", background: "rgba(15, 23, 42, 0.6)", padding: "8px 12px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div style={{ marginTop: "8px", marginBottom: "8px", background: "#f8fafc", padding: "8px 12px", borderRadius: "10px", border: "1.5px solid #e2e8f0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", fontSize: "12px" }}>
-                      <span style={{ color: "#94a3b8", fontWeight: 600 }}>Collection Progress:</span>
-                      <span style={{ fontWeight: 700, color: isCollectionComplete ? "#10b981" : "#38bdf8" }}>
+                      <span style={{ color: "#64748b", fontWeight: 650 }}>Collection Progress:</span>
+                      <span style={{ fontWeight: 800, color: isCollectionComplete ? "#166534" : "#0284c7" }}>
                         ${money(collectedSum)} / ${money(budgetToCollect)} ({collectionPct}%)
                       </span>
                     </div>
-                    <div style={{ height: "6px", background: "rgba(255, 255, 255, 0.1)", borderRadius: "3px", overflow: "hidden" }}>
+                    <div style={{ height: "6px", background: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
                       <div
                         style={{
                           height: "100%",

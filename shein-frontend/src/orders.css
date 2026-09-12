@@ -47,10 +47,30 @@
 }
 
 .ordHeaderRight {
-  min-width: 320px;
+  flex: 1;
+  max-width: 720px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.ordControlsRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ordControlItem {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.ordControlBtns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .ordLabel {
@@ -628,3 +648,147 @@
   gap: 10px;
   background: #fafbfd;
 }
+
+/* ==========================================================================
+   Responsive Adaptations (Viewport <= 960px, <= 768px, <= 480px)
+   ========================================================================== */
+@media (max-width: 960px) {
+  .ordHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .ordHeaderRight {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .ordStats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .ordPage {
+    padding: 16px 14px 60px;
+  }
+
+  .ordTitle {
+    font-size: 24px;
+  }
+
+  .ordControlsRow {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .ordControlItem {
+    width: 100%;
+  }
+
+  .ordControlBtns {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .ordControlBtns a,
+  .ordControlBtns button {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .ordStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .ordStatCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .ordStatValue {
+    font-size: 18px;
+  }
+
+  .ordGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .ordCard {
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  /* Modal Bottom Sheet */
+  .modalBackdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modalCard {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: 92vh;
+    animation: cmBottomSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.25);
+  }
+
+  .modalCard::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4.5px;
+    background: #cbd5e1;
+    border-radius: 4px;
+    margin: 10px auto 2px;
+    flex-shrink: 0;
+  }
+
+  .modalHeader {
+    padding: 12px 18px 14px;
+  }
+
+  .modalTitle {
+    font-size: 16.5px;
+  }
+
+  .modalBody {
+    padding: 16px 18px;
+  }
+
+  .modalBody input,
+  .modalBody select {
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+    min-height: 44px;
+  }
+
+  .modalFooter {
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modalFooter button {
+    width: 100%;
+    min-height: 46px;
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 440px) {
+  .ordStats {
+    grid-template-columns: 1fr;
+  }
+}
+

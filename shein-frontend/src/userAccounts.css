@@ -1350,3 +1350,77 @@
     padding-bottom: 4px;
   }
 }
+
+@media (max-width: 640px) {
+  .userAccountsPage {
+    padding: 14px 12px 64px;
+  }
+
+  .userAccountsModalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .userAccountsModalBox {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: 92vh;
+    animation: cmBottomSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.25);
+  }
+
+  .userAccountsModalBox::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4.5px;
+    background: #cbd5e1;
+    border-radius: 4px;
+    margin: 10px auto 2px;
+    flex-shrink: 0;
+  }
+
+  .modalHeader {
+    padding: 12px 18px 14px;
+  }
+
+  .modalBody {
+    padding: 16px 18px;
+  }
+
+  .modalBody input,
+  .modalBody select {
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+    min-height: 44px;
+  }
+
+  .modalActions {
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modalPrimaryBtn,
+  .modalSecondaryBtn,
+  .modalDangerBtn {
+    width: 100%;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14.5px;
+  }
+
+  .createFormInput,
+  .createFormSelect {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .createSubmitBtn {
+    min-height: 46px;
+    font-size: 14.5px;
+  }
+}
+

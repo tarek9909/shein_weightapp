@@ -1,0 +1,713 @@
+/* orderCollectionModal.css - Ultra-Premium Mobile Bottom-Sheet & Responsive Design */
+
+@keyframes ocmOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ocmModalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ocmBottomSheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.ocmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+  animation: ocmOverlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ocmModal {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 860px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.9);
+  color: #0f172a;
+  overflow: hidden;
+  animation: ocmModalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+/* Modal Header */
+.ocmHeader {
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.ocmHeaderMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ocmIconBadge {
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ocmIconBadge.complete {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.ocmIconBadge.pending {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.ocmHeaderTitles {
+  min-width: 0;
+}
+
+.ocmTitle {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ocmSub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ocmCloseBtn {
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ocmCloseBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+/* Modal Body */
+.ocmBody {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 22px;
+  flex: 1;
+}
+
+.ocmAlert {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocmAlertError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.ocmAlertSuccess {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+/* Progress Card */
+.ocmProgressCard {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+
+.ocmProgressHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.ocmProgressLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.ocmProgressValues {
+  font-size: 24px;
+  font-weight: 850;
+  color: #0f172a;
+  margin-top: 2px;
+  letter-spacing: -0.5px;
+}
+
+.ocmProgressTarget {
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ocmProgressPill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ocmProgressPill.complete {
+  background: #dcfce7;
+  color: #166534;
+  border: 1.5px solid #86efac;
+}
+
+.ocmProgressPill.pending {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+}
+
+.ocmProgressTrack {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+
+.ocmProgressBar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease-out;
+}
+
+.ocmProgressBar.complete {
+  background: linear-gradient(90deg, #10b981, #34d399);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+}
+
+.ocmProgressBar.pending {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+/* Formula Card */
+.ocmFormulaCard {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.ocmFormulaCard.complete {
+  border-color: #86efac;
+}
+
+.ocmFormulaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ocmFormulaTitle {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ocmFormulaSub {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ocmMathGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ocmMathBox {
+  padding: 10px 12px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ocmMathBoxCollected {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+}
+
+.ocmMathBoxCost {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+}
+
+.ocmMathBoxCustoms {
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+}
+
+.ocmMathBoxLosses {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+}
+
+.ocmMathBoxProfit {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 2px solid #34d399;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.ocmMathBoxProfitNegative {
+  background: #fff1f2;
+  border: 2px solid #fda4af;
+}
+
+.ocmMathLabel {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.ocmMathValue {
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.ocmProfitAsideRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ocmProfitStatusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1.5px solid #6ee7b7;
+  color: #065f46;
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.ocmAsideBtns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ocmClearBtn {
+  padding: 8px 14px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ocmClearBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.ocmSecureBtn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+/* Customer Section */
+.ocmCustomerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ocmCustomerTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ocmCustomerList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ocmCustomerCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 12px;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.ocmCustomerCard.paid {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+}
+
+.ocmCustomerCard.pending {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+}
+
+.ocmCustomerMain {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.ocmCustomerNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ocmCustomerName {
+  font-weight: 800;
+  font-size: 14.5px;
+  color: #0f172a;
+}
+
+.ocmDeliveryTag {
+  font-size: 11.5px;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-weight: 800;
+}
+
+.ocmCartTag {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ocmLossBadge {
+  margin-top: 4px;
+  display: inline-block;
+  font-size: 11px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-weight: 700;
+}
+
+.ocmCustomerAmountWrap {
+  text-align: right;
+}
+
+.ocmCustomerAmountLabel {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ocmCustomerAmount {
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.ocmCustomerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ocmCollectedBadge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #dcfce7;
+  border: 1.5px solid #86efac;
+  color: #15803d;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.ocmCollectBtn {
+  padding: 7px 14px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ocmCollectBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+.ocmRecordLossBtn {
+  padding: 7px 12px;
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ocmRecordLossBtn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+/* Modal Footer */
+.ocmFooter {
+  padding: 14px 22px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.ocmCloseFooterBtn {
+  padding: 9px 24px;
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-weight: 750;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.ocmCloseFooterBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   Mobile Bottom-Sheet Adaptation (Viewport <= 640px)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .ocmOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .ocmModal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: 92vh;
+    animation: ocmBottomSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.25);
+  }
+
+  /* Handle drag bar indicator */
+  .ocmModal::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4.5px;
+    background: #cbd5e1;
+    border-radius: 4px;
+    margin: 10px auto 2px;
+    flex-shrink: 0;
+  }
+
+  .ocmHeader {
+    padding: 12px 18px 14px;
+  }
+
+  .ocmTitle {
+    font-size: 16.5px;
+  }
+
+  .ocmBody {
+    padding: 14px 16px;
+  }
+
+  .ocmMathGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .ocmMathBoxProfit,
+  .ocmMathBoxProfitNegative {
+    grid-column: span 2;
+  }
+
+  .ocmProfitAsideRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ocmAsideBtns {
+    width: 100%;
+  }
+
+  .ocmClearBtn,
+  .ocmSecureBtn {
+    flex: 1;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ocmCustomerCard {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+
+  .ocmCustomerAmountWrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 8px;
+    margin-top: 4px;
+    text-align: left;
+  }
+
+  .ocmCustomerActions {
+    width: 100%;
+  }
+
+  .ocmCollectBtn,
+  .ocmRecordLossBtn,
+  .ocmCollectedBadge {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .ocmFooter {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ocmCloseFooterBtn {
+    width: 100%;
+    min-height: 46px;
+  }
+}

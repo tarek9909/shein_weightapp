@@ -364,7 +364,7 @@
 
 @media (max-width: 640px) {
   .delPage {
-    padding: 12px;
+    padding: 14px 12px 64px;
     border-radius: 14px;
   }
   .delTitle {
@@ -379,6 +379,23 @@
     width: 100%;
     min-width: unset;
   }
+  .delSelect,
+  .delInput {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .delStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .delStatCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .delStatValue {
+    font-size: 18px;
+  }
   .delRow {
     padding: 14px 12px;
     border-radius: 14px;
@@ -387,7 +404,9 @@
   .delBtnSoft,
   .delBtnDanger {
     width: 100%;
+    min-height: 44px;
     justify-content: center;
+    font-size: 14px;
   }
   .delTableWrap {
     width: 100%;
@@ -399,3 +418,4 @@
     min-width: 640px;
   }
 }
+

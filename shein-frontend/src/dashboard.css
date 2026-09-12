@@ -1134,7 +1134,7 @@
   flex-wrap: wrap;
 }
 
-/* Responsive */
+/* -------------------- Responsive Adaptations -------------------- */
 @media (max-width: 1200px) {
   .dashHeroKpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1144,23 +1144,231 @@
   }
 }
 
+@media (max-width: 960px) {
+  .dashPage {
+    padding: 20px 16px 60px;
+  }
+  .dashOpsStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .dashHeader {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
   }
+
   .dashHeaderRight {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
+
+  .dashMonthControl {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .dashAddMonth {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .dashAddMonth .dashInput {
+    flex: 1;
+    min-width: 0;
+    width: auto !important;
+  }
+
+  .dashAddMonth .dashBtn {
+    flex-shrink: 0;
+  }
+
+  /* Horizontal swipeable tab bar */
+  .dashNavTabs {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .dashNavTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashNavTab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* Crisp 2x2 Hero KPIs on Mobile */
   .dashHeroKpis {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
   }
+
+  .dashStat--hero {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .dashStat--hero .dashStatValue {
+    font-size: 20px;
+    letter-spacing: -0.02em;
+  }
+
+  .dashStatTitle {
+    font-size: 10px;
+  }
+
+  .dashStatIconWrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .dashStatSubText {
+    font-size: 11px;
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* 2-column Operations Strip */
   .dashOpsStrip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
   }
+
+  .dashOpsItem {
+    padding: 10px 12px;
+    border-radius: 9px;
+  }
+
+  .dashOpsLabel {
+    font-size: 10.5px;
+  }
+
+  .dashOpsValue {
+    font-size: 15px;
+  }
+
+  .dashOpsSub {
+    font-size: 10.5px;
+  }
+
+  /* P&L Performance Card */
+  .dashPnLCard {
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+
+  .dashPnLCardHead {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .dashPnLCardHeadRight {
+    width: 100%;
+  }
+
+  .dashPnLCardHeadRight .dashBtnSoft {
+    flex: 1;
+    min-height: 42px;
+    font-size: 12.5px;
+    text-align: center;
+  }
+
+  .dashPnLGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Grids & Cards */
   .dashBudgetGrid,
   .dashOrderGrid,
-  .dashPaymentGrid {
+  .dashPaymentGrid,
+  .dashFormRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dashCard {
+    border-radius: 12px;
+  }
+
+  .dashCardHead {
+    padding: 11px 14px;
+  }
+
+  .dashCardHeadBtn {
+    padding: 11px 14px;
+  }
+
+  .dashCardBody {
+    padding: 14px;
+  }
+
+  /* Inputs and Buttons: Touch Target Compliance & No iOS Zoom */
+  .dashSelect,
+  .dashInput {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .dashBtn,
+  .dashBtnSoft,
+  .dashBtnDanger {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .dashTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 440px) {
+  .dashPage {
+    padding: 12px 10px 56px;
+  }
+
+  .dashTitle {
+    font-size: 22px;
+  }
+
+  .dashHeroKpis {
+    gap: 8px;
+  }
+
+  .dashStat--hero {
+    padding: 10px 12px;
+  }
+
+  .dashStat--hero .dashStatValue {
+    font-size: 18px;
+  }
+
+  .dashOpsStrip {
     grid-template-columns: 1fr;
   }
 }

@@ -857,16 +857,15 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="dashAddMonth" style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+          <div className="dashAddMonth">
             <input
               className="dashInput"
               value={newMonthName}
               onChange={(e) => setNewMonthName(e.target.value)}
               placeholder="New Month name..."
-              style={{ width: "160px" }}
               disabled={readOnly}
             />
-            <button className="dashBtn" onClick={handleAddMonth} disabled={readOnly}>
+            <button className="dashBtn" onClick={handleAddMonth} disabled={readOnly} type="button">
               + Add Month
             </button>
           </div>

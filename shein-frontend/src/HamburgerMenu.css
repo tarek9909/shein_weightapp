@@ -576,15 +576,48 @@
 
   .topNavMobileToggle {
     display: flex;
+    width: 44px;
+    height: 44px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  :root {
+    --app-header-h: 60px;
+  }
+
+  .topNavBar {
+    height: 60px;
+  }
+
+  .topNavInner {
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+  }
+
   .topNavBrandText {
     font-size: 15px;
   }
+
   .topNavLogoIcon {
     width: 32px;
     height: 32px;
   }
+
+  .menu-content {
+    width: min(320px, 86vw);
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .menu-link {
+    min-height: 44px;
+    padding: 11px 14px;
+    font-size: 14.5px;
+  }
+
+  .menu-logout-btn {
+    min-height: 46px;
+    font-size: 14px;
+  }
 }
+
