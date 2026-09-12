@@ -15,7 +15,17 @@ function localApiBase() {
 }
 
 function remoteBrowserUrl() {
-  return String(process.env.SHEIN_REMOTE_BROWSER_URL || "").trim();
+  const raw = String(process.env.SHEIN_REMOTE_BROWSER_URL || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    // Never send the VNC password (or another credential accidentally placed
+    // in the browser URL) to the frontend or expose it in API responses.
+    ["password", "passwd", "vnc_password", "token", "access_token"].forEach((key) => parsed.searchParams.delete(key));
+    return parsed.toString();
+  } catch (_) {
+    return raw;
+  }
 }
 
 function profileApiTimeoutMs() {
