@@ -169,6 +169,10 @@ it to proxy noVNC too, add a protected WebSocket-capable route for `/vnc/` to
 the scraper's port 6080. The route must include authentication; noVNC itself
 should not be exposed anonymously.
 
+On the current `shein-tracker.duckdns.org` VPS, opening the browser URL first
+shows HTTP Basic Auth (`admin` plus the private `SHEIN_VNC_PASSWORD` value),
+then the noVNC password prompt. Keep the password out of the URL query string.
+
 After the browser URL works from the phone, set the same public URL in `.env`:
 
 ```env

@@ -42,6 +42,12 @@ it only through an authenticated HTTPS reverse proxy, VPN, or SSH tunnel. Do
 not expose the Python API, internal token, or noVNC without authentication and
 HTTPS.
 
+On the current `shein-tracker.duckdns.org` deployment, the outer Nginx proxy
+protects `/vnc/` with HTTP Basic Auth. The username is `admin`; use the value
+of `SHEIN_VNC_PASSWORD` from `/var/www/shein/.env` as the password. The same
+password may be requested again by the noVNC viewer. Never put that password
+in `SHEIN_REMOTE_BROWSER_URL` or another URL query string.
+
 For a native Ubuntu install, the display layer can be started separately:
 
 ```bash
