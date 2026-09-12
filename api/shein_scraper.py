@@ -797,7 +797,14 @@ def _launch_shein_browser(
         "locale": "ar",
         "viewport": {"width": 1280, "height": 800},
     }
-    if PLAYWRIGHT_BROWSER_CHANNEL:
+    # Manual OAuth uses the installed system Chrome. Reuse that same browser
+    # binary for later profile-based scraping so Chrome can read the cookies it
+    # created; the bundled Chromium build can exit with TargetClosedError on
+    # these profiles even though the profile is valid.
+    system_browser = _manual_browser_path() if MANUAL_BROWSER_MODE == "system" else None
+    if system_browser:
+        launch_options["executable_path"] = system_browser
+    elif PLAYWRIGHT_BROWSER_CHANNEL:
         launch_options["channel"] = PLAYWRIGHT_BROWSER_CHANNEL
     if manual:
         # Manual OAuth login runs in the visible VPS browser. Do not add
